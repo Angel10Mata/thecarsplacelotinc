@@ -10,8 +10,7 @@ const servicesViewport = { once: true, amount: 0.2 } as const
 // Sección servicios (landing)
 export function ServicesSection() {
   const reduceMotion = useReducedMotion()
-  const fadeHidden = reduceMotion ? false : { opacity: 0 }
-  const fadeVisible = { opacity: 1 }
+  const motionDuration = reduceMotion ? 0 : undefined
 
   const services = [
     { title: "Vehicle Sales", desc: "Certified pre-owned units with full transparency.", icon: ShieldCheck, color: "from-blue-500 to-cyan-400" },
@@ -28,10 +27,10 @@ export function ServicesSection() {
       )}
     >
       <motion.div 
-        initial={fadeHidden}
-        whileInView={fadeVisible}
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
         viewport={servicesViewport}
-        transition={{ duration: reduceMotion ? 0 : 0.55, ease: "easeOut" }}
+        transition={{ duration: motionDuration ?? 0.55, ease: "easeOut" }}
         className="text-center mb-12 lg:mb-16 space-y-4"
       >
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20">
@@ -45,11 +44,11 @@ export function ServicesSection() {
         {services.map((s, idx) => (
           <motion.div 
             key={idx}
-            initial={fadeHidden}
-            whileInView={fadeVisible}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={servicesViewport}
             transition={{
-              duration: reduceMotion ? 0 : 0.45,
+              duration: motionDuration ?? 0.45,
               ease: "easeOut",
               delay: reduceMotion ? 0 : 0.08 + idx * 0.08,
             }}

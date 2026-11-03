@@ -359,35 +359,35 @@ input[type=number] {
       to bottom,
       #fafafa 0%,
       #fafafa calc(100% - var(--public-section-fade)),
-      #f6f6f7 calc(100% - 12rem),
-      #f2f2f3 calc(100% - 8rem),
-      #f0f0f1 calc(100% - 4rem),
-      #f4f4f5 100%
-    );
-  }
-
-  .public-section-surface--services {
-    background-color: #f4f4f5;
-    background-image: linear-gradient(
-      to bottom,
-      #f4f4f5 0%,
-      #f4f4f5 calc(100% - var(--public-section-fade)),
-      #eeeff0 calc(100% - 12rem),
-      #e9e9ec calc(100% - 8rem),
-      #e6e6e9 calc(100% - 4rem),
+      #efeff1 calc(100% - 12rem),
+      #e8e8eb calc(100% - 8rem),
+      #e0e0e4 calc(100% - 4rem),
       #e4e4e7 100%
     );
   }
 
-  .public-section-surface--about {
+  .public-section-surface--services {
     background-color: #e4e4e7;
     background-image: linear-gradient(
       to bottom,
       #e4e4e7 0%,
       #e4e4e7 calc(100% - var(--public-section-fade)),
-      #ededee calc(100% - 12rem),
-      #f0f0f1 calc(100% - 8rem),
-      #f2f2f3 calc(100% - 4rem),
+      #dcdee2 calc(100% - 12rem),
+      #d6d6da calc(100% - 8rem),
+      #d0d0d5 calc(100% - 4rem),
+      #d4d4d8 100%
+    );
+  }
+
+  .public-section-surface--about {
+    background-color: #d4d4d8;
+    background-image: linear-gradient(
+      to bottom,
+      #d4d4d8 0%,
+      #d4d4d8 calc(100% - var(--public-section-fade)),
+      #dedee2 calc(100% - 12rem),
+      #e8e8eb calc(100% - 8rem),
+      #f0f0f2 calc(100% - 4rem),
       #f4f4f5 100%
     );
   }
@@ -398,8 +398,8 @@ input[type=number] {
       to bottom,
       #f4f4f5 0%,
       #f4f4f5 calc(100% - var(--public-section-fade)),
-      #f0f0f1 calc(100% - 10rem),
-      #ececed calc(100% - 6rem),
+      #f6f6f7 calc(100% - 10rem),
+      #f9f9fa calc(100% - 6rem),
       var(--background) 100%
     );
   }

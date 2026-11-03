@@ -5,5 +5,5 @@ export default function FarmamuniLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppPageBackground>{children}</AppPageBackground>;
+  return <AppPageBackground hexagonBackdrop>{children}</AppPageBackground>;
 }

@@ -6,7 +6,7 @@ export default function EsperandoAccesoLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AppPageBackground centered contentClassName="items-center justify-center">
+    <AppPageBackground centered contentClassName="items-center justify-center" hexagonBackdrop>
       {children}
     </AppPageBackground>
   );

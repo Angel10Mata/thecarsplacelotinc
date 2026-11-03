@@ -47,7 +47,7 @@ const rangoFechaShellClass =
   "h-9 min-w-0 w-full flex-1 basis-0 lg:w-[10.75rem] lg:max-w-[10.75rem] lg:flex-none";
 
 const rangoFechaInputClass =
-  "h-9 rounded-xl border-zinc-200 bg-zinc-50 pl-2 pr-10 text-xs tabular-nums tracking-tight dark:border-zinc-700 dark:bg-zinc-800 sm:pl-3 sm:pr-12 sm:text-sm lg:rounded-full";
+  "h-9 rounded-xl border-zinc-200 bg-white pl-2 pr-10 text-xs tabular-nums tracking-tight dark:border-zinc-700 dark:bg-zinc-900 sm:pl-3 sm:pr-12 sm:text-sm lg:rounded-full";
 
 const filtroBrandPillClass = cn(
   "h-9 w-full min-w-0 text-sm font-semibold text-brand shadow-none",

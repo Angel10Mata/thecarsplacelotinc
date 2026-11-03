@@ -44,7 +44,7 @@ export function ReporteriaCard({
   return (
     <section
       className={cn(
-        "overflow-visible rounded-2xl border border-border bg-zinc-50 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/40",
+        "overflow-visible rounded-2xl border border-border bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
         className,
       )}
     >
@@ -356,7 +356,7 @@ export function ReporteriaVehiculosModal({
             {vehiculos.map((vehiculo) => (
               <li
                 key={vehiculo.id}
-                className="flex items-center gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                className="flex items-center gap-3 overflow-hidden rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               >
                 <span className="min-w-0 truncate font-bold text-foreground">
                   {vehiculo.titulo}

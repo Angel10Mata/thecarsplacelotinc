@@ -100,7 +100,7 @@ function DashboardModuleCard({
       onFocus={() => onHoverChange(true)}
       onBlur={() => onHoverChange(false)}
       className={cn(
-        "group flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border bg-card p-0 shadow-lg ring-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl",
+        "group flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border bg-white p-0 shadow-lg ring-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:bg-zinc-900",
         accent.card,
       )}
     >

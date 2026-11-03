@@ -2,9 +2,8 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Home } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { APP_BASE_PATH } from "@/lib/app-config";
-import { getModuleBackHref } from "@/lib/module-back-href";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -54,33 +53,12 @@ export function BreadcrumbNav() {
     })
     .filter((item): item is { segment: string; label: string; href: string } => item !== null);
 
-  const backHref = getModuleBackHref(pathname) ?? APP_BASE_PATH;
-
   return (
     <LayoutGroup id="breadcrumb">
       <motion.div
         layout
-        className="flex items-center gap-2 text-[9px] md:text-base font-medium text-muted-foreground overflow-hidden pt-1"
+        className="flex items-center gap-2 text-[9px] md:text-sm font-medium text-muted-foreground overflow-hidden pt-1"
       >
-        <motion.div layout="position">
-          <Link
-            href={backHref}
-            className="group flex items-center justify-center hover:text-foreground transition-colors cursor-pointer mr-1"
-            title="Atrás"
-          >
-            <ArrowLeft className="size-5 md:size-6 transition-transform group-hover:-translate-x-1" />
-          </Link>
-        </motion.div>
-
-        <motion.div layout="position" className="flex items-center">
-          <Link
-            href={APP_BASE_PATH}
-            className="hover:text-foreground transition-colors p-1 shrink-0 flex items-center"
-          >
-            <Home className="size-5 md:size-6" />
-          </Link>
-        </motion.div>
-
         <div className="flex items-center gap-1 overflow-hidden mask-gradient">
           <AnimatePresence mode="popLayout" initial={false}>
             {visibleSegments.map((item, index) => {
@@ -105,12 +83,14 @@ export function BreadcrumbNav() {
                   }}
                   className="flex items-center gap-1 shrink-0 whitespace-nowrap"
                 >
-                  <ChevronRight className="size-5 md:size-6 text-muted-foreground/40 shrink-0" />
+                  {index > 0 ? (
+                    <ChevronRight className="size-4 md:size-5 text-muted-foreground/40 shrink-0" />
+                  ) : null}
                   <Link
                     href={item.href}
                     className={`capitalize hover:text-foreground transition-colors truncate ${
                       isLast
-                        ? "text-foreground underline underline-offset-4 pointer-events-none text-xs md:text-lg"
+                        ? "text-foreground underline underline-offset-4 pointer-events-none text-[10px] md:text-base"
                         : ""
                     }`}
                   >

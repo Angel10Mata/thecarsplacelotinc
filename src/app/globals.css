@@ -143,15 +143,6 @@
   body {
     @apply bg-background text-foreground antialiased;
     background-color: var(--background);
-    background-image: radial-gradient(rgba(82, 93, 83, 0.05) 1px, transparent 1px);
-    background-size: 24px 24px;
-    background-attachment: fixed;
-  }
-  .dark body {
-    background-color: var(--background);
-    background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 24px 24px;
-    background-attachment: fixed;
   }
 
   html[data-modal-open],

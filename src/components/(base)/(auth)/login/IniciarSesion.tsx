@@ -15,7 +15,7 @@ import {
   KeyRound,
   User,
   ArrowBigUpDash,
-  CarFront,
+  ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,7 +23,7 @@ import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
 import { AuroraText } from "@/components/ui/aurora-text";
 import AppLogoLogin from "@/components/(base)/brand/AppLogoLogin";
-import { APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
+import { APP_BASE_PATH, APP_NAME, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 
 export default function IniciarSesion() {
   const [mounted, setMounted] = useState(false);
@@ -132,21 +132,29 @@ export default function IniciarSesion() {
   if (!mounted) return null;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 28 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, ease: [0.25, 1, 0.5, 1] }}
-      className="relative w-full max-w-lg md:max-w-xl px-6 md:px-12 pb-12 mx-auto"
-    >
-        <MagicCard className="rounded-3xl border border-border/50 bg-card/40 backdrop-blur-xl shadow-2xl overflow-visible!">
+    <div className="relative flex w-full flex-1 flex-col items-center justify-center pb-12">
+      <Link
+        href={PUBLIC_CATALOG_PATH}
+        className="fixed left-6 top-[calc(var(--banner-height,0px)+var(--app-header-height,var(--header-row-height))+0.5rem)] z-20 inline-flex w-fit items-center gap-1 text-sm font-semibold text-brand transition-colors hover:text-brand/80 lg:left-12 dark:text-brand-bright dark:hover:text-brand-bright/80"
+      >
+        <ChevronLeft className="size-4 shrink-0" aria-hidden />
+        Volver al inventario
+      </Link>
+      <motion.div
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: [0.25, 1, 0.5, 1] }}
+        className="relative w-full max-w-lg px-6 md:max-w-xl md:px-12"
+      >
+        <MagicCard className="rounded-3xl border border-border/50 bg-background shadow-2xl overflow-visible!">
           <div className="flex flex-col items-center space-y-5 p-10 border-b border-border/50 text-center">
             <div className="w-full">
               <AppLogoLogin />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-2xl font-bold tracking-tight">
-                <AuroraText>Welcome Back</AuroraText>
+              <h3 className="text-xl font-bold tracking-tight sm:text-2xl">
+                <AuroraText>{APP_NAME}</AuroraText>
               </h3>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Sign in to manage your inventory
@@ -284,7 +292,7 @@ export default function IniciarSesion() {
                         <span className="w-full border-t border-border/50" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest">
-                        <span className="bg-card px-3 text-muted-foreground/70">
+                        <span className="bg-background px-3 text-muted-foreground/70">
                           O
                         </span>
                       </div>
@@ -323,17 +331,8 @@ export default function IniciarSesion() {
               </div>
             </form>
           )}
-
-          <div className="border-t border-border/50 px-10 py-5">
-            <Link
-              href={PUBLIC_CATALOG_PATH}
-              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-brand bg-transparent px-4 py-3 text-sm font-bold text-brand transition-colors hover:bg-brand/10 active:scale-[0.98] dark:border-brand-bright dark:text-brand-bright dark:hover:bg-brand-bright/10"
-            >
-              <CarFront className="size-4 shrink-0" aria-hidden />
-              Volver al inventario
-            </Link>
-          </div>
         </MagicCard>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

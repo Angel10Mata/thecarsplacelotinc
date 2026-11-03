@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
+import { APP_BASE_PATH, PUBLIC_CATALOG_PATH, VEHICULOS_INVENTARIO_PATH } from "@/lib/app-config";
 import { createClient } from "@/utils/supabase/server";
 import { DEFAULT_CAR_INCOTERMS, DEFAULT_CAR_STATUS } from "./helpers";
 import {
@@ -156,6 +156,7 @@ export async function crearCarAction(raw: unknown) {
     }
 
     revalidatePath(`${APP_BASE_PATH}/vehiculos`);
+    revalidatePath(VEHICULOS_INVENTARIO_PATH);
     revalidatePath(PUBLIC_CATALOG_PATH);
     return { ok: true as const };
   } catch {
@@ -264,6 +265,7 @@ export async function actualizarCarAction(raw: unknown) {
     }
 
     revalidatePath(`${APP_BASE_PATH}/vehiculos`);
+    revalidatePath(VEHICULOS_INVENTARIO_PATH);
     revalidatePath(PUBLIC_CATALOG_PATH);
     return { ok: true as const };
   } catch {

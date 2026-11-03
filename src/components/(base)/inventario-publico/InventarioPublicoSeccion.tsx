@@ -14,6 +14,7 @@ import type { PublicInventoryItem } from "./lib/zod";
 type InventarioPublicoSeccionProps = {
   embedded?: boolean;
   backFromVehiculos?: boolean;
+  showBackToVehiculosLink?: boolean;
   items: PublicInventoryItem[];
   isLoading: boolean;
   isError: boolean;
@@ -47,6 +48,7 @@ function InventoryGridSlot() {
 export function InventarioPublicoSeccion({
   embedded = false,
   backFromVehiculos = false,
+  showBackToVehiculosLink = true,
   items,
   isLoading,
   isError,
@@ -100,7 +102,7 @@ export function InventarioPublicoSeccion({
           embeddedFromVehiculos ? "gap-2 pb-1 pt-0" : "gap-0",
         )}
       >
-        {embeddedFromVehiculos ? (
+        {embeddedFromVehiculos && showBackToVehiculosLink ? (
           <Link
             href={VEHICULOS_MODULE_PATH}
             className="relative z-10 mt-1 inline-flex w-fit items-center gap-1 text-sm font-semibold text-brand transition-colors hover:text-brand/80 md:mt-2 dark:text-brand-bright dark:hover:text-brand-bright/80"

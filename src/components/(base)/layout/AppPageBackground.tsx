@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { DotPattern } from "@/components/ui/dot-pattern";
 import { ModuleRouteReady } from "@/components/ui/module-route-ready";
 import { cn } from "@/lib/utils";
 
@@ -28,12 +27,6 @@ export function AppPageBackground({
         className,
       )}
     >
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <DotPattern
-          patternId="tcpl-page-dot-pattern"
-          className="mask-[radial-gradient(1000px_circle_at_center,white,transparent)] opacity-80"
-        />
-      </div>
       <div
         className={cn(
           "relative z-10 flex w-full flex-1 flex-col min-h-0",

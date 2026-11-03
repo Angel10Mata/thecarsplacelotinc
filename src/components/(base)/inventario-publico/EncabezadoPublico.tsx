@@ -9,6 +9,7 @@ import { HeaderBrand } from "@/components/(base)/brand/HeaderBrand";
 import { APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 import { NavPublicoEnlaces } from "./NavPublicoEnlaces";
 import { PUBLIC_NAV_LINKS } from "./lib/nav-publico";
+import { scrollToPublicSection } from "./lib/scroll-public-section";
 
 const navLinkIcons = {
   "#inventory": CarFront,
@@ -84,7 +85,12 @@ export function EncabezadoPublico() {
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setIsOpen(false)}
+                onClick={(event) => {
+                  if (scrollToPublicSection(link.href)) {
+                    event.preventDefault();
+                  }
+                  setIsOpen(false);
+                }}
                 className="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               >
                 <Icon className="size-4" aria-hidden />

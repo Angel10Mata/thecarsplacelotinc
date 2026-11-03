@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { PUBLIC_NAV_LINKS } from "./nav-publico";
+import { syncPublicSectionHash } from "./scroll-public-section";
+
+function initialActiveHash(): string {
+  if (typeof window === "undefined") return "#inventory";
+  const hash = window.location.hash;
+  if (PUBLIC_NAV_LINKS.some((link) => link.href === hash)) return hash;
+  return "#inventory";
+}
 
 function cssVarPx(name: string, fallbackPx: number): number {
   const raw = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -21,7 +29,7 @@ function intersectionRootMarginTop(mode: "app-header" | "public-header"): string
 }
 
 export function usePublicNavActiveHash(mode: "app-header" | "public-header") {
-  const [activeHash, setActiveHash] = useState<string>("#inventory");
+  const [activeHash, setActiveHash] = useState<string>(initialActiveHash);
 
   useEffect(() => {
     const sectionIds = PUBLIC_NAV_LINKS.map((link) => link.href.replace("#", ""));
@@ -37,7 +45,9 @@ export function usePublicNavActiveHash(mode: "app-header" | "public-header") {
             .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
           const top = visible[0];
           if (top?.target.id) {
-            setActiveHash(`#${top.target.id}`);
+            const next = `#${top.target.id}`;
+            setActiveHash(next);
+            syncPublicSectionHash(next, "replace");
           }
         },
         {

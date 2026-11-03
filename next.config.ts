@@ -53,6 +53,12 @@ const nextConfig: NextConfig = {
         destination: "/:path*",
         permanent: false,
       },
+      {
+        source: "/",
+        has: [{ type: "query", key: "from", value: "vehiculos" }],
+        destination: "/TheCarsPlace/vehiculos/inventario",
+        permanent: false,
+      },
     ];
   },
   images: {

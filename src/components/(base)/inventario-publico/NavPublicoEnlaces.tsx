@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { PUBLIC_NAV_LINKS } from "./lib/nav-publico";
+import { scrollToPublicSection } from "./lib/scroll-public-section";
 import { usePublicNavActiveHash } from "./lib/use-public-nav-active";
 
 type NavPublicoEnlacesProps = {
@@ -26,6 +27,11 @@ export function NavPublicoEnlaces({
           <Link
             key={link.href}
             href={link.href}
+            onClick={(event) => {
+              if (scrollToPublicSection(link.href)) {
+                event.preventDefault();
+              }
+            }}
             className={cn(
               "group relative shrink-0 whitespace-nowrap text-sm font-bold transition-colors",
               linkClassName,

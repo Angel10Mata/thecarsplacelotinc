@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import { labelRol } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { logoutSession } from "@/app/actions";
 
 // TIPOS
 
@@ -132,7 +133,6 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
   const closeMenu = () => setIsOpen(false);
 
   const handleLogout = async () => {
-    closeMenu();
     const isDark = document.documentElement.classList.contains("dark");
     const result = await Swal.fire({
       title: "¿Cerrar sesión?",
@@ -145,13 +145,33 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
       cancelButtonText: "Cancelar",
       background: isDark ? "#000000" : "#ffffff",
       color: isDark ? "#ffffff" : "#000000",
+      heightAuto: false,
+      customClass: {
+        container: "z-[300]",
+      },
     });
 
-    if (result.isConfirmed) {
+    if (!result.isConfirmed) return;
+
+    closeMenu();
+
+    try {
       const supabase = createClient();
-      await supabase.auth.signOut();
-      window.location.replace(PUBLIC_CATALOG_PATH);
+      await supabase.auth.signOut({ scope: "global" });
+      await logoutSession();
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "No se pudo cerrar sesión",
+        text: "Intenta de nuevo.",
+        customClass: { container: "z-[300]" },
+      });
+      return;
     }
+
+    const next = new URL(PUBLIC_CATALOG_PATH, window.location.origin);
+    next.searchParams.set("signed_out", String(Date.now()));
+    window.location.replace(next.toString());
   };
 
   const isActivePath = (href: string) =>

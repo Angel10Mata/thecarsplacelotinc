@@ -5,6 +5,7 @@ export const APP_NAME_UPPER = "THE CARS PLACE LOT INC";
 export const APP_LOGO_OVERLAY_TAGLINE = "The Cars Place Lot Inc";
 export const APP_BASE_PATH = "/TheCarsPlace";
 export const PUBLIC_CATALOG_PATH = "/";
+export const LOGOUT_PATH = "/logout";
 export const VEHICULOS_MODULE_PATH = `${APP_BASE_PATH}/vehiculos`;
 export const VEHICULOS_INVENTARIO_PATH = `${VEHICULOS_MODULE_PATH}/inventario`;
 export const PUBLIC_CATALOG_FROM_VEHICULOS_PATH = VEHICULOS_INVENTARIO_PATH;

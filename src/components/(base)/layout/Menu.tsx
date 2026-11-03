@@ -14,7 +14,7 @@ import { AuroraText } from "@/components/ui/aurora-text";
 import { PushNotificationToggle } from "@/components/ui/PushNotificationToggle";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { ADMIN_MENU_ITEMS, APP_MODULES } from "@/lib/app-modules";
-import { APP_BASE_PATH, APP_NAME, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
+import { APP_BASE_PATH, APP_NAME, LOGOUT_PATH } from "@/lib/app-config";
 import {
   adminIconColors,
   adminMorphIcons,
@@ -25,9 +25,7 @@ import {
   navMorphIcons,
 } from "@/lib/morph-icons";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/utils/supabase/client";
 import { labelRol } from "@/components/(base)/(users)/usuarios/lib/permissions";
-import { logoutSession } from "@/app/actions";
 
 // TIPOS
 
@@ -154,32 +152,7 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
     if (!result.isConfirmed) return;
 
     closeMenu();
-
-    try {
-      const supabase = createClient();
-      await supabase.auth.signOut({ scope: "global" });
-      await logoutSession();
-    } catch {
-      Swal.fire({
-        icon: "error",
-        title: "No se pudo cerrar sesión",
-        text: "Intenta de nuevo.",
-        customClass: { container: "z-[300]" },
-      });
-      return;
-    }
-
-    const catalog = PUBLIC_CATALOG_PATH;
-    const { pathname, search, hash } = window.location;
-    const onCatalog =
-      pathname === catalog || pathname === `${catalog}/`;
-
-    if (!onCatalog || search || hash) {
-      window.location.replace(catalog);
-      return;
-    }
-
-    window.location.reload();
+    window.location.assign(LOGOUT_PATH);
   };
 
   const isActivePath = (href: string) =>

@@ -346,6 +346,22 @@ input[type=number] {
   display: none;
 }
 
+.public-services-grid {
+  transform: translateY(0.75rem);
+  transition: transform 0.55s ease-out;
+}
+
+.public-services-grid.is-visible {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .public-services-grid {
+    transform: none;
+    transition: none;
+  }
+}
+
 @layer components {
   .public-section-surface {
     --public-section-fade: 16rem;

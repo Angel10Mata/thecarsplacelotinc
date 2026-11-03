@@ -1,10 +1,31 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import { Globe, ShieldCheck, Truck, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { publicSectionSurface } from "./public-section-surfaces"
 
 export function ServicesSection() {
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const node = gridRef.current
+    if (!node) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return
+        setVisible(true)
+        observer.disconnect()
+      },
+      { threshold: 0.12 },
+    )
+
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
   const services = [
     { title: "Vehicle Sales", desc: "Certified pre-owned units with full transparency.", icon: ShieldCheck, color: "from-blue-500 to-cyan-400" },
     { title: "Global Import", desc: "Expert logistics and legal documentation for imports.", icon: Globe, color: "from-purple-500 to-pink-500" },
@@ -27,7 +48,13 @@ export function ServicesSection() {
         <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter italic text-foreground leading-none">Our Services</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl w-full pb-10">
+      <div
+        ref={gridRef}
+        className={cn(
+          "public-services-grid grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl w-full pb-10",
+          visible && "is-visible",
+        )}
+      >
         {services.map((s) => (
           <div
             key={s.title}

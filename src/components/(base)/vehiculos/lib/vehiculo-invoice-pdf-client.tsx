@@ -29,7 +29,7 @@ async function renderInvoiceBlob(row: VehiculoListRow): Promise<Blob> {
     import("./VehiculoFacturaPdfDocument"),
     logoSrcForPdf(),
   ]);
-  const data = buildVehiculoFacturaPdfData(row, logoSrc);
+  const data = buildVehiculoFacturaPdfData(row, logoSrc ?? "");
   return pdf(<VehiculoFacturaPdfDocument data={data} />).toBlob();
 }
 

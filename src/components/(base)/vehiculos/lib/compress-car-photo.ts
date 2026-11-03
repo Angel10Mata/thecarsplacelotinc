@@ -9,7 +9,7 @@ function jpegFileName(source: File): string {
   return `${base || "photo"}.jpg`;
 }
 
-async function loadImageSource(file: File): Promise<CanvasImageSource> {
+async function loadImageSource(file: File): Promise<HTMLImageElement | ImageBitmap> {
   if (typeof createImageBitmap === "function") {
     try {
       return await createImageBitmap(file);
@@ -30,13 +30,13 @@ async function loadImageSource(file: File): Promise<CanvasImageSource> {
   }
 }
 
-function releaseImageSource(source: CanvasImageSource): void {
+function releaseImageSource(source: HTMLImageElement | ImageBitmap): void {
   if (source instanceof ImageBitmap) {
     source.close();
   }
 }
 
-function sourceDimensions(source: CanvasImageSource): { w: number; h: number } {
+function sourceDimensions(source: HTMLImageElement | ImageBitmap): { w: number; h: number } {
   if (source instanceof HTMLImageElement) {
     return { w: source.naturalWidth, h: source.naturalHeight };
   }
@@ -53,7 +53,7 @@ function canvasToJpegBlob(
 }
 
 async function encodeJpegUnderTarget(
-  source: CanvasImageSource,
+  source: HTMLImageElement | ImageBitmap,
   targetBytes: number,
 ): Promise<Blob> {
   const { w: srcW, h: srcH } = sourceDimensions(source);

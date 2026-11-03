@@ -1,8 +1,8 @@
 import { carMediaPublicUrlIsPdf } from "./car-images";
 import type { VehiculoListRow } from "./zod";
 
-/** Marco de vista 4:3 vertical (ancho:alto = 3:4), alineado con fotos del inventario. */
-export const vehiculoGaleriaMarcoFotoClass = "aspect-[3/4]";
+export const VEHICLE_PHOTO_ASPECT = 4 / 3;
+export const vehiculoGaleriaMarcoFotoClass = "aspect-[4/3]";
 
 export type VehiculoPhotoItem = { kind: "image"; url: string };
 

@@ -32,5 +32,7 @@ export function VehiculoInvoicePanel({
     );
   }
 
-  return <CarGeneratedInvoiceViewer row={row} className={invoiceViewerClass} />;
+  return (
+    <CarGeneratedInvoiceViewer row={row} className={invoiceViewerClass} />
+  );
 }

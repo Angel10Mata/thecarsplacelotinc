@@ -1,10 +1,18 @@
 "use client"
 
 import { Globe, ShieldCheck, Truck, Zap } from "lucide-react"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { publicSectionSurface } from "./public-section-surfaces"
+
+const servicesViewport = { once: true, amount: 0.2 } as const
 
 // Sección servicios (landing)
 export function ServicesSection() {
+  const reduceMotion = useReducedMotion()
+  const fadeHidden = reduceMotion ? false : { opacity: 0 }
+  const fadeVisible = { opacity: 1 }
+
   const services = [
     { title: "Vehicle Sales", desc: "Certified pre-owned units with full transparency.", icon: ShieldCheck, color: "from-blue-500 to-cyan-400" },
     { title: "Global Import", desc: "Expert logistics and legal documentation for imports.", icon: Globe, color: "from-purple-500 to-pink-500" },
@@ -12,12 +20,18 @@ export function ServicesSection() {
   ]
 
   return (
-    <section id="services" className="min-h-screen lg:h-screen w-full snap-start flex flex-col items-center justify-start lg:justify-center px-6 pt-28 lg:pt-0 border-t border-border/40 bg-background overflow-hidden">
+    <section
+      id="services"
+      className={cn(
+        "min-h-[100dvh] min-h-screen w-full snap-start flex flex-col items-center justify-start px-6 pt-28 pb-10 lg:h-screen lg:justify-center lg:pt-0 lg:pb-10 overflow-x-hidden overflow-y-visible",
+        publicSectionSurface.services,
+      )}
+    >
       <motion.div 
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: false, amount: 0.5 }}
-        transition={{ duration: 1.8, ease: "linear" }}
+        initial={fadeHidden}
+        whileInView={fadeVisible}
+        viewport={servicesViewport}
+        transition={{ duration: reduceMotion ? 0 : 0.55, ease: "easeOut" }}
         className="text-center mb-12 lg:mb-16 space-y-4"
       >
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20">
@@ -31,11 +45,15 @@ export function ServicesSection() {
         {services.map((s, idx) => (
           <motion.div 
             key={idx}
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: false }}
-            transition={{ duration: 1, ease: "linear", delay: 0.4 + (idx * 0.2) }}
-            className="group relative p-8 lg:p-10 rounded-4xl border border-border/50 bg-card/30 backdrop-blur-xl transition-all shadow-sm"
+            initial={fadeHidden}
+            whileInView={fadeVisible}
+            viewport={servicesViewport}
+            transition={{
+              duration: reduceMotion ? 0 : 0.45,
+              ease: "easeOut",
+              delay: reduceMotion ? 0 : 0.08 + idx * 0.08,
+            }}
+            className="group relative rounded-4xl border border-border/55 bg-card/35 p-8 shadow-sm backdrop-blur-xl transition-all dark:border-zinc-700/80 dark:bg-zinc-800/55 lg:p-10"
           >
             <div className={`size-14 lg:size-16 rounded-2xl bg-linear-to-br ${s.color} flex items-center justify-center mb-6 lg:mb-8 shadow-lg`}>
               <s.icon className="size-6 lg:size-8 text-white" />

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { Copy, FileText, Images, X } from "lucide-react";
 import { Download as DownloadNode } from "lucide";
 import { ModalShell, modalAccentClass, toast } from "@/components/ui/general-modal";
@@ -9,9 +10,11 @@ import { cn } from "@/lib/utils";
 import {
   buildVehiculoPhotoItems,
   resolveVehiculoInvoiceSource,
+  vehiculoGaleriaMarcoFotoClass,
   type VehiculoInvoiceSource,
 } from "../lib/vehiculo-galeria-items";
 import { vehiculoFacturaPdfFileName } from "../lib/vehiculo-invoice-data";
+import { prefetchInvoicePdfLibs } from "../lib/vehiculo-react-pdf";
 import { vehiculosTablaAddOutlineButtonClass } from "../lib/tabla-vehiculos-ui";
 import type { VehiculoListRow } from "../lib/zod";
 import { VehiculoInvoicePanel } from "./VehiculoInvoicePanel";
@@ -23,10 +26,18 @@ const galeriaPhotosStageClass =
   "relative flex min-h-0 flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-zinc-950 md:flex-row";
 
 const galeriaPhotosMainClass =
-  "relative min-h-[14rem] w-full flex-1 md:min-h-0";
+  "relative flex min-h-[14rem] w-full flex-1 items-center justify-center p-4 md:min-h-0";
 
 const galeriaPhotosThumbRailClass =
-  "flex h-24 w-full shrink-0 flex-row gap-2 overflow-x-auto border-t border-zinc-200/80 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950 md:h-full md:w-24 md:flex-col md:overflow-x-hidden md:overflow-y-auto md:border-l md:border-t-0";
+  "flex h-24 w-full shrink-0 flex-row gap-2 overflow-x-auto border-t border-zinc-200/80 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-950 md:h-full md:w-32 md:flex-col md:overflow-x-hidden md:overflow-y-auto md:border-l md:border-t-0";
+
+const galeriaViewFadeTransition = {
+  duration: 0.38,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
+const galeriaToggleFooterClass =
+  "flex shrink-0 justify-center border-t border-zinc-200/80 px-4 py-4 dark:border-zinc-700 md:px-6";
 
 function formatInvoiceDateEn(iso: string): string {
   const d = new Date(iso);
@@ -122,6 +133,15 @@ export function VehiculoGaleriaViewerModal({
   }, [row?.id]);
 
   useEffect(() => {
+    if (!row) return;
+    prefetchInvoicePdfLibs();
+    if (invoiceSource?.kind !== "generated-invoice") return;
+    void import("../lib/vehiculo-invoice-pdf-client").then((mod) => {
+      mod.prefetchGeneratedInvoicePdf(row);
+    });
+  }, [row, invoiceSource?.kind]);
+
+  useEffect(() => {
     if (selected >= photoItems.length) {
       setSelected(Math.max(0, photoItems.length - 1));
     }
@@ -146,6 +166,7 @@ export function VehiculoGaleriaViewerModal({
   const precio = formatPrecio(row.precio);
   const titulo = tituloVehiculo(row);
   const estado = row.estado?.trim().toUpperCase();
+  const showingPhotos = viewMode === "photos";
 
   return (
     <ModalShell
@@ -159,8 +180,15 @@ export function VehiculoGaleriaViewerModal({
       headerClassName="hidden"
       contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0 md:p-0"
     >
-      {viewMode === "photos" ? (
-        <div className="flex shrink-0 flex-col gap-1 border-b border-zinc-200/80 px-4 py-3 dark:border-zinc-700 md:px-6 md:py-4">
+      <div className="relative min-h-[8.25rem] shrink-0 border-b border-zinc-200/80 dark:border-zinc-700 md:min-h-[9rem]">
+        <motion.div
+          className="absolute inset-0 flex flex-col justify-center gap-1 px-4 py-3 md:px-6 md:py-4"
+          initial={false}
+          animate={{ opacity: showingPhotos ? 1 : 0 }}
+          transition={galeriaViewFadeTransition}
+          style={{ pointerEvents: showingPhotos ? "auto" : "none" }}
+          aria-hidden={!showingPhotos}
+        >
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 pt-1.5">
               {estado ? (
@@ -211,9 +239,16 @@ export function VehiculoGaleriaViewerModal({
               </button>
             </div>
           ) : null}
-        </div>
-      ) : (
-        <div className="relative flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200/80 px-4 py-2.5 dark:border-zinc-700 md:px-6">
+        </motion.div>
+
+        <motion.div
+          className="absolute inset-0 flex items-center justify-between gap-3 px-4 md:px-6"
+          initial={false}
+          animate={{ opacity: showingPhotos ? 0 : 1 }}
+          transition={galeriaViewFadeTransition}
+          style={{ pointerEvents: showingPhotos ? "none" : "auto" }}
+          aria-hidden={showingPhotos}
+        >
           <p
             className={cn(
               "min-w-0 truncate text-sm font-black uppercase tracking-tight md:text-base",
@@ -233,90 +268,102 @@ export function VehiculoGaleriaViewerModal({
               <X className="size-5" strokeWidth={2.25} />
             </button>
           </div>
-        </div>
-      )}
+        </motion.div>
+      </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-0">
-        {viewMode === "photos" ? (
-          <>
-            <div className={galeriaPhotosStageClass}>
-              <div className={galeriaPhotosMainClass}>
-                {activePhoto ? (
+      <div className="relative min-h-0 flex-1">
+        <motion.div
+          className="absolute inset-0 flex min-h-0 flex-col"
+          initial={false}
+          animate={{ opacity: showingPhotos ? 1 : 0 }}
+          transition={galeriaViewFadeTransition}
+          style={{ pointerEvents: showingPhotos ? "auto" : "none" }}
+          aria-hidden={!showingPhotos}
+        >
+          <div className={cn(galeriaPhotosStageClass, "min-h-0 flex-1")}>
+            <div className={galeriaPhotosMainClass}>
+              {activePhoto ? (
+                <div
+                  className={cn(
+                    "relative h-full max-h-full w-auto max-w-full overflow-hidden rounded-2xl bg-zinc-900",
+                    vehiculoGaleriaMarcoFotoClass,
+                  )}
+                >
                   <img
                     key={activePhoto.url}
                     src={activePhoto.url}
                     alt=""
-                    className="absolute inset-0 size-full object-contain p-4"
+                    className="absolute inset-0 size-full object-cover"
                   />
-                ) : (
-                  <p className="flex h-full min-h-[14rem] items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground">
-                    Sin fotografías. Usa Invoice para ver la factura.
-                  </p>
-                )}
-              </div>
-
-              {photoItems.length > 1 ? (
-                <div className={galeriaPhotosThumbRailClass}>
-                  {photoItems.map((item, index) => (
-                    <button
-                      key={`${item.url}-${index}`}
-                      type="button"
-                      onClick={() => setSelected(index)}
-                      className={cn(
-                        "relative aspect-square h-full shrink-0 overflow-hidden rounded-xl border-2 transition-all md:h-auto md:w-full",
-                        selected === index
-                          ? "scale-105 border-brand dark:border-brand-bright"
-                          : "border-transparent opacity-40 hover:opacity-100 dark:opacity-30",
-                      )}
-                    >
-                      <img
-                        src={item.url}
-                        alt=""
-                        className="size-full object-cover"
-                      />
-                    </button>
-                  ))}
                 </div>
-              ) : null}
+              ) : (
+                <p className="flex h-full min-h-[14rem] items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground">
+                  Sin fotografías. Usa Invoice para ver la factura.
+                </p>
+              )}
             </div>
 
-            <div className="flex shrink-0 justify-center border-t border-zinc-200/80 px-4 py-4 dark:border-zinc-700 md:px-6">
-              <button
-                type="button"
-                onClick={() => setViewMode("invoice")}
-                className={cn(
-                  vehiculosTablaAddOutlineButtonClass,
-                  "w-auto max-lg:w-auto",
-                )}
-              >
-                <FileText className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
-                Invoice
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex min-h-0 w-full flex-1 flex-col p-2 md:min-h-0 md:p-3 md:pb-2">
-              <div className={galeriaMediaPanelInvoiceClass}>
-                <VehiculoInvoicePanel invoiceSource={invoiceSource} row={row} />
+            {photoItems.length > 1 ? (
+              <div className={galeriaPhotosThumbRailClass}>
+                {photoItems.map((item, index) => (
+                  <button
+                    key={`${item.url}-${index}`}
+                    type="button"
+                    onClick={() => setSelected(index)}
+                    className={cn(
+                      "relative aspect-[4/3] h-full shrink-0 overflow-hidden rounded-xl border-2 transition-all md:h-auto md:w-full",
+                      selected === index
+                        ? "scale-105 border-brand dark:border-brand-bright"
+                        : "border-transparent opacity-40 hover:opacity-100 dark:opacity-30",
+                    )}
+                  >
+                    <img
+                      src={item.url}
+                      alt=""
+                      className="size-full object-cover"
+                    />
+                  </button>
+                ))}
               </div>
-            </div>
+            ) : null}
+          </div>
+        </motion.div>
 
-            <div className="flex shrink-0 justify-center border-t border-zinc-200/80 px-4 py-4 dark:border-zinc-700 md:px-6">
-              <button
-                type="button"
-                onClick={() => setViewMode("photos")}
-                className={cn(
-                  vehiculosTablaAddOutlineButtonClass,
-                  "w-auto max-lg:w-auto",
-                )}
-              >
-                <Images className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
-                Fotos
-              </button>
-            </div>
-          </>
-        )}
+        <motion.div
+          className="absolute inset-0 flex min-h-0 flex-col p-2 md:p-3 md:pb-2"
+          initial={false}
+          animate={{ opacity: showingPhotos ? 0 : 1 }}
+          transition={galeriaViewFadeTransition}
+          style={{ pointerEvents: showingPhotos ? "none" : "auto" }}
+          aria-hidden={showingPhotos}
+        >
+          <div className={cn(galeriaMediaPanelInvoiceClass, "h-full min-h-0")}>
+            <VehiculoInvoicePanel invoiceSource={invoiceSource} row={row} />
+          </div>
+        </motion.div>
+      </div>
+
+      <div className={galeriaToggleFooterClass}>
+        <button
+          type="button"
+          onClick={() => setViewMode(showingPhotos ? "invoice" : "photos")}
+          className={cn(
+            vehiculosTablaAddOutlineButtonClass,
+            "w-auto max-lg:w-auto",
+          )}
+        >
+          {showingPhotos ? (
+            <>
+              <FileText className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
+              Invoice
+            </>
+          ) : (
+            <>
+              <Images className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
+              Fotos
+            </>
+          )}
+        </button>
       </div>
     </ModalShell>
   );

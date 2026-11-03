@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 import { APP_BASE_PATH, PUBLIC_CATALOG_PATH, VEHICULOS_INVENTARIO_PATH } from "@/lib/app-config";
 import { createClient } from "@/utils/supabase/server";
 import { DEFAULT_CAR_INCOTERMS, DEFAULT_CAR_STATUS } from "./helpers";
-import {
-  customerRowSchema,
-  type CustomerRow,
-} from "@/components/(base)/clientes/lib/zod";
+import { loadCustomersByIds } from "./load-customers";
 import { codeFromPgUniqueViolation } from "./action-errors";
 import {
   actualizarCarSchema,
@@ -69,25 +66,7 @@ export async function listCarsAction() {
       ),
     ];
 
-    const customerById = new Map<string, CustomerRow>();
-
-    if (customerIds.length > 0) {
-      const { data: customerRows, error: customerError } = await supabase
-        .from("customers")
-        .select("id, customer_name, customer_nit, customer_address, created_at")
-        .in("id", customerIds);
-
-      if (customerError) {
-        console.error("listCars customers:", customerError.message);
-      } else {
-        for (const row of customerRows ?? []) {
-          const parsedCustomer = customerRowSchema.safeParse(row);
-          if (parsedCustomer.success) {
-            customerById.set(parsedCustomer.data.id, parsedCustomer.data);
-          }
-        }
-      }
-    }
+    const customerById = await loadCustomersByIds(customerIds);
 
     const parsed = cars.map((car) => ({
       car,
@@ -188,19 +167,13 @@ export async function getCarForEditAction(id: string) {
       return { ok: false as const, code: "VALIDATION" };
     }
 
-    let customer = null;
     const customerId = parsedCar.data.customer_id;
-    if (customerId) {
-      const { data: customerRow } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("id", customerId)
-        .maybeSingle();
-      if (customerRow) {
-        const parsedCustomer = customerRowSchema.safeParse(customerRow);
-        if (parsedCustomer.success) customer = parsedCustomer.data;
-      }
-    }
+    const customers = customerId
+      ? await loadCustomersByIds([customerId])
+      : new Map();
+    const customer = customerId
+      ? (customers.get(customerId) ?? null)
+      : null;
 
     return {
       ok: true as const,

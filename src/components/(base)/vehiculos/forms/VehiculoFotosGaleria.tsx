@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { FileText, Loader2, Plus, X } from "lucide-react";
 import { toast } from "@/components/ui/general-modal";
 import { cn } from "@/lib/utils";
+import ImageEditorModal from "@/components/imgs/ImageEditorModal";
+import { VEHICLE_PHOTO_ASPECT } from "../lib/vehiculo-galeria-items";
 import {
   CAR_IMAGE_MAX_BYTES,
   CAR_PDF_MAX_BYTES,
@@ -19,7 +21,7 @@ import {
 } from "../lib/storage-actions";
 
 const TILE_CLASS =
-  "relative size-[7.75rem] shrink-0 overflow-hidden rounded-2xl sm:size-32";
+  "relative aspect-[4/3] w-[8.75rem] shrink-0 overflow-hidden rounded-2xl sm:w-36";
 
 const IMAGE_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 const PDF_MIME = "application/pdf";
@@ -131,9 +133,15 @@ export function VehiculoFotosGaleria({
   const [localTiles, setLocalTiles] = useState<
     { key: string; url: string; isPdf: boolean }[]
   >([]);
+  const [cropQueue, setCropQueue] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
+  const pathsRef = useRef(paths);
   const canAdd = maxPhotos === undefined || paths.length < maxPhotos;
+
+  useEffect(() => {
+    pathsRef.current = paths;
+  }, [paths]);
 
   const principalImageIndex = useMemo(
     () => paths.findIndex((p) => !isCarPdfStoragePath(p)),
@@ -171,49 +179,41 @@ export function VehiculoFotosGaleria({
       toast.warn(`Solo se añadirán ${batch.length} archivo${batch.length === 1 ? "" : "s"} (límite alcanzado).`);
     }
 
-    const previews = batch.map((item, index) => {
-      const isPdf = item.kind === "pdf";
-      return {
-        key: `${item.file.name}-${item.file.lastModified}-${index}`,
-        url: isPdf ? "" : URL.createObjectURL(item.file),
-        isPdf,
-      };
-    });
-    setLocalTiles(previews);
-    setUploading(true);
-    let workingPaths = paths;
-    let added = 0;
+    const images = batch
+      .filter((item) => item.kind === "image")
+      .map((item) => fileForImageUpload(item.file));
+    const pdfs = batch.filter((item) => item.kind === "pdf").map((item) => item.file);
 
-    try {
-      for (const item of batch) {
-        const next =
-          item.kind === "pdf"
-            ? await uploadPdfToPaths(item.file, workingPaths, storageFolderId)
-            : item.kind === "image"
-              ? await uploadImageToPaths(
-                  fileForImageUpload(item.file),
-                  workingPaths,
-                  storageFolderId,
-                )
-              : null;
-        if (next) {
-          workingPaths = next;
-          added += 1;
+    if (pdfs.length > 0) {
+      const previews = pdfs.map((file, index) => ({
+        key: `${file.name}-${file.lastModified}-${index}`,
+        url: "",
+        isPdf: true,
+      }));
+      setLocalTiles(previews);
+      setUploading(true);
+      let workingPaths = paths;
+      let added = 0;
+      try {
+        for (const file of pdfs) {
+          const next = await uploadPdfToPaths(file, workingPaths, storageFolderId);
+          if (next) {
+            workingPaths = next;
+            added += 1;
+          }
         }
-      }
-      if (added > 0) {
-        onChange(workingPaths);
-        setMediaEpoch(Date.now());
-        if (added > 1) {
-          toast.success(`${added} archivos añadidos.`);
+        if (added > 0) {
+          onChange(workingPaths);
+          setMediaEpoch(Date.now());
         }
+      } finally {
+        setLocalTiles([]);
+        setUploading(false);
       }
-    } finally {
-      previews.forEach((tile) => {
-        if (tile.url.startsWith("blob:")) URL.revokeObjectURL(tile.url);
-      });
-      setLocalTiles([]);
-      setUploading(false);
+    }
+
+    if (images.length > 0) {
+      setCropQueue((queue) => [...queue, ...images]);
     }
   };
 
@@ -249,8 +249,8 @@ export function VehiculoFotosGaleria({
   };
 
   useEffect(() => {
-    onBusyChange?.(uploading);
-  }, [uploading, onBusyChange]);
+    onBusyChange?.(uploading || cropQueue.length > 0);
+  }, [uploading, cropQueue.length, onBusyChange]);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
@@ -260,8 +260,32 @@ export function VehiculoFotosGaleria({
   };
 
   const handleAddClick = () => {
-    if (uploading || !storageFolderId) return;
+    if (uploading || !storageFolderId || cropQueue.length > 0) return;
     fileInputRef.current?.click();
+  };
+
+  const handleCropApply = async (cropped: File) => {
+    if (!storageFolderId) return;
+    setUploading(true);
+    try {
+      const next = await uploadImageToPaths(
+        cropped,
+        pathsRef.current,
+        storageFolderId,
+      );
+      if (next) {
+        pathsRef.current = next;
+        onChange(next);
+        setMediaEpoch(Date.now());
+      }
+    } finally {
+      setUploading(false);
+      setCropQueue((queue) => queue.slice(1));
+    }
+  };
+
+  const handleCropCancel = () => {
+    setCropQueue((queue) => queue.slice(1));
   };
 
   const uploadImageToPaths = async (
@@ -487,6 +511,16 @@ export function VehiculoFotosGaleria({
           </button>
         ) : null}
       </div>
+      {cropQueue[0] ? (
+        <ImageEditorModal
+          file={cropQueue[0]}
+          aspect={VEHICLE_PHOTO_ASPECT}
+          title="Recortar foto"
+          hint="Encuadra la foto para que se vea todo."
+          onApply={handleCropApply}
+          onCancel={handleCropCancel}
+        />
+      ) : null}
     </>
   );
 }

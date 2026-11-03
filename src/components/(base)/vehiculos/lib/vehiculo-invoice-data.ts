@@ -30,6 +30,12 @@ function money(n: number): string {
   return Number.isFinite(n) ? n.toFixed(2) : "0.00";
 }
 
+function formatInvoiceCustomerName(value: string | null | undefined): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return "—";
+  return trimmed.toLocaleUpperCase("es-GT");
+}
+
 export function buildVehiculoFacturaPdfData(
   row: VehiculoListRow,
   logoSrc: string,
@@ -44,7 +50,7 @@ export function buildVehiculoFacturaPdfData(
     logoSrc,
     invoiceNumber: row.placa,
     invoiceDateDisplay: formatInvoiceDateLegacy(row.invoiceDate),
-    customerName: row.clienteNombre?.trim() || "—",
+    customerName: formatInvoiceCustomerName(row.clienteNombre),
     customerNit: row.clienteNit?.trim() || "—",
     customerAddress: row.clienteDireccion?.trim() || "—",
     carDescription: `${carLine}${vinPart}`.trim() || row.placa,

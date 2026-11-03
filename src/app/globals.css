@@ -346,6 +346,116 @@ input[type=number] {
   display: none;
 }
 
+@layer components {
+  .public-section-surface {
+    --public-section-fade: 16rem;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+  }
+
+  .public-section-surface--inventory {
+    background-color: #fafafa;
+    background-image: linear-gradient(
+      to bottom,
+      #fafafa 0%,
+      #fafafa calc(100% - var(--public-section-fade)),
+      #f6f6f7 calc(100% - 12rem),
+      #f2f2f3 calc(100% - 8rem),
+      #f0f0f1 calc(100% - 4rem),
+      #f4f4f5 100%
+    );
+  }
+
+  .public-section-surface--services {
+    background-color: #f4f4f5;
+    background-image: linear-gradient(
+      to bottom,
+      #f4f4f5 0%,
+      #f4f4f5 calc(100% - var(--public-section-fade)),
+      #eeeff0 calc(100% - 12rem),
+      #e9e9ec calc(100% - 8rem),
+      #e6e6e9 calc(100% - 4rem),
+      #e4e4e7 100%
+    );
+  }
+
+  .public-section-surface--about {
+    background-color: #e4e4e7;
+    background-image: linear-gradient(
+      to bottom,
+      #e4e4e7 0%,
+      #e4e4e7 calc(100% - var(--public-section-fade)),
+      #ededee calc(100% - 12rem),
+      #f0f0f1 calc(100% - 8rem),
+      #f2f2f3 calc(100% - 4rem),
+      #f4f4f5 100%
+    );
+  }
+
+  .public-section-surface--contact {
+    background-color: #f4f4f5;
+    background-image: linear-gradient(
+      to bottom,
+      #f4f4f5 0%,
+      #f4f4f5 calc(100% - var(--public-section-fade)),
+      #f0f0f1 calc(100% - 10rem),
+      #ececed calc(100% - 6rem),
+      var(--background) 100%
+    );
+  }
+
+  .dark .public-section-surface--inventory {
+    background-color: #09090b;
+    background-image: linear-gradient(
+      to bottom,
+      #09090b 0%,
+      #09090b calc(100% - var(--public-section-fade)),
+      #0b0b0e calc(100% - 12rem),
+      #0f0f12 calc(100% - 8rem),
+      #131316 calc(100% - 4rem),
+      #18181b 100%
+    );
+  }
+
+  .dark .public-section-surface--services {
+    background-color: #18181b;
+    background-image: linear-gradient(
+      to bottom,
+      #18181b 0%,
+      #18181b calc(100% - var(--public-section-fade)),
+      #1c1c1f calc(100% - 12rem),
+      #202023 calc(100% - 8rem),
+      #232326 calc(100% - 4rem),
+      #27272a 100%
+    );
+  }
+
+  .dark .public-section-surface--about {
+    background-color: #27272a;
+    background-image: linear-gradient(
+      to bottom,
+      #27272a 0%,
+      #27272a calc(100% - var(--public-section-fade)),
+      #1f1f22 calc(100% - 12rem),
+      #161618 calc(100% - 8rem),
+      #0f0f11 calc(100% - 4rem),
+      #09090b 100%
+    );
+  }
+
+  .dark .public-section-surface--contact {
+    background-color: #09090b;
+    background-image: linear-gradient(
+      to bottom,
+      #09090b 0%,
+      #09090b calc(100% - var(--public-section-fade)),
+      #0c0c0e calc(100% - 10rem),
+      #101012 calc(100% - 6rem),
+      var(--background) 100%
+    );
+  }
+}
+
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(141, 167, 142, 0.45) transparent;
@@ -363,5 +473,16 @@ input[type=number] {
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.photo-crop-container {
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
+.photo-crop-area {
+  border: none !important;
+  color: rgba(255, 255, 255, 0.72);
+  box-shadow: none !important;
 }
 

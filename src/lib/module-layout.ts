@@ -49,7 +49,7 @@ export const modulePageScrollClass = [
   moduleContentMaxWidth,
   "mx-auto overflow-hidden",
   "px-3 sm:px-4 md:px-5",
-  "pt-32 md:pt-36 pb-10",
+  "pt-3 md:pt-0 pb-10 mt-0 md:mt-4",
 ].join(" ");
 
 export const moduleControlsShellClass =

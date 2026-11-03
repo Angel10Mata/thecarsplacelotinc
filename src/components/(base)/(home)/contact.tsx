@@ -3,16 +3,21 @@
 import { MessageCircle, Phone, MapPin, PhoneCall } from "lucide-react";
 import { motion } from "framer-motion";
 import { AuroraText } from "@/components/ui/aurora-text";
+import { cn } from "@/lib/utils";
+import { publicSectionSurface } from "./public-section-surfaces";
 
-// Sección contacto (landing)
 export function ContactSection() {
-  const telDisplay = "+502 0000-0000";
-  const whatsappUrl = "https://wa.me/50200000000";
+  const telDisplay = "+1 (845) 309-7936";
+  const telHref = "18453097936";
+  const whatsappUrl = "https://wa.me/18453097936";
 
   return (
     <section
       id="contact"
-      className="min-h-screen lg:h-screen w-full snap-start flex flex-col justify-between px-6 pt-28 pb-10 bg-background text-foreground border-t border-border/40 overflow-hidden"
+      className={cn(
+        "min-h-screen lg:h-screen w-full snap-start flex flex-col justify-between px-6 pt-28 pb-10 text-foreground overflow-hidden",
+        publicSectionSurface.contact,
+      )}
     >
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-5xl mx-auto">
         <motion.div
@@ -25,11 +30,11 @@ export function ContactSection() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
             <PhoneCall className="size-3 text-primary" />
             <span className="text-[9px] font-bold uppercase tracking-widest text-primary">
-              Contacto
+              Contact
             </span>
           </div>
           <h2 className="text-3xl lg:text-5xl font-black uppercase tracking-tighter italic leading-none">
-            Escríbanos
+            Let's Talk
           </h2>
         </motion.div>
 
@@ -43,13 +48,13 @@ export function ContactSection() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="space-y-4 lg:space-y-6 text-center lg:text-left">
               <p className="text-muted-foreground text-sm lg:text-base font-medium leading-relaxed">
-                Contáctenos para recibir asesoría sobre el Sistema Integral de Gestión Kore
-                y optimizar sus procesos operativos.
+                Visit our lot in Brewster or chat with us online for immediate
+                assistance.
               </p>
               <div className="flex items-center justify-center lg:justify-start gap-4 p-3 rounded-xl bg-muted/50 border border-zinc-200 dark:border-zinc-800">
                 <MapPin className="text-primary size-4 shrink-0" />
                 <span className="font-bold uppercase text-[10px] lg:text-xs tracking-tight leading-tight">
-                  Concepción Las Minas, Chiquimula, Guatemala
+                  3651 Danbury Road, Brewster, NY 10509
                 </span>
               </div>
             </div>
@@ -58,6 +63,7 @@ export function ContactSection() {
               <a
                 href={whatsappUrl}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="group flex items-center justify-between p-4 lg:p-6 rounded-3xl bg-background border border-zinc-300 dark:border-zinc-700 hover:bg-emerald-500 text-black dark:text-white hover:text-white dark:hover:text-black transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-4">
@@ -66,22 +72,20 @@ export function ContactSection() {
                     <p className="text-[9px] opacity-60 tracking-widest text-inherit">
                       WhatsApp
                     </p>
-                    <p className="text-sm lg:text-lg text-inherit">
-                      Asistencia Kore
-                    </p>
+                    <p className="text-sm lg:text-lg text-inherit">Chat Now</p>
                   </div>
                 </div>
               </a>
 
               <a
-                href={`tel:${telDisplay}`}
+                href={`tel:${telHref}`}
                 className="group flex items-center justify-between p-4 lg:p-6 rounded-3xl bg-background border border-zinc-300 dark:border-zinc-700 hover:bg-primary text-black dark:text-white hover:text-white dark:hover:text-black transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-4">
                   <Phone className="size-6 lg:size-8 text-primary group-hover:text-inherit" />
                   <div className="text-left font-bold uppercase">
                     <p className="text-[9px] opacity-60 tracking-widest text-inherit">
-                      Llámenos ahora
+                      Call Us Now
                     </p>
                     <p className="text-sm lg:text-lg text-inherit tracking-tighter">
                       {telDisplay}
@@ -99,20 +103,20 @@ export function ContactSection() {
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
-        className="text-center mt-auto space-y-2"
+        className="text-center mt-auto space-y-1"
       >
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+        <p className="text-xs font-bold uppercase tracking-widest opacity-40">
           © {new Date().getFullYear()} THE CARS PLACE LOT INC.
         </p>
-        <p className="text-sm font-black uppercase tracking-wide text-foreground">
-          POWERED BY{" "}
+        <p className="text-xs font-bold uppercase tracking-widest">
+          Powered by{" "}
           <a
             href="https://www.oscar27jimenez.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block cursor-pointer transition-opacity hover:opacity-90"
+            className="inline-block cursor-pointer transition-all hover:underline"
           >
-            <AuroraText>ING. OSCAR JIMÉNEZ</AuroraText>
+            <AuroraText>Ing. Oscar Jiménez</AuroraText>
           </a>
         </p>
       </motion.div>

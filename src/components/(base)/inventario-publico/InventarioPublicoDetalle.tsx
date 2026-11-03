@@ -7,7 +7,11 @@ import { motion } from "framer-motion";
 import { Check, Copy, FileText, Images, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { lockPageScroll } from "@/components/ui/general-modal";
-import { resolveVehiculoInvoiceSource } from "@/components/(base)/vehiculos/lib/vehiculo-galeria-items";
+import {
+  resolveVehiculoInvoiceSource,
+  vehiculoGaleriaMarcoFotoClass,
+} from "@/components/(base)/vehiculos/lib/vehiculo-galeria-items";
+import { prefetchInvoicePdfLibs } from "@/components/(base)/vehiculos/lib/vehiculo-react-pdf";
 import { VehiculoInvoicePanel } from "@/components/(base)/vehiculos/forms/VehiculoInvoicePanel";
 import { vehiculosTablaAddOutlineButtonClass } from "@/components/(base)/vehiculos/lib/tabla-vehiculos-ui";
 import type { VehiculoListRow } from "@/components/(base)/vehiculos/lib/zod";
@@ -66,6 +70,17 @@ export function InventarioPublicoDetalle({
   useEffect(() => {
     setIsImageLoading(true);
   }, [activeImage]);
+
+  useEffect(() => {
+    if (!isOpen || !invoiceRow) return;
+    prefetchInvoicePdfLibs();
+    if (invoiceSource?.kind !== "generated-invoice") return;
+    void import("@/components/(base)/vehiculos/lib/vehiculo-invoice-pdf-client").then(
+      (mod) => {
+        mod.prefetchGeneratedInvoicePdf(invoiceRow);
+      },
+    );
+  }, [isOpen, itemId, invoiceRow, invoiceSource?.kind]);
 
   if (!isOpen || !item || !invoiceSource || typeof document === "undefined") {
     return null;
@@ -163,23 +178,30 @@ export function InventarioPublicoDetalle({
             style={{ pointerEvents: showingPhotos ? "auto" : "none" }}
             aria-hidden={!showingPhotos}
           >
-            <div className="relative h-full w-full flex-1">
+            <div className="relative flex h-full w-full flex-1 items-center justify-center p-4">
               {activeSrc ? (
-                <Image
-                  key={`${item.id}-${activeImage}`}
-                  src={activeSrc}
-                  alt={item.title}
-                  fill
+                <div
                   className={cn(
-                    "object-contain p-4 transition-all duration-700",
-                    isImageLoading
-                      ? "scale-95 opacity-0 blur-sm"
-                      : "scale-100 opacity-100 blur-0",
+                    "relative h-full max-h-full w-auto max-w-full overflow-hidden rounded-2xl bg-zinc-900",
+                    vehiculoGaleriaMarcoFotoClass,
                   )}
-                  sizes="(max-width: 768px) 100vw, 80vw"
-                  priority
-                  onLoad={() => setIsImageLoading(false)}
-                />
+                >
+                  <Image
+                    key={`${item.id}-${activeImage}`}
+                    src={activeSrc}
+                    alt={item.title}
+                    fill
+                    className={cn(
+                      "object-cover transition-all duration-700",
+                      isImageLoading
+                        ? "scale-95 opacity-0 blur-sm"
+                        : "scale-100 opacity-100 blur-0",
+                    )}
+                    sizes="(max-width: 768px) 100vw, 80vw"
+                    priority
+                    onLoad={() => setIsImageLoading(false)}
+                  />
+                </div>
               ) : (
                 <div className="flex h-full items-center justify-center text-sm font-semibold text-muted-foreground">
                   Sin fotografías
@@ -195,7 +217,7 @@ export function InventarioPublicoDetalle({
                     type="button"
                     onClick={() => setActiveImage(idx)}
                     className={cn(
-                      "relative aspect-square h-full shrink-0 overflow-hidden rounded-xl border-2 transition-all sm:h-auto sm:w-full",
+                      "relative aspect-[4/3] h-full shrink-0 overflow-hidden rounded-xl border-2 transition-all sm:h-auto sm:w-full",
                       activeImage === idx
                         ? "scale-105 border-primary"
                         : "border-transparent opacity-40 hover:opacity-100 dark:opacity-30",

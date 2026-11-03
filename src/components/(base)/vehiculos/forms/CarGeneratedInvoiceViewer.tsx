@@ -1,22 +1,24 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { createGeneratedInvoiceBlobUrl } from "../lib/vehiculo-invoice-pdf-client";
+import {
+  getGeneratedInvoiceBlobUrl,
+  invoiceRenderCacheKey,
+} from "../lib/vehiculo-invoice-pdf-client";
 import type { VehiculoListRow } from "../lib/zod";
+
+const invoiceLoading = (
+  <div className="flex min-h-[14rem] flex-1 items-center justify-center bg-white">
+    <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
+  </div>
+);
 
 const CarPdfInlineViewer = dynamic(
   () =>
     import("./CarPdfInlineViewer").then((m) => m.CarPdfInlineViewer),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex min-h-[14rem] flex-1 items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
-      </div>
-    ),
-  },
+  { ssr: false, loading: () => invoiceLoading },
 );
 
 type CarGeneratedInvoiceViewerProps = {
@@ -28,43 +30,40 @@ export function CarGeneratedInvoiceViewer({
   row,
   className,
 }: CarGeneratedInvoiceViewerProps) {
+  const cacheKey = useMemo(() => invoiceRenderCacheKey(row), [row]);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let active = true;
-    let objectUrl: string | null = null;
-    setLoading(true);
+    setBlobUrl(null);
+    setError(false);
 
-    void createGeneratedInvoiceBlobUrl(row)
+    void getGeneratedInvoiceBlobUrl(row)
       .then((url) => {
-        if (!active) {
-          URL.revokeObjectURL(url);
-          return;
-        }
-        objectUrl = url;
+        if (!active) return;
         setBlobUrl(url);
       })
       .catch((err) => {
         console.error("generated invoice pdf:", err);
-        if (active) setBlobUrl(null);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (active) setError(true);
       });
 
     return () => {
       active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [row]);
+  }, [cacheKey, row]);
 
-  if (loading || !blobUrl) {
+  if (error) {
     return (
-      <div className="flex min-h-[14rem] flex-1 items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
+      <div className="flex min-h-[14rem] flex-1 items-center justify-center bg-white px-6 text-center text-sm font-semibold text-muted-foreground">
+        No se pudo cargar la factura.
       </div>
     );
+  }
+
+  if (!blobUrl) {
+    return invoiceLoading;
   }
 
   return <CarPdfInlineViewer url={blobUrl} className={className} />;

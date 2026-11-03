@@ -44,11 +44,16 @@ export function VerInventarioGrid({
     <div className={cn("scroll-smooth", "min-h-0 w-full")}>
       <div
         className={cn(
-          modulePageShellClass,
           sectionScrollMarginEmbedded,
           fromVehiculosModule
-            ? "min-h-0 pt-0 pb-0 md:pt-0 md:pb-8 mt-0"
-            : "min-h-0 pt-0 pb-0 md:pt-0 md:pb-8 mt-0 md:mt-4",
+            ? cn(
+                modulePageShellClass,
+                "min-h-0 pt-0 pb-0 md:pt-0 md:pb-8 mt-0",
+              )
+            : cn(
+                "relative w-full min-h-0 pt-0 pb-0 md:pb-8 mt-0 md:mt-4",
+                "public-landing-section-stack [&>section+section]:-mt-px",
+              ),
         )}
       >
         <InventarioPublicoSeccion

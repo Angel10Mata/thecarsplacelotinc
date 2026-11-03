@@ -3,13 +3,18 @@
 import { AppLogo } from "@/components/(base)/brand/AppLogo";
 import { MapPin, Phone, Info } from "lucide-react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { publicSectionSurface } from "./public-section-surfaces";
 
 // Sección nosotros (landing)
 export function AboutSection() {
   return (
     <section
       id="about"
-      className="min-h-screen lg:h-screen w-full snap-start flex flex-col items-center justify-start lg:justify-center px-6 pt-28 lg:pt-0 border-t border-border/40 bg-background overflow-hidden"
+      className={cn(
+        "min-h-screen lg:h-screen w-full snap-start flex flex-col items-center justify-start lg:justify-center px-6 pt-28 lg:pt-0 overflow-hidden",
+        publicSectionSurface.about,
+      )}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}

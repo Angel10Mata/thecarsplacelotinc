@@ -8,6 +8,7 @@ import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { TCPL_AURORA_COLORS, TCPL_AURORA_MUTED } from "@/lib/brand-colors";
 import { VEHICULOS_MODULE_PATH } from "@/lib/app-config";
+import { publicSectionSurface } from "@/components/(base)/(home)/public-section-surfaces";
 import { cn } from "@/lib/utils";
 import type { PublicInventoryItem } from "./lib/zod";
 
@@ -27,7 +28,7 @@ function InventoryGridSlot() {
       aria-hidden
       className="invisible pointer-events-none hidden overflow-hidden rounded-4xl border border-transparent md:flex md:flex-col"
     >
-      <div className="aspect-16/11 w-full" />
+      <div className="aspect-[4/3] w-full" />
       <div className="flex flex-col p-5 pt-2">
         <div className="flex w-full items-center justify-between">
           <span className="text-xs sm:text-sm">&nbsp;</span>
@@ -88,12 +89,13 @@ export function InventarioPublicoSeccion({
     <section
       id="inventory"
       className={cn(
-        "flex w-full flex-col overflow-x-hidden bg-background",
+        "flex w-full flex-col overflow-x-hidden",
+        !embeddedFromVehiculos && publicSectionSurface.inventory,
         embedded
           ? embeddedFromVehiculos
             ? "min-h-0 border-0 pt-0"
             : "min-h-0 border-0 pt-8 sm:pt-5 md:pt-2"
-          : "min-h-screen snap-start border-b border-border/40 pt-24",
+          : "min-h-screen snap-start pt-24",
       )}
     >
       <div
@@ -168,7 +170,7 @@ export function InventarioPublicoSeccion({
 
       <div
         className={cn(
-          "mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 pb-20 lg:px-12",
+          "flex w-full flex-1 flex-col px-6 pb-12 lg:px-12",
           embeddedFromVehiculos ? "mt-6" : "mt-10",
         )}
       >
@@ -208,7 +210,7 @@ export function InventarioPublicoSeccion({
                     "group relative flex cursor-pointer flex-col overflow-hidden rounded-4xl border border-gray-400 bg-card/30 shadow-none backdrop-blur-sm transition-all duration-700 ease-out hover:-translate-y-1 hover:border-primary/50",
                   )}
                 >
-                  <div className="relative aspect-16/11 overflow-hidden border-b border-gray-400 bg-zinc-900">
+                  <div className="relative aspect-[4/3] overflow-hidden border-b border-gray-400 bg-zinc-900">
                     {item.coverImageUrl ? (
                       <Image
                         src={item.coverImageUrl}

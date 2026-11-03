@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { customerRowSchema, type CustomerRow } from "@/components/(base)/clientes/lib/zod";
 import { carRowSchema } from "@/components/(base)/vehiculos/lib/zod";
+import { loadCustomersByIds } from "@/components/(base)/vehiculos/lib/load-customers";
 import { mapCarRowToPublicInventoryItem } from "./helpers";
 import { publicInventoryItemSchema } from "./zod";
 
@@ -33,25 +33,7 @@ export async function listPublicInventoryAction() {
       ),
     ];
 
-    const customerById = new Map<string, CustomerRow>();
-
-    if (customerIds.length > 0) {
-      const { data: customerRows, error: customerError } = await supabase
-        .from("customers")
-        .select("id, customer_name, customer_nit, customer_address, created_at")
-        .in("id", customerIds);
-
-      if (customerError) {
-        console.error("listPublicInventory customers:", customerError.message);
-      } else {
-        for (const row of customerRows ?? []) {
-          const parsedCustomer = customerRowSchema.safeParse(row);
-          if (parsedCustomer.success) {
-            customerById.set(parsedCustomer.data.id, parsedCustomer.data);
-          }
-        }
-      }
-    }
+    const customerById = await loadCustomersByIds(customerIds);
 
     const items = cars
       .map((car) => {

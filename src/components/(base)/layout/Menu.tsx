@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, LogIn, LogOut, Shield } from "lucide-react";
+import { ArrowRight, ChevronDown, LogOut, Shield } from "lucide-react";
 import Swal from "sweetalert2";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import { useProfile } from "@/components/(base)/(users)/profile/lib/hooks";
@@ -244,15 +244,34 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
           </div>
         ) : (
           <div className="shrink-0 border-b border-border/40 bg-zinc-100 dark:bg-zinc-800">
-            <div className="px-5 py-3">
-              <Link
-                href="/login"
-                onClick={closeMenu}
-                className="inline-flex w-full cursor-pointer items-center gap-3 text-base font-bold text-brand transition-colors hover:text-brand-bright dark:text-brand-bright dark:hover:text-brand"
-              >
-                <LogIn className="size-6 shrink-0" strokeWidth={2.25} aria-hidden />
-                Iniciar sesión
-              </Link>
+            <div className="px-5 py-5">
+              <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+                <div className="flex items-center gap-3">
+                  <MorphIconBox
+                    from={navMorphIcons.logIn.from}
+                    to={navMorphIcons.logIn.to}
+                    size={MENU_ICON_MAIN.size}
+                    color={navIconColors.brandBright}
+                    strokeWidth={MENU_ICON_MAIN.strokeWidth}
+                    spring="snappy"
+                    padding={MENU_ICON_MAIN.padding}
+                    boxClassName={cn("shrink-0", navIconBoxClass.menuTile)}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black uppercase tracking-wide text-foreground">
+                      Acceso al sistema
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href="/login"
+                  onClick={closeMenu}
+                  className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-brand-bright active:scale-[0.99]"
+                >
+                  Iniciar sesión
+                  <ArrowRight className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
+                </Link>
+              </div>
             </div>
           </div>
         )}

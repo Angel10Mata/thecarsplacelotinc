@@ -18,7 +18,6 @@ import {
   ReporteriaChartTooltipFloat,
   ReporteriaChartTooltipList,
   ReporteriaChartTooltipShell,
-  ReporteriaKpiCard,
   formatMontoCompactoUsd,
   reporteriaChartPlotClass,
   reporteriaChartPlotOuterClass,
@@ -66,13 +65,11 @@ function DineroTooltipBody({ punto }: { punto: DineroMesPunto }) {
 type GraficasDineroVehiculosProps = {
   puntos: DineroMesPunto[];
   vendido: number;
-  unidadesVendidas: number;
 };
 
 export function GraficasDineroVehiculos({
   puntos,
   vendido,
-  unidadesVendidas,
 }: GraficasDineroVehiculosProps) {
   const { at, punto, syncFromChart, leaveChart, tooltipHandlers } =
     useReporteriaChartPinnedTooltip<DineroMesPunto>();
@@ -84,14 +81,14 @@ export function GraficasDineroVehiculos({
   };
 
   return (
-    <ReporteriaCard title="Montos de compra">
-      <div className="px-4 py-4 md:px-6">
-        <ReporteriaKpiCard
-          label={`Con salida · ${unidadesVendidas}`}
-          value={formatMonedaUsd(vendido)}
-        />
-      </div>
-
+    <ReporteriaCard
+      title="Compra"
+      headerAside={
+        <span className="text-lg font-black tabular-nums tracking-tight text-foreground md:text-xl">
+          {formatMonedaUsd(vendido)}
+        </span>
+      }
+    >
       <div className={reporteriaChartPlotOuterClass}>
         <div className={reporteriaChartPlotClass}>
         <ResponsiveContainer width="100%" height="100%">

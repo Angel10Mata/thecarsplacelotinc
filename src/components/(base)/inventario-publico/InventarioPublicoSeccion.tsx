@@ -2,12 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { CarFront, ChevronLeft, ChevronRight, Filter, Search } from "lucide-react";
 import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { TCPL_AURORA_COLORS, TCPL_AURORA_MUTED } from "@/lib/brand-colors";
-import { VEHICULOS_MODULE_PATH } from "@/lib/app-config";
 import { publicSectionSurface } from "@/components/(base)/(home)/public-section-surfaces";
 import { cn } from "@/lib/utils";
 import type { PublicInventoryItem } from "./lib/zod";
@@ -15,7 +13,6 @@ import type { PublicInventoryItem } from "./lib/zod";
 type InventarioPublicoSeccionProps = {
   embedded?: boolean;
   backFromVehiculos?: boolean;
-  showBackToVehiculosLink?: boolean;
   items: PublicInventoryItem[];
   isLoading: boolean;
   isError: boolean;
@@ -49,7 +46,6 @@ function InventoryGridSlot() {
 export function InventarioPublicoSeccion({
   embedded = false,
   backFromVehiculos = false,
-  showBackToVehiculosLink = true,
   items,
   isLoading,
   isError,
@@ -104,16 +100,6 @@ export function InventarioPublicoSeccion({
           embeddedFromVehiculos ? "gap-2 pb-1 pt-0" : "gap-0",
         )}
       >
-        {embeddedFromVehiculos && showBackToVehiculosLink ? (
-          <Link
-            href={VEHICULOS_MODULE_PATH}
-            className="relative z-10 mt-1 inline-flex w-fit items-center gap-1 text-sm font-semibold text-brand transition-colors hover:text-brand/80 md:mt-2 dark:text-brand-bright dark:hover:text-brand-bright/80"
-          >
-            <ChevronLeft className="size-4 shrink-0" aria-hidden />
-            Volver a vehículos
-          </Link>
-        ) : null}
-
         <div
           className={cn(
             "flex shrink-0 flex-col items-center justify-center text-center transition-all duration-1000 ease-out",

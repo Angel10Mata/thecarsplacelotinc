@@ -25,7 +25,7 @@ export default function AppLogoLogin() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ type: "spring", stiffness: 50, damping: 16 }}
       >
-        <AppLogo size={200} priority className="w-[min(85vw,200px)] h-auto" />
+        <AppLogo size={140} priority className="w-[min(70vw,140px)] h-auto" />
       </motion.button>
 
       {mounted &&

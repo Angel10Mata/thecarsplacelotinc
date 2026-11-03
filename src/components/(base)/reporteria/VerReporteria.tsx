@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { cn } from "@/lib/utils";
-import { modulePageShellClass } from "@/lib/module-layout";
+import { modulePageHeaderClass, modulePageHeaderRowClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
 import { GraficasDineroVehiculos } from "./GraficasDineroVehiculos";
 import { GraficasIngresosVehiculos } from "./GraficasIngresosVehiculos";
 import { ReporteriaFiltros } from "./ReporteriaFiltros";
@@ -23,7 +23,7 @@ import type { ReporteriaCampoFecha, ReporteriaFiltroCalendario } from "./lib/zod
 export function VerReporteria() {
   const [mounted, setMounted] = useState(false);
   const [filtro, setFiltro] = useState<ReporteriaFiltroCalendario | null>(null);
-  const [campo, setCampo] = useState<ReporteriaCampoFecha>("factura");
+  const [campo] = useState<ReporteriaCampoFecha>("factura");
   const { data = [], isPending, isError } = useReporteriaVehiculos();
 
   useEffect(() => {
@@ -89,12 +89,10 @@ export function VerReporteria() {
         "min-h-0 gap-2 pt-0 pb-0 md:pt-0 md:pb-8 mt-0 md:mt-4",
       )}
     >
-      <header className="mb-0">
-        <div className="flex items-center gap-3 pl-3 md:pl-0">
+      <header className={modulePageHeaderClass}>
+        <div className={modulePageHeaderRowClass}>
           <ModuleHeaderBackButton size="sm" />
-          <h1 className="min-w-0 text-xl font-black uppercase leading-none tracking-tight text-foreground sm:text-2xl md:text-3xl">
-            Reportería
-          </h1>
+          <h1 className={modulePageTitleClass}>Reportería</h1>
         </div>
       </header>
 
@@ -110,24 +108,16 @@ export function VerReporteria() {
 
       {mounted && filtro && !isPending && !isError ? (
         <div className="flex flex-col gap-6">
-          <ReporteriaFiltros
-            filtro={filtro}
-            campo={campo}
-            onFiltro={setFiltro}
-            onCampo={setCampo}
-          />
+          <ReporteriaFiltros filtro={filtro} onFiltro={setFiltro} />
 
           <GraficasIngresosVehiculos
             puntos={ingresos.puntos}
             registrados={ingresos.vehiculos}
-            ultimoFechaLabel={ingresos.ultimoFechaLabel}
-            diaActivo={filtro.vista === "dia" ? filtro.dia : undefined}
           />
 
           <GraficasDineroVehiculos
             puntos={dinero.puntos}
             vendido={dinero.vendido}
-            unidadesVendidas={dinero.unidadesVendidas}
           />
         </div>
       ) : null}

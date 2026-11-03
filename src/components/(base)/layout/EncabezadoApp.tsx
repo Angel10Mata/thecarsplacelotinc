@@ -118,10 +118,11 @@ export default function EncabezadoApp() {
 
             <div className="relative z-10 flex shrink-0 items-center gap-2.5 md:gap-4">
               {mounted ? <AnimatedThemeToggler /> : null}
-              {mounted && !isPublicCatalog ? (
+              {mounted ? (
                 <button
                   id="refresh-btn"
                   type="button"
+                  aria-label="Recargar"
                   onClick={handleRefresh}
                   onMouseEnter={() => {
                     if (!refreshSpinning) setRefreshRotation(90);
@@ -151,6 +152,7 @@ export default function EncabezadoApp() {
                   <button
                     type="button"
                     onClick={() => setIsOpen(!isOpen)}
+                    aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
                     className="flex cursor-pointer items-center justify-center text-foreground transition-colors active:scale-95 hover:text-foreground/80"
                   >
                     <MorphHoverIcon

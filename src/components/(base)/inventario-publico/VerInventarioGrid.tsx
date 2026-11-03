@@ -6,8 +6,9 @@ import { AboutSection } from "@/components/(base)/(home)/about";
 import { ContactSection } from "@/components/(base)/(home)/contact";
 import { ServicesSection } from "@/components/(base)/(home)/services";
 import { cn } from "@/lib/utils";
-import { modulePageShellClass } from "@/lib/module-layout";
-import { VEHICULOS_INVENTARIO_PATH } from "@/lib/app-config";
+import { modulePageHeaderClass, modulePageHeaderRowClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
+import { VEHICULOS_INVENTARIO_PATH, VEHICULOS_MODULE_PATH } from "@/lib/app-config";
+import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import { VehiculoGaleriaViewerModal } from "@/components/(base)/vehiculos/forms/VehiculoGaleriaViewerModal";
 import type { VehiculoListRow } from "@/components/(base)/vehiculos/lib/zod";
 import { InventarioPublicoSeccion } from "./InventarioPublicoSeccion";
@@ -56,6 +57,18 @@ export function VerInventarioGrid({
               ),
         )}
       >
+        {fromVehiculosModule ? (
+          <header className={modulePageHeaderClass}>
+            <div className={modulePageHeaderRowClass}>
+              <ModuleHeaderBackButton
+                size="sm"
+                href={VEHICULOS_MODULE_PATH}
+                ariaLabel="Volver a vehículos"
+              />
+              <h1 className={modulePageTitleClass}>Volver a vehículos</h1>
+            </div>
+          </header>
+        ) : null}
         <InventarioPublicoSeccion
           embedded
           backFromVehiculos={fromVehiculosModule}

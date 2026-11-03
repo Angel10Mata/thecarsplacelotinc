@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect, useActionState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { login, getPublicAppSettings, type ActionState } from "./actions";
@@ -15,7 +14,6 @@ import {
   KeyRound,
   User,
   ArrowBigUpDash,
-  ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,6 +21,8 @@ import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
 import { AuroraText } from "@/components/ui/aurora-text";
 import AppLogoLogin from "@/components/(base)/brand/AppLogoLogin";
+import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
+import { modulePageHeaderRowClass } from "@/lib/module-layout";
 import { APP_BASE_PATH, APP_NAME, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 
 export default function IniciarSesion() {
@@ -133,13 +133,22 @@ export default function IniciarSesion() {
 
   return (
     <div className="relative flex w-full flex-1 flex-col items-center justify-center pb-12">
-      <Link
-        href={PUBLIC_CATALOG_PATH}
-        className="fixed left-6 top-[calc(var(--banner-height,0px)+var(--app-header-height,var(--header-row-height))+0.5rem)] z-20 inline-flex w-fit items-center gap-1 text-sm font-semibold text-brand transition-colors hover:text-brand/80 lg:left-12 dark:text-brand-bright dark:hover:text-brand-bright/80"
+      <div
+        className={cn(
+          "fixed z-20 mx-auto w-full max-w-screen-2xl",
+          "left-0 right-0 top-[calc(var(--banner-height,0px)+var(--app-header-height,var(--header-row-height))+0.75rem)]",
+          modulePageHeaderRowClass,
+        )}
       >
-        <ChevronLeft className="size-4 shrink-0" aria-hidden />
-        Volver al inventario
-      </Link>
+        <ModuleHeaderBackButton
+          size="sm"
+          href={PUBLIC_CATALOG_PATH}
+          ariaLabel="Volver al inventario"
+        />
+        <p className="min-w-0 text-sm font-bold uppercase tracking-tight text-foreground sm:text-base">
+          Volver al inventario
+        </p>
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 28 }}
         animate={{ opacity: 1, y: 0 }}

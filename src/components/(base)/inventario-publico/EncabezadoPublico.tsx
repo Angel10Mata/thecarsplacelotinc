@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CarFront, Info, LayoutGrid, LogIn, Menu, PhoneCall, X } from "lucide-react";
+import { CarFront, EllipsisVertical, Info, LayoutGrid, LogIn, PhoneCall, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { HeaderBrand } from "@/components/(base)/brand/HeaderBrand";
@@ -57,7 +57,7 @@ export function EncabezadoPublico() {
               className="flex items-center justify-center rounded-xl border border-border/50 p-2.5 text-foreground hover:bg-muted/50"
               aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
             >
-              {isOpen ? <X className="size-6" /> : <Menu className="size-6" />}
+              {isOpen ? <X className="size-6" /> : <EllipsisVertical className="size-6" />}
             </button>
           </div>
         </div>

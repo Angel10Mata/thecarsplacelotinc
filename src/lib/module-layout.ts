@@ -61,6 +61,16 @@ export const moduleListPageShellClass = [
   "mx-auto flex flex-col gap-3",
 ].join(" ");
 
+export const modulePageHeaderClass = "mb-0 pt-3 md:pt-0";
+
+export const modulePageHeaderRowClass =
+  "flex items-center gap-3 px-3 sm:px-4 md:px-0";
+
+export const modulePageHeaderRowInsetClass = "flex items-center gap-3";
+
+export const modulePageTitleClass =
+  "min-w-0 flex-1 text-xl font-black uppercase leading-none tracking-tight text-foreground sm:text-2xl md:text-3xl";
+
 export const inventarioPageShellClass = [
   "w-full",
   moduleContentMaxWidth,

@@ -10,22 +10,20 @@ import {
 } from "@/components/ui/siget-action-button";
 import { APP_MODULES, type AppModuleConfig } from "@/lib/app-modules";
 import {
-  moduleIconColors,
   moduleMorphIcons,
   navMorphIcons,
   type MorphIconColorSet,
 } from "@/lib/morph-icons";
-import { TCPL_AURORA_COLORS, TCPL_BRAND_RED } from "@/lib/brand-colors";
+import { TCPL_BRAND_RED } from "@/lib/brand-colors";
 import { dashboardInnerClass, dashboardOuterClass } from "@/lib/module-layout";
 
-const BRAND_GRADIENT = `linear-gradient(135deg, ${[...TCPL_AURORA_COLORS, TCPL_AURORA_COLORS[0]].join(", ")})`;
+const MODULE_CARD_ACCENT = TCPL_BRAND_RED.dashboardCard;
 
-const BRAND_RED_PALETTE: MorphIconColorSet =
-  moduleIconColors.vehiculos ?? {
-    color: TCPL_BRAND_RED.primary,
-    boxClass:
-      "bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/50 dark:to-orange-950/30 border-red-200/90 dark:border-red-800/55 shadow-md ring-1 ring-red-500/10 dark:ring-red-400/10",
-  };
+const MODULE_ICON_PALETTE: MorphIconColorSet = {
+  color: MODULE_CARD_ACCENT,
+  boxClass:
+    "border-brand-dark-soft/50 bg-red-950/[0.08] ring-1 ring-brand-dark-soft/15 dark:border-brand-dark-soft dark:bg-red-950/25 dark:ring-brand-dark-soft/25",
+};
 
 type ModuleTheme = {
   palette: MorphIconColorSet;
@@ -34,7 +32,7 @@ type ModuleTheme = {
 
 function resolveModuleTheme(_moduleId: string): ModuleTheme {
   return {
-    palette: BRAND_RED_PALETTE,
+    palette: MODULE_ICON_PALETTE,
     rippleColor: "rgba(255,255,255,0.35)",
   };
 }
@@ -43,7 +41,7 @@ function DashboardHeader() {
   return (
     <header className="mb-5 w-full min-w-0 text-center md:mb-7 md:pl-0 md:text-left">
       <div className="flex min-w-0 items-center justify-center gap-2 whitespace-nowrap md:flex-col md:items-start md:justify-start md:gap-0 md:whitespace-normal">
-        <p className="shrink-0 text-lg font-black uppercase leading-none tracking-tight text-brand dark:text-brand-bright md:text-[10px] md:font-bold md:tracking-[0.28em]">
+        <p className="shrink-0 text-lg font-black uppercase leading-none tracking-tight text-brand-dark-soft md:text-sm md:font-bold md:tracking-[0.28em]">
           Panel
         </p>
         <h1 className="min-w-0 text-lg font-black uppercase leading-none tracking-tight text-foreground md:mt-1 md:text-2xl md:text-3xl">
@@ -94,13 +92,12 @@ function DashboardModuleCard({
   return (
     <article
       id={`${mod.id}-card`}
-      className="flex h-full flex-col overflow-hidden rounded-2xl border-2 border-brand/45 bg-zinc-50 shadow-md ring-1 ring-brand/25 dark:border-brand-bright/50 dark:bg-zinc-800/50 dark:shadow-lg dark:ring-brand-bright/30"
+      className="flex h-full flex-col overflow-hidden rounded-2xl border-2 border-brand-dark-soft bg-zinc-50 shadow-md ring-1 ring-brand-dark-soft/40 dark:border-brand-dark-soft dark:bg-zinc-800/50 dark:shadow-lg dark:ring-brand-dark-soft/50"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
       <div
-        className="shrink-0 px-4 py-2.5"
-        style={{ backgroundImage: BRAND_GRADIENT }}
+        className="shrink-0 bg-brand-dark-soft px-4 py-2.5 dark:bg-brand-dark-soft"
         aria-hidden
       />
 
@@ -131,9 +128,9 @@ function DashboardModuleCard({
             morphTo={navMorphIcons.chevronRight.to}
             onClick={() => onNavigate(mod.href)}
             ariaLabel={enterLabel}
-            style={{ backgroundImage: BRAND_GRADIENT }}
+            style={{ backgroundColor: MODULE_CARD_ACCENT }}
             className={cn(
-              "h-11 w-full rounded-xl border-0 bg-transparent text-sm font-bold text-white shadow-none hover:opacity-[0.97] dark:bg-transparent",
+              "h-11 w-full rounded-xl border-0 text-sm font-bold text-white shadow-none hover:opacity-[0.97]",
               "[&_span_truncate]:overflow-visible [&_span_truncate]:text-clip",
             )}
           />

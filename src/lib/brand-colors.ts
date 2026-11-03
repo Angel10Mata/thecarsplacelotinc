@@ -2,6 +2,7 @@ export const TCPL_BRAND_RED = {
   vivid: "#ff0000",
   primary: "#dc2626",
   dark: "#991b1b",
+  dashboardCard: "#b80000",
   bright: "#ef4444",
 } as const;
 

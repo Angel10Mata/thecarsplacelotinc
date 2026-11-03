@@ -19,7 +19,6 @@ import {
   ReporteriaChartTooltipFloat,
   ReporteriaChartTooltipList,
   ReporteriaChartTooltipShell,
-  ReporteriaKpiCard,
   reporteriaChartPlotClass,
   reporteriaChartPlotOuterClass,
   reporteriaChartTooltipCursorOnlyStyle,
@@ -41,19 +40,16 @@ function IngresosDot({
   cx,
   cy,
   payload,
-  diaActivo,
   onSelect,
 }: IngresosDotProps & {
-  diaActivo?: string;
   onSelect?: (punto: IngresoVehiculoPunto) => void;
 }) {
   if (cx == null || cy == null || !payload || payload.ingresos <= 0) {
     return null;
   }
 
-  const activo = Boolean(diaActivo && payload.fecha === diaActivo);
-  const halo = activo ? 9 : 7;
-  const nucleo = activo ? 5.5 : 4.5;
+  const halo = 7;
+  const nucleo = 4.5;
 
   return (
     <g
@@ -69,7 +65,7 @@ function IngresosDot({
         cy={cy}
         r={halo}
         fill={TCPL_BRAND_RED.primary}
-        fillOpacity={activo ? 0.28 : 0.18}
+        fillOpacity={0.18}
       />
       <circle
         cx={cx}
@@ -151,15 +147,11 @@ function IngresosTooltipBody({ punto }: { punto: IngresoVehiculoPunto }) {
 type GraficasIngresosVehiculosProps = {
   puntos: IngresoVehiculoPunto[];
   registrados: number;
-  ultimoFechaLabel: string;
-  diaActivo?: string;
 };
 
 export function GraficasIngresosVehiculos({
   puntos,
   registrados,
-  ultimoFechaLabel,
-  diaActivo,
 }: GraficasIngresosVehiculosProps) {
   const { at, punto, syncFromChart, leaveChart, tooltipHandlers } =
     useReporteriaChartPinnedTooltip<IngresoVehiculoPunto>();
@@ -180,12 +172,14 @@ export function GraficasIngresosVehiculos({
     : "";
 
   return (
-    <ReporteriaCard title="Compras de vehículos">
-      <div className="grid grid-cols-1 gap-3 px-4 py-4 sm:grid-cols-2 md:px-6">
-        <ReporteriaKpiCard label="Comprados" value={String(registrados)} />
-        <ReporteriaKpiCard label="Última compra" value={ultimoFechaLabel} />
-      </div>
-
+    <ReporteriaCard
+      title="Vehículos"
+      headerAside={
+        <span className="text-lg font-black tabular-nums tracking-tight text-foreground md:text-xl">
+          {registrados}
+        </span>
+      }
+    >
       <div className={reporteriaChartPlotOuterClass}>
         <div className={reporteriaChartPlotClass}>
         <ResponsiveContainer width="100%" height="100%">
@@ -255,9 +249,7 @@ export function GraficasIngresosVehiculos({
               stroke={TCPL_BRAND_RED.primary}
               strokeWidth={2.5}
               fill="url(#ingresosVehiculosFill)"
-              dot={
-                <IngresosDot diaActivo={diaActivo} onSelect={abrirDetalle} />
-              }
+              dot={<IngresosDot onSelect={abrirDetalle} />}
               activeDot={(props) => (
                 <IngresosActiveDot {...props} onSelect={abrirDetalle} />
               )}

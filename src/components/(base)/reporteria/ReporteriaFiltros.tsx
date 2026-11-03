@@ -21,30 +21,19 @@ import {
   cambiarVistaFiltro,
   etiquetaMesLargo,
   etiquetaRangoSemanaCorto,
-  moverFiltroCalendario,
   opcionesSemanaMes,
   rangoSemanaMes,
 } from "./lib/helpers";
 import type {
-  ReporteriaCampoFecha,
   ReporteriaFiltroCalendario,
   ReporteriaSemana,
   ReporteriaVista,
 } from "./lib/zod";
 
 const VISTAS: Array<{ value: ReporteriaVista; label: string }> = [
-  { value: "dia", label: "Día" },
   { value: "mes", label: "Mes" },
   { value: "rango", label: "Rango" },
 ];
-
-const CAMPOS: Array<{ value: ReporteriaCampoFecha; label: string }> = [
-  { value: "factura", label: "Factura compra" },
-  { value: "registro", label: "Registro" },
-];
-
-const pillShellClass =
-  "rounded-full border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900";
 
 const pillButtonClass = (active: boolean) =>
   cn(
@@ -60,27 +49,17 @@ const rangoFechaShellClass =
 const rangoFechaInputClass =
   "h-9 rounded-xl border-zinc-200 bg-zinc-50 pl-2 pr-10 text-xs tabular-nums tracking-tight dark:border-zinc-700 dark:bg-zinc-800 sm:pl-3 sm:pr-12 sm:text-sm lg:rounded-full";
 
-const diaFechaShellClass =
-  "h-9 min-w-0 flex-1 sm:max-w-[11rem] lg:max-w-[10.75rem]";
-
-const diaFechaInputClass =
-  "h-9 rounded-xl border-zinc-200 bg-zinc-50 pl-3 pr-12 text-center text-sm tabular-nums tracking-tight dark:border-zinc-700 dark:bg-zinc-800 lg:rounded-full";
-
 type ReporteriaFiltrosProps = {
   filtro: ReporteriaFiltroCalendario;
-  campo: ReporteriaCampoFecha;
   onFiltro: (value: ReporteriaFiltroCalendario) => void;
-  onCampo: (value: ReporteriaCampoFecha) => void;
 };
 
 export function ReporteriaFiltros({
   filtro,
-  campo,
   onFiltro,
-  onCampo,
 }: ReporteriaFiltrosProps) {
   return (
-    <section className="flex flex-col gap-3 px-3 md:px-0 lg:flex-row lg:flex-wrap lg:items-center">
+    <section className="flex flex-col gap-3 px-3 sm:px-4 md:px-0 lg:flex-row lg:flex-wrap lg:items-center">
       <div
         className={cn(
           "flex w-full min-w-0 flex-col gap-2.5 rounded-2xl border border-zinc-200 bg-white p-2.5 dark:border-zinc-700 dark:bg-zinc-900",
@@ -140,33 +119,6 @@ export function ReporteriaFiltros({
           </div>
         ) : null}
 
-        {filtro.vista === "dia" ? (
-          <div
-            className={cn(
-              "flex w-full items-center gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800",
-              "lg:w-auto lg:min-w-[15rem] lg:border-0 lg:pt-0 lg:pl-1 lg:pr-1",
-            )}
-          >
-            <NavChevron
-              label="Anterior"
-              onClick={() => onFiltro(moverFiltroCalendario(filtro, -1))}
-            />
-            <ModalFechaCalendario
-              value={filtro.dia}
-              onChange={(dia) => {
-                if (!dia) return;
-                onFiltro({ ...filtro, dia, mes: dia.slice(0, 7), semana: "all" });
-              }}
-              className={diaFechaShellClass}
-              inputClassName={diaFechaInputClass}
-            />
-            <NavChevron
-              label="Siguiente"
-              onClick={() => onFiltro(moverFiltroCalendario(filtro, 1))}
-            />
-          </div>
-        ) : null}
-
         {filtro.vista === "mes" ? (
           <div
             className={cn(
@@ -186,28 +138,6 @@ export function ReporteriaFiltros({
             />
           </div>
         ) : null}
-      </div>
-
-      <div
-        className={cn(
-          "inline-flex w-full items-center gap-1",
-          pillShellClass,
-          "lg:w-auto",
-        )}
-      >
-        {CAMPOS.map((opcion) => (
-          <button
-            key={opcion.value}
-            type="button"
-            onClick={() => onCampo(opcion.value)}
-            className={cn(
-              pillButtonClass(campo === opcion.value),
-              "flex-1 text-center lg:flex-none",
-            )}
-          >
-            {opcion.label}
-          </button>
-        ))}
       </div>
     </section>
   );

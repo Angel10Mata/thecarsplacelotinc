@@ -13,6 +13,7 @@
   --brand-red: #dc2626;
   --brand-red-bright: #ef4444;
   --brand-red-dark: #991b1b;
+  --brand-red-dark-soft: #b80000;
   --brand-red-vivid: #ff0000;
   --brand-accent: var(--brand-red);
   --brand-accent-soft: #fef2f2;
@@ -78,6 +79,7 @@
   --color-brand: var(--brand-red);
   --color-brand-bright: var(--brand-red-bright);
   --color-brand-dark: var(--brand-red-dark);
+  --color-brand-dark-soft: var(--brand-red-dark-soft);
   --color-brand-vivid: var(--brand-red-vivid);
   --color-brand-soft: var(--brand-accent-soft);
 
@@ -140,9 +142,24 @@
   button, [role="button"], a[href] {
     cursor: pointer;
   }
+  html {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     background-color: var(--background);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  body::-webkit-scrollbar {
+    display: none;
   }
 
   html[data-modal-open],

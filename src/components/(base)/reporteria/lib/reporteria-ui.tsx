@@ -32,10 +32,12 @@ export function ReporteriaKpiCard({
 
 export function ReporteriaCard({
   title,
+  headerAside,
   children,
   className,
 }: {
   title: string;
+  headerAside?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -46,10 +48,13 @@ export function ReporteriaCard({
         className,
       )}
     >
-      <div className="border-b border-border px-4 py-4 dark:border-zinc-700 md:px-6">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 dark:border-zinc-700 md:px-6">
         <h2 className="text-lg font-black uppercase tracking-tight text-foreground md:text-xl">
           {title}
         </h2>
+        {headerAside ? (
+          <div className="shrink-0 text-right">{headerAside}</div>
+        ) : null}
       </div>
       {children}
     </section>

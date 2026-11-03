@@ -4,7 +4,6 @@ export interface AppModuleConfig {
   id: string;
   title: string;
   subtitle: string;
-  banner: string;
   desc: string;
   href: string;
   allowedRoles?: string[];
@@ -16,7 +15,6 @@ export const APP_MODULES: AppModuleConfig[] = [
     id: "vehiculos",
     title: "Vehículos",
     subtitle: "Inventario",
-    banner: "Operación · Lote",
     desc: "Inventario de vehículos, estatus en lote, documentación y ubicación.",
     href: `${APP_BASE_PATH}/vehiculos`,
     allowedRoles: ["super", "admin", "user"],
@@ -25,7 +23,6 @@ export const APP_MODULES: AppModuleConfig[] = [
     id: "clientes",
     title: "Clientes",
     subtitle: "Directorio",
-    banner: "Contacto · NIT",
     desc: "Directorio de clientes, NIT, dirección y datos de contacto.",
     href: `${APP_BASE_PATH}/clientes`,
     allowedRoles: ["super", "admin", "user"],
@@ -34,7 +31,6 @@ export const APP_MODULES: AppModuleConfig[] = [
     id: "reporteria",
     title: "Reportería",
     subtitle: "Compras",
-    banner: "KPIs · Métricas",
     desc: "Compras de vehículos, montos y métricas por periodo.",
     href: `${APP_BASE_PATH}/reporteria`,
     allowedRoles: ["super", "admin", "user"],

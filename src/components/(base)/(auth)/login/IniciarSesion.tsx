@@ -18,10 +18,10 @@ import {
   CarFront,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AuroraText } from "@/components/ui/aurora-text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "next-themes";
 import Swal from "sweetalert2";
+import { AuroraText } from "@/components/ui/aurora-text";
 import AppLogoLogin from "@/components/(base)/brand/AppLogoLogin";
 import { APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 
@@ -146,10 +146,10 @@ export default function IniciarSesion() {
 
             <div className="space-y-1">
               <h3 className="text-2xl font-bold tracking-tight">
-                <AuroraText>Bienvenido de nuevo</AuroraText>
+                <AuroraText>Welcome Back</AuroraText>
               </h3>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">
-                KORE AUTHENTICATION SYSTEM
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                Sign in to manage your inventory
               </p>
             </div>
           </div>

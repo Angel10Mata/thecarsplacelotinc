@@ -1,16 +1,11 @@
-import { redirect } from "next/navigation";
-import { APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
-import { createClient } from "@/utils/supabase/server";
+import { Suspense } from "react";
+import { ModuleRouteSuspenseFallback } from "@/components/ui/module-page-loading";
+import { VerInventarioGrid } from "@/components/(base)/inventario-publico";
 
-export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    redirect(APP_BASE_PATH);
-  }
-
-  redirect(PUBLIC_CATALOG_PATH);
+export default function HomePage() {
+  return (
+    <Suspense fallback={<ModuleRouteSuspenseFallback />}>
+      <VerInventarioGrid />
+    </Suspense>
+  );
 }

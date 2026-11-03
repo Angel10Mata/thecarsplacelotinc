@@ -99,11 +99,10 @@ function DashboardModuleCard({
       onPointerLeave={() => setHovered(false)}
     >
       <div
-        className="px-4 py-2.5 text-center text-[10px] font-bold uppercase tracking-[0.22em] text-white"
+        className="shrink-0 px-4 py-2.5"
         style={{ backgroundImage: BRAND_GRADIENT }}
-      >
-        {mod.banner}
-      </div>
+        aria-hidden
+      />
 
       <div className="flex flex-1 flex-col gap-5 bg-white p-6 dark:bg-zinc-900">
         <div className="flex items-start gap-4">

@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Shield } from "lucide-react";
+import { ChevronDown, LogIn, LogOut, Shield } from "lucide-react";
 import Swal from "sweetalert2";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import { useProfile } from "@/components/(base)/(users)/profile/lib/hooks";
@@ -196,19 +196,10 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center gap-2 text-sm font-bold text-red-500 hover:text-red-600 dark:text-red-400 transition-colors cursor-pointer"
+                className="inline-flex cursor-pointer items-center gap-2.5 text-sm font-bold text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
               >
-                <MorphIconBox
-                  from={navMorphIcons.logOut.from}
-                  to={navMorphIcons.logOut.to}
-                  size={18}
-                  color="#ef4444"
-                  strokeWidth={2.25}
-                  spring="snappy"
-                  padding="xs"
-                  boxClassName={cn("shrink-0", navIconBoxClass.menuTileSub)}
-                />
-                Cerrar Sesión
+                <LogOut className="size-5 shrink-0" strokeWidth={2.25} aria-hidden />
+                Cerrar sesión
               </button>
               <PushNotificationToggle />
             </div>
@@ -246,47 +237,15 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
           </div>
         ) : (
           <div className="shrink-0 border-b border-border/40 bg-zinc-100 dark:bg-zinc-800">
-            <div className="px-5 py-5">
-              <div className={cn(menuWhiteCard, "p-4")}>
-                <div className="flex items-start gap-3">
-                  <MorphIconBox
-                    from={navMorphIcons.logIn.from}
-                    to={navMorphIcons.logIn.to}
-                    size={MENU_ICON_MAIN.size}
-                    color={navIconColors.brandBright}
-                    strokeWidth={MENU_ICON_MAIN.strokeWidth}
-                    spring="snappy"
-                    padding={MENU_ICON_MAIN.padding}
-                    boxClassName={cn("shrink-0", navIconBoxClass.menuTile)}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black uppercase tracking-wide text-brand dark:text-brand-bright">
-                      Acceso al sistema
-                    </p>
-                    <p className="mt-1 text-xs leading-snug text-muted-foreground">
-                      Inicia sesión para administrar vehículos, clientes y el
-                      panel de {APP_NAME}.
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/login"
-                  onClick={closeMenu}
-                  className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2.5 rounded-xl bg-brand px-4 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand-bright active:scale-[0.99]"
-                >
-                  Iniciar sesión
-                  <MorphIconBox
-                    from={navMorphIcons.logIn.from}
-                    to={navMorphIcons.logIn.to}
-                    size={16}
-                    color="#ffffff"
-                    strokeWidth={2.25}
-                    spring="snappy"
-                    padding="xs"
-                    boxClassName="border-0 bg-transparent"
-                  />
-                </Link>
-              </div>
+            <div className="px-5 py-3">
+              <Link
+                href="/login"
+                onClick={closeMenu}
+                className="inline-flex w-full cursor-pointer items-center gap-3 text-base font-bold text-brand transition-colors hover:text-brand-bright dark:text-brand-bright dark:hover:text-brand"
+              >
+                <LogIn className="size-6 shrink-0" strokeWidth={2.25} aria-hidden />
+                Iniciar sesión
+              </Link>
             </div>
           </div>
         )}

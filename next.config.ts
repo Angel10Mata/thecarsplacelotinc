@@ -43,6 +43,16 @@ const nextConfig: NextConfig = {
         destination: "/TheCarsPlace/vehiculos/:path*",
         permanent: true,
       },
+      {
+        source: "/inventario",
+        destination: "/",
+        permanent: false,
+      },
+      {
+        source: "/inventario/:path*",
+        destination: "/:path*",
+        permanent: false,
+      },
     ];
   },
   images: {

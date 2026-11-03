@@ -1,3 +1,6 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { AppPageBackground } from "@/components/(base)/layout/AppPageBackground";
 
 export default function AuthRoutesLayout({
@@ -5,5 +8,10 @@ export default function AuthRoutesLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AppPageBackground centered>{children}</AppPageBackground>;
+  const pathname = usePathname();
+  return (
+    <AppPageBackground centered={pathname === "/login"}>
+      {children}
+    </AppPageBackground>
+  );
 }

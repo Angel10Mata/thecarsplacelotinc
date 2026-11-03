@@ -169,9 +169,17 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
       return;
     }
 
-    const next = new URL(PUBLIC_CATALOG_PATH, window.location.origin);
-    next.searchParams.set("signed_out", String(Date.now()));
-    window.location.replace(next.toString());
+    const catalog = PUBLIC_CATALOG_PATH;
+    const { pathname, search, hash } = window.location;
+    const onCatalog =
+      pathname === catalog || pathname === `${catalog}/`;
+
+    if (!onCatalog || search || hash) {
+      window.location.replace(catalog);
+      return;
+    }
+
+    window.location.reload();
   };
 
   const isActivePath = (href: string) =>

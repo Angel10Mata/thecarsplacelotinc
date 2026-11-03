@@ -49,6 +49,21 @@ const rangoFechaShellClass =
 const rangoFechaInputClass =
   "h-9 rounded-xl border-zinc-200 bg-zinc-50 pl-2 pr-10 text-xs tabular-nums tracking-tight dark:border-zinc-700 dark:bg-zinc-800 sm:pl-3 sm:pr-12 sm:text-sm lg:rounded-full";
 
+const filtroBrandPillClass = cn(
+  "h-9 w-full min-w-0 text-sm font-semibold text-brand shadow-none",
+  "rounded-full border border-brand/35 bg-white px-2.5",
+  "hover:border-brand/55 hover:bg-brand/5",
+  "focus-visible:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20",
+  "dark:border-brand-bright/40 dark:bg-zinc-900 dark:text-brand-bright dark:hover:bg-brand-bright/10",
+  "dark:focus-visible:ring-brand-bright/25",
+);
+
+const filtroBrandPillMobileCenterClass = cn(
+  "max-lg:relative max-lg:justify-center max-lg:px-8",
+  "[&>svg:last-child]:max-lg:absolute [&>svg:last-child]:max-lg:right-2.5 [&>svg:last-child]:max-lg:text-brand",
+  "dark:[&>svg:last-child]:max-lg:text-brand-bright",
+);
+
 type ReporteriaFiltrosProps = {
   filtro: ReporteriaFiltroCalendario;
   onFiltro: (value: ReporteriaFiltroCalendario) => void;
@@ -122,7 +137,7 @@ export function ReporteriaFiltros({
         {filtro.vista === "mes" ? (
           <div
             className={cn(
-              "grid w-full grid-cols-1 items-center gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800 sm:grid-cols-2",
+              "grid w-full grid-cols-1 items-center gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800",
               "lg:flex lg:w-auto lg:flex-nowrap lg:border-0 lg:border-l lg:border-zinc-100 lg:pt-0 lg:pl-2 lg:pr-1 dark:lg:border-zinc-800",
             )}
           >
@@ -199,20 +214,24 @@ function MesPicker({
           ref={triggerRef}
           type="button"
           className={cn(
-            "inline-flex h-9 w-full shrink-0 cursor-pointer items-center justify-between gap-1.5 rounded-full border border-brand/35 bg-white px-2.5 text-sm font-semibold text-brand shadow-none",
-            "hover:border-brand/55 hover:bg-brand/5",
-            "focus-visible:border-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/20",
-            "dark:border-brand-bright/40 dark:bg-zinc-900 dark:text-brand-bright dark:hover:bg-brand-bright/10",
-            "dark:focus-visible:ring-brand-bright/25",
-            "lg:w-auto lg:min-w-[13.75rem] lg:px-3",
+            filtroBrandPillClass,
+            "inline-flex shrink-0 cursor-pointer items-center gap-1.5",
+            filtroBrandPillMobileCenterClass,
+            "lg:w-auto lg:min-w-[13.75rem] lg:justify-between lg:px-3",
           )}
           aria-label="Elegir mes"
         >
-          <CalendarDays className="size-4 shrink-0 max-sm:hidden" aria-hidden />
-          <span className="flex-1 whitespace-nowrap text-center sm:text-left">
+          <CalendarDays
+            className="size-4 shrink-0 text-brand max-lg:hidden lg:block dark:text-brand-bright"
+            aria-hidden
+          />
+          <span className="flex-1 whitespace-nowrap text-center text-brand max-lg:text-center lg:text-left dark:text-brand-bright">
             {etiqueta}
           </span>
-          <ChevronDown className="size-4 shrink-0 opacity-70" aria-hidden />
+          <ChevronDown
+            className="size-4 shrink-0 text-brand opacity-70 dark:text-brand-bright"
+            aria-hidden
+          />
         </button>
       </PopoverTrigger>
       <PopoverContent
@@ -314,12 +333,12 @@ function SemanaMesSelect({
     >
       <SelectTrigger
         className={cn(
-          "h-9 w-full min-w-0 cursor-pointer rounded-full border border-brand/35 bg-white px-2.5 text-sm font-semibold text-brand shadow-none",
-          "hover:border-brand/55 hover:bg-brand/5",
-          "focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand/20",
-          "dark:border-brand-bright/40 dark:bg-zinc-900 dark:text-brand-bright dark:hover:bg-brand-bright/10",
-          "dark:focus-visible:ring-brand-bright/25 [&_svg:not([class*='size-'])]:text-brand dark:[&_svg:not([class*='size-'])]:text-brand-bright",
-          "[&_[data-slot=select-value]]:truncate [&_[data-slot=select-value]]:text-center lg:min-w-[11.5rem] lg:max-w-none lg:px-3 lg:[&_[data-slot=select-value]]:text-left",
+          filtroBrandPillClass,
+          "cursor-pointer",
+          filtroBrandPillMobileCenterClass,
+          "[&_svg:not([class*='size-'])]:text-brand dark:[&_svg:not([class*='size-'])]:text-brand-bright",
+          "max-lg:[&_[data-slot=select-value]]:flex-1 max-lg:[&_[data-slot=select-value]]:justify-center max-lg:[&_[data-slot=select-value]]:text-center max-lg:[&_[data-slot=select-value]]:text-brand dark:max-lg:[&_[data-slot=select-value]]:text-brand-bright",
+          "[&_[data-slot=select-value]]:truncate lg:min-w-[11.5rem] lg:max-w-none lg:justify-between lg:px-3 lg:[&_[data-slot=select-value]]:flex-none lg:[&_[data-slot=select-value]]:text-left lg:[&_[data-slot=select-value]]:text-brand dark:lg:[&_[data-slot=select-value]]:text-brand-bright",
         )}
       >
         <SelectValue placeholder="Semana">

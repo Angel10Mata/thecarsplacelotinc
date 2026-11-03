@@ -1,50 +1,67 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import { MorphIconBox } from "@/components/ui/morph-hover-icon";
-import {
-  SigetActionButton,
-} from "@/components/ui/siget-action-button";
+import { MorphHoverIcon } from "@/components/ui/morph-hover-icon";
 import { APP_MODULES, type AppModuleConfig } from "@/lib/app-modules";
-import {
-  moduleMorphIcons,
-  navMorphIcons,
-  type MorphIconColorSet,
-} from "@/lib/morph-icons";
-import { TCPL_BRAND_RED } from "@/lib/brand-colors";
+import { moduleMorphIcons, navMorphIcons } from "@/lib/morph-icons";
 import { dashboardInnerClass, dashboardOuterClass } from "@/lib/module-layout";
 
-const MODULE_CARD_ACCENT = TCPL_BRAND_RED.dashboardCard;
-
-const MODULE_ICON_PALETTE: MorphIconColorSet = {
-  color: MODULE_CARD_ACCENT,
-  boxClass:
-    "border-brand-dark-soft/50 bg-red-950/[0.08] ring-1 ring-brand-dark-soft/15 dark:border-brand-dark-soft dark:bg-red-950/25 dark:ring-brand-dark-soft/25",
+type DashboardModuleAccent = {
+  card: string;
+  badge: string;
+  button: string;
+  iconBg: string;
+  iconColor: string;
+  subtitle: string;
+  feature: string;
 };
 
-type ModuleTheme = {
-  palette: MorphIconColorSet;
-  rippleColor: string;
+const DASHBOARD_MODULE_ACCENTS: Record<string, DashboardModuleAccent> = {
+  vehiculos: {
+    card: "border-blue-300/40 ring-blue-300/20 dark:border-blue-400/20",
+    badge: "bg-blue-500",
+    button: "bg-blue-500 hover:bg-blue-600",
+    iconBg: "bg-blue-50 dark:bg-blue-400/10",
+    iconColor: "#3b82f6",
+    subtitle: "text-blue-600 dark:text-blue-400",
+    feature: "text-blue-500 dark:text-blue-400",
+  },
+  clientes: {
+    card: "border-orange-300/40 ring-orange-300/20 dark:border-orange-400/20",
+    badge: "bg-orange-500",
+    button: "bg-orange-500 hover:bg-orange-600",
+    iconBg: "bg-orange-50 dark:bg-orange-400/10",
+    iconColor: "#f97316",
+    subtitle: "text-orange-600 dark:text-orange-400",
+    feature: "text-orange-500 dark:text-orange-400",
+  },
+  reporteria: {
+    card: "border-purple-300/40 ring-purple-300/20 dark:border-purple-400/20",
+    badge: "bg-purple-400",
+    button: "bg-purple-400 hover:bg-purple-500",
+    iconBg: "bg-purple-50 dark:bg-purple-400/10",
+    iconColor: "#a855f7",
+    subtitle: "text-purple-600 dark:text-purple-300",
+    feature: "text-purple-500 dark:text-purple-400",
+  },
 };
 
-function resolveModuleTheme(_moduleId: string): ModuleTheme {
-  return {
-    palette: MODULE_ICON_PALETTE,
-    rippleColor: "rgba(255,255,255,0.35)",
-  };
+function resolveDashboardAccent(moduleId: string): DashboardModuleAccent {
+  return DASHBOARD_MODULE_ACCENTS[moduleId] ?? DASHBOARD_MODULE_ACCENTS.vehiculos;
 }
 
 function DashboardHeader() {
   return (
     <header className="mb-5 w-full min-w-0 text-center md:mb-7 md:pl-0 md:text-left">
       <div className="flex min-w-0 items-center justify-center gap-2 whitespace-nowrap md:flex-col md:items-start md:justify-start md:gap-0 md:whitespace-normal">
-        <p className="shrink-0 text-lg font-black uppercase leading-none tracking-tight text-brand-dark-soft md:text-sm md:font-bold md:tracking-[0.28em]">
+        <p className="shrink-0 text-lg font-black uppercase leading-none tracking-tight text-brand dark:text-brand-bright md:text-sm md:font-bold md:tracking-[0.28em]">
           Panel
         </p>
-        <h1 className="min-w-0 text-lg font-black uppercase leading-none tracking-tight text-foreground md:mt-1 md:text-2xl md:text-3xl">
+        <h1 className="min-w-0 text-lg font-black uppercase leading-none tracking-tight text-brand dark:text-brand-bright md:mt-1 md:text-2xl md:text-3xl">
           Administración
         </h1>
       </div>
@@ -52,89 +69,110 @@ function DashboardHeader() {
   );
 }
 
-function ModuleMorphIcon({
-  moduleId,
-  theme,
-  hovered,
-}: {
-  moduleId: string;
-  theme: ModuleTheme;
-  hovered?: boolean;
-}) {
-  const pair = moduleMorphIcons[moduleId] ?? navMorphIcons.fallback;
-
-  return (
-    <MorphIconBox
-      from={pair.from}
-      to={pair.to}
-      size={48}
-      color={theme.palette.color}
-      strokeWidth={2}
-      spring="bouncy"
-      padding="md"
-      hovered={hovered}
-      boxClassName={cn(theme.palette.boxClass, "rounded-2xl shrink-0 shadow-sm")}
-    />
-  );
-}
-
 function DashboardModuleCard({
   mod,
+  hovered,
+  onHoverChange,
   onNavigate,
 }: {
   mod: AppModuleConfig;
+  hovered: boolean;
+  onHoverChange: (active: boolean) => void;
   onNavigate: (href: string) => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-  const theme = resolveModuleTheme(mod.id);
-  const enterLabel = `Entrar a ${mod.title}`;
+  const morph = moduleMorphIcons[mod.id] ?? navMorphIcons.fallback;
+  const accent = resolveDashboardAccent(mod.id);
 
   return (
     <article
       id={`${mod.id}-card`}
-      className="flex h-full flex-col overflow-hidden rounded-2xl border-2 border-brand-dark-soft bg-zinc-50 shadow-md ring-1 ring-brand-dark-soft/40 dark:border-brand-dark-soft dark:bg-zinc-800/50 dark:shadow-lg dark:ring-brand-dark-soft/50"
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => setHovered(false)}
+      role="link"
+      tabIndex={0}
+      onClick={() => onNavigate(mod.href)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onNavigate(mod.href);
+        }
+      }}
+      onMouseEnter={() => onHoverChange(true)}
+      onMouseLeave={() => onHoverChange(false)}
+      onFocus={() => onHoverChange(true)}
+      onBlur={() => onHoverChange(false)}
+      className={cn(
+        "group flex h-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border bg-card p-0 shadow-lg ring-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl",
+        accent.card,
+      )}
     >
       <div
-        className="shrink-0 bg-brand-dark-soft px-4 py-2.5 dark:bg-brand-dark-soft"
-        aria-hidden
-      />
+        className={cn(
+          "py-2 text-center text-[10px] font-black uppercase tracking-widest text-white",
+          accent.badge,
+        )}
+      >
+        {mod.badge}
+      </div>
 
-      <div className="flex flex-1 flex-col gap-5 bg-white p-6 dark:bg-zinc-900">
-        <div className="flex items-start gap-4">
-          <ModuleMorphIcon moduleId={mod.id} theme={theme} hovered={hovered} />
-
-          <div className="min-w-0 pt-0.5">
-            <h2 className="text-2xl font-black leading-none tracking-tight text-foreground sm:text-[1.65rem]">
+      <div className="flex h-full flex-col px-5 py-8">
+        <div className="mb-8 flex flex-col gap-3">
+          <div className="flex items-center gap-5">
+            <div
+              className={cn(
+                "flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl transition-transform duration-300 group-hover:scale-110",
+                accent.iconBg,
+                hovered && "scale-110",
+              )}
+            >
+              <MorphHoverIcon
+                from={morph.from}
+                to={morph.to}
+                hovered={hovered}
+                size={40}
+                color={accent.iconColor}
+                spring="snappy"
+              />
+            </div>
+            <h2 className="min-w-0 text-2xl font-black leading-[1.05] text-foreground">
               {mod.title}
+              <br />
+              <span className={accent.subtitle}>{mod.subtitle}</span>
             </h2>
-            <p className="mt-1 text-lg font-semibold leading-tight text-muted-foreground">
-              {mod.subtitle}
-            </p>
           </div>
+          <p className="text-sm font-medium leading-snug text-muted-foreground">
+            {mod.desc}
+          </p>
         </div>
 
-        <p className="text-base font-medium leading-relaxed text-muted-foreground">
-          {mod.desc}
-        </p>
-
-        <div className="mt-auto pt-1">
-          <SigetActionButton
-            label={enterLabel}
-            accentColor="#ffffff"
-            rippleColor={theme.rippleColor}
-            morphFrom={navMorphIcons.chevronRight.from}
-            morphTo={navMorphIcons.chevronRight.to}
-            onClick={() => onNavigate(mod.href)}
-            ariaLabel={enterLabel}
-            style={{ backgroundColor: MODULE_CARD_ACCENT }}
-            className={cn(
-              "h-11 w-full rounded-xl border-0 text-sm font-bold text-white shadow-none hover:opacity-[0.97]",
-              "[&_span_truncate]:overflow-visible [&_span_truncate]:text-clip",
-            )}
-          />
+        <div
+          className={cn(
+            "pointer-events-none mb-8 w-full rounded-xl py-3.5 text-center text-sm font-bold text-white shadow-sm transition-opacity duration-300 group-hover:opacity-95",
+            accent.button,
+          )}
+          aria-hidden
+        >
+          {mod.cta}
         </div>
+
+        <ul className="mt-auto w-full space-y-4">
+          {mod.features.map((feature) => (
+            <li
+              key={feature.label}
+              className="flex items-center gap-3 text-sm font-medium text-muted-foreground"
+            >
+              <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center", accent.feature)}>
+                <MorphHoverIcon
+                  from={feature.iconFrom}
+                  to={feature.iconTo}
+                  hovered={hovered}
+                  size={18}
+                  color={accent.iconColor}
+                  spring="snappy"
+                />
+              </span>
+              {feature.label}
+            </li>
+          ))}
+        </ul>
       </div>
     </article>
   );
@@ -153,6 +191,7 @@ function DashboardEmptyModules() {
 export function VerDashboard() {
   const { effectiveRole } = useUserContext();
   const router = useRouter();
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const isSuperOrAdmin = ["super", "admin"].includes(effectiveRole);
   const roleLoaded = effectiveRole !== "authenticated";
@@ -172,15 +211,24 @@ export function VerDashboard() {
         {visibleModules.length === 0 ? (
           <DashboardEmptyModules />
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3"
+          >
             {visibleModules.map((mod) => (
               <DashboardModuleCard
                 key={mod.id}
                 mod={mod}
+                hovered={hoveredCard === mod.id}
+                onHoverChange={(active) =>
+                  setHoveredCard(active ? mod.id : null)
+                }
                 onNavigate={(href) => router.push(href)}
               />
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

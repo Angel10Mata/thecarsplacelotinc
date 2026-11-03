@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { PUBLIC_CATALOG_PATH } from "@/lib/app-config";
+import { clearSupabaseAuthCookies } from "@/utils/supabase/proxy";
 
 export const dynamic = "force-dynamic";
 
@@ -31,5 +32,6 @@ export async function GET(request: NextRequest) {
   );
 
   await supabase.auth.signOut();
+  clearSupabaseAuthCookies(request, redirectResponse);
   return redirectResponse;
 }

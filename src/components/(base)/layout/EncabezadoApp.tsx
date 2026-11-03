@@ -34,7 +34,8 @@ export default function EncabezadoApp() {
   const isLoginPage = pathname === "/login";
   const showBreadcrumb =
     Boolean(user) && !isLoginPage && !isPublicCatalog && !isInventarioPage;
-  const showHamburger = Boolean(user) || isPublicCatalog;
+  const showHamburger =
+    !isLoginPage && (Boolean(user) || isPublicCatalog);
   const headerRef = useRef<HTMLElement | null>(null);
   const canManage = ["super", "admin"].includes(effectiveRole);
   const { vehiculoDetalleAbierto } = useInventarioUi();

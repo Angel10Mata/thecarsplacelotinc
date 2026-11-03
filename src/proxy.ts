@@ -1,10 +1,29 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { APP_BASE_PATH } from "@/lib/app-config";
+import { APP_BASE_PATH, LOGOUT_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 import { isAdminRole, resolveUserRole } from "@/lib/user-role";
-import { createClient } from "@/utils/supabase/proxy";
+import { clearSupabaseAuthCookies, createClient } from "@/utils/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
-  const { supabase, response } = createClient(request);
+  const { supabase, getResponse } = createClient(request);
+  const pathname = request.nextUrl.pathname;
+
+  if (pathname === LOGOUT_PATH) {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = PUBLIC_CATALOG_PATH;
+    url.search = "";
+    url.hash = "";
+    const redirectResponse = NextResponse.redirect(url, { status: 303 });
+    redirectResponse.headers.set("Cache-Control", "no-store");
+    getResponse()
+      .cookies.getAll()
+      .forEach((cookie) => {
+        redirectResponse.cookies.set(cookie);
+      });
+    clearSupabaseAuthCookies(request, redirectResponse);
+    return redirectResponse;
+  }
+
   let user = null;
   try {
     const { data } = await supabase.auth.getUser();
@@ -12,7 +31,6 @@ export async function proxy(request: NextRequest) {
   } catch (error) {
     console.error("Supabase auth error in proxy:", error);
   }
-  const pathname = request.nextUrl.pathname;
   const adminPrefix = `${APP_BASE_PATH}/admin`;
 
   if (!user && pathname.startsWith(APP_BASE_PATH)) {
@@ -102,11 +120,11 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return response;
+  return getResponse();
 }
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|logout|.*\\.(?:svg|png|jpg|jpeg|gif|webp|csv|xlsx|woff|woff2|tff|otf|js|css)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|csv|xlsx|woff|woff2|tff|otf|js|css)$).*)",
   ],
 };

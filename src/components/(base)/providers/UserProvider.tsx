@@ -78,12 +78,13 @@ export function UserProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        setUser(session.user);
-      } else {
+      if (event === "SIGNED_OUT" || !session?.user) {
         setUser(null);
         setProfileRole(null);
+        setSimulatedRole(null);
+        return;
       }
+      setUser(session.user);
     });
 
     return () => {

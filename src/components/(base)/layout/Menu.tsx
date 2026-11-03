@@ -25,6 +25,7 @@ import {
   navMorphIcons,
 } from "@/lib/morph-icons";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/utils/supabase/client";
 import { labelRol } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 // TIPOS
@@ -152,6 +153,11 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
     if (!result.isConfirmed) return;
 
     closeMenu();
+    try {
+      await createClient().auth.signOut({ scope: "local" });
+    } catch {
+      /* the /logout route still clears server cookies */
+    }
     window.location.assign(LOGOUT_PATH);
   };
 

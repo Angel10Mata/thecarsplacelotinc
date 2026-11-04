@@ -16,6 +16,7 @@ import {
   crearCustomerSchema,
   customerRefSchema,
   customerRowSchema,
+  type ClienteDetalleData,
   type ClienteListRow,
   type CustomerRow,
 } from "./zod";
@@ -367,4 +368,26 @@ export async function listCarsByCustomerAction(rawCustomerId: unknown) {
   } catch {
     return { ok: false as const, code: "UNKNOWN" };
   }
+}
+
+export async function getClienteDetalleAction(rawCustomerId: unknown) {
+  const parsedId = customerIdParamSchema.safeParse(rawCustomerId);
+  if (!parsedId.success) {
+    return { ok: false as const, code: "VALIDATION" };
+  }
+
+  const [customerRes, vehiculosRes] = await Promise.all([
+    getCustomerByIdAction(parsedId.data),
+    listCarsByCustomerAction(parsedId.data),
+  ]);
+
+  if (!customerRes.ok) return customerRes;
+  if (!vehiculosRes.ok) return vehiculosRes;
+
+  const data: ClienteDetalleData = {
+    cliente: customerRes.data,
+    vehiculos: vehiculosRes.data,
+  };
+
+  return { ok: true as const, data };
 }

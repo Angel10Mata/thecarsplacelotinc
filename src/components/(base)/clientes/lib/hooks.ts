@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   actualizarCustomerAction,
   crearCustomerAction,
+  getClienteDetalleAction,
   getCustomerByIdAction,
   getCustomerByRefAction,
   listCarsByCustomerAction,
@@ -24,6 +25,25 @@ export function clienteVehiculosQueryKey(customerId: string) {
 
 export function customerDetailQueryKey(customerId: string) {
   return ["clientes", "detail", customerId] as const;
+}
+
+export function clienteDetalleQueryKey(customerId: string) {
+  return ["clientes", "detalle", customerId] as const;
+}
+
+export function useClienteDetalle(customerId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: customerId
+      ? clienteDetalleQueryKey(customerId)
+      : (["clientes", "detalle", "none"] as const),
+    queryFn: async () => {
+      if (!customerId) return null;
+      const res = await getClienteDetalleAction(customerId);
+      if (!res.ok) throw new Error(res.code);
+      return res.data;
+    },
+    enabled: enabled && customerId !== null,
+  });
 }
 
 export function customerDetailRefQueryKey(ref: CustomerRef) {
@@ -133,6 +153,8 @@ export function useActualizarCustomer() {
       qc.invalidateQueries({ queryKey: customersQueryKey });
       qc.invalidateQueries({ queryKey: customersSearchQueryKey });
       qc.invalidateQueries({ queryKey: customerDetailQueryKey(variables.id) });
+      qc.invalidateQueries({ queryKey: clienteDetalleQueryKey(variables.id) });
+      qc.invalidateQueries({ queryKey: clienteVehiculosQueryKey(variables.id) });
     },
   });
 }

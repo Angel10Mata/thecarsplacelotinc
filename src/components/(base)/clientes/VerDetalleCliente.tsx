@@ -12,7 +12,7 @@ import { VehiculoGaleriaViewerModal } from "@/components/(base)/vehiculos/forms/
 import type { VehiculoListRow } from "@/components/(base)/vehiculos/lib/zod";
 import { ClienteDetalleVehiculosTabla } from "./ClienteDetalleVehiculosTabla";
 import { getCustomerByRefAction } from "./lib/actions";
-import { useClienteVehiculos, useCustomer } from "./lib/hooks";
+import { useClienteDetalle } from "./lib/hooks";
 import {
   clienteDetallePath,
   guardarClienteDetalleEnSesion,
@@ -73,22 +73,20 @@ export function VerDetalleCliente() {
   }, [router, searchParams]);
 
   const {
-    data: cliente,
-    isLoading: clienteLoading,
-    isError: clienteError,
-  } = useCustomer(customerId, Boolean(customerId) && !entradaLista);
-  const {
-    data: vehiculos,
-    isLoading: vehiculosLoading,
-    isError: vehiculosError,
-  } = useClienteVehiculos(customerId, Boolean(customerId) && !entradaLista);
+    data: detalle,
+    isPending: detallePending,
+    isError: detalleError,
+  } = useClienteDetalle(customerId, Boolean(customerId) && !entradaLista);
   const [galeriaRow, setGaleriaRow] = useState<VehiculoListRow | null>(null);
   const [editarCarId, setEditarCarId] = useState<string | null>(null);
 
-  const rows = vehiculos ?? [];
-  const cargandoCliente = entradaLista || (Boolean(customerId) && clienteLoading);
+  const cliente = detalle?.cliente ?? null;
+  const rows = detalle?.vehiculos ?? [];
+  const pageLoading =
+    entradaLista || (Boolean(customerId) && detallePending);
   const sinCliente =
-    !entradaLista && (!customerId || clienteError || (!clienteLoading && !cliente));
+    !entradaLista &&
+    (!customerId || detalleError || (!detallePending && !cliente));
 
   return (
     <>
@@ -111,15 +109,15 @@ export function VerDetalleCliente() {
           </div>
         </header>
 
-        {cargandoCliente ? <ModuleDataLoadingPanel minHeightClass="min-h-[16rem]" /> : null}
+        {pageLoading ? <ModuleDataLoadingPanel minHeightClass="min-h-[16rem]" /> : null}
 
-        {!cargandoCliente && sinCliente ? (
+        {!pageLoading && sinCliente ? (
           <p className="rounded-2xl border border-border py-14 text-center text-sm font-semibold text-destructive dark:border-zinc-700">
             No se encontró el cliente o no tienes permiso para verlo.
           </p>
         ) : null}
 
-        {!cargandoCliente && cliente ? (
+        {!pageLoading && cliente ? (
           <div className="flex flex-col gap-4">
             <section
               className={cn(
@@ -150,8 +148,8 @@ export function VerDetalleCliente() {
 
             <ClienteDetalleVehiculosTabla
               rows={rows}
-              isLoading={vehiculosLoading}
-              isError={vehiculosError}
+              isLoading={false}
+              isError={false}
               onVerGaleria={setGaleriaRow}
               onEditar={(row) => setEditarCarId(row.id)}
             />

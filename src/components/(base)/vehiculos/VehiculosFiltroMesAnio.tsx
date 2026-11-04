@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
   usePopoverMountReady,
 } from "@/components/ui/popover";
-import { FiltroAnioMesPopoverContent } from "@/components/ui/filtro-anio-mes-popover";
+import {
+  FiltroAnioMesPopoverContent,
+  filtroAnioMesMesBotonClass,
+  filtroAnioMesMesesGridClass,
+  usePopoverTriggerWidth,
+} from "@/components/ui/filtro-anio-mes-popover";
 import { cn } from "@/lib/utils";
 import {
   etiquetaFiltroMesAnioVehiculos,
@@ -61,6 +66,9 @@ function AnioPickerVehiculos({
   const mes = filtro.mes;
   const [open, setOpen] = useState(false);
   const popoverReady = usePopoverMountReady();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const etiquetaTrigger = etiquetaFiltroMesAnioVehiculos(filtro);
+  const triggerWidth = usePopoverTriggerWidth(triggerRef, etiquetaTrigger);
   const selectedYear = Number(mes.slice(0, 4));
   const selectedMonth = Number(mes.slice(5, 7));
   const [draftYear, setDraftYear] = useState(selectedYear);
@@ -76,16 +84,17 @@ function AnioPickerVehiculos({
 
   const triggerClassName = cn(
     vehiculosTablaAddOutlineButtonClass,
-    "min-w-[6.25rem] tabular-nums",
+    "min-w-[6.25rem] tabular-nums md:min-w-[9.5rem] md:justify-between md:px-4",
   );
 
   const triggerButton = (
     <button
+      ref={triggerRef}
       type="button"
       className={triggerClassName}
       aria-label="Elegir año y mes"
     >
-      {etiquetaFiltroMesAnioVehiculos(filtro)}
+      {etiquetaTrigger}
       <ChevronDown className="size-4 shrink-0 opacity-80" aria-hidden />
     </button>
   );
@@ -97,8 +106,8 @@ function AnioPickerVehiculos({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
-      <FiltroAnioMesPopoverContent>
-        <div className="mb-1.5 flex items-center justify-between gap-2 px-0.5">
+      <FiltroAnioMesPopoverContent triggerWidth={triggerWidth}>
+        <div className="mb-2 flex items-center justify-between gap-2 px-0.5">
           <NavChevron label="Año anterior" onClick={() => irAnio(draftYear - 1)} />
           <button
             type="button"
@@ -107,7 +116,7 @@ function AnioPickerVehiculos({
               setOpen(false);
             }}
             className={cn(
-              "min-w-[3rem] cursor-pointer rounded-lg px-1 text-center text-sm font-bold tabular-nums text-zinc-800 transition-colors hover:bg-brand/10 hover:text-brand dark:text-zinc-100 dark:hover:bg-brand-bright/15 dark:hover:text-brand-bright",
+              "min-w-[4rem] cursor-pointer rounded-xl px-2 py-1 text-center text-base font-black tabular-nums text-zinc-800 transition-colors hover:bg-brand/10 hover:text-brand dark:text-zinc-100 dark:hover:bg-brand-bright/15 dark:hover:text-brand-bright",
               filtro.alcance === "year" &&
                 selectedYear === draftYear &&
                 "bg-brand/10 text-brand dark:bg-brand-bright/15 dark:text-brand-bright",
@@ -125,7 +134,7 @@ function AnioPickerVehiculos({
             setOpen(false);
           }}
           className={cn(
-            "mb-1 h-8 w-full cursor-pointer rounded-full text-xs font-bold transition-colors",
+            "mb-2 h-9 w-full cursor-pointer rounded-full text-sm font-bold transition-colors",
             filtro.alcance === "all"
               ? "bg-brand text-white dark:bg-brand-bright dark:text-zinc-950"
               : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700",
@@ -133,7 +142,7 @@ function AnioPickerVehiculos({
         >
           Todos
         </button>
-        <div className="grid grid-cols-3 gap-0.5">
+        <div className={filtroAnioMesMesesGridClass}>
           {MESES_CORTOS.map((label, index) => {
             const monthValue = `${draftYear}-${String(index + 1).padStart(2, "0")}`;
             const active =
@@ -149,7 +158,7 @@ function AnioPickerVehiculos({
                   setOpen(false);
                 }}
                 className={cn(
-                  "h-8 cursor-pointer rounded-full text-[11px] font-semibold leading-none transition-colors sm:text-xs",
+                  filtroAnioMesMesBotonClass,
                   active
                     ? "bg-brand text-white dark:bg-brand-bright dark:text-zinc-950"
                     : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800",

@@ -44,7 +44,7 @@ function IngresosDot({
 }: IngresosDotProps & {
   onSelect?: (punto: IngresoVehiculoPunto, at: ReporteriaChartHoverAt) => void;
 }) {
-  if (cx == null || cy == null || !payload || payload.ingresos <= 0) {
+  if (cx == null || cy == null || !payload) {
     return null;
   }
 
@@ -113,16 +113,19 @@ function IngresosActiveDot({
 function IngresosTooltipBody({
   punto,
   pinned,
+  onClose,
 }: {
   punto: IngresoVehiculoPunto;
   pinned?: boolean;
+  onClose?: () => void;
 }) {
   const tituloFecha = tituloPeriodoReporteria(punto.fecha, punto.label);
 
   return (
-    <ReporteriaChartTooltipShell pinned={pinned}>
+    <ReporteriaChartTooltipShell pinned={pinned} onClose={onClose}>
       <ReporteriaChartTooltipHeader
         title={tituloFecha}
+        withClose={Boolean(onClose)}
         trailing={
           punto.ingresos === 0
             ? "Sin compras"
@@ -262,26 +265,15 @@ export function GraficasIngresosVehiculos({
               <LabelList
                 dataKey="ingresos"
                 position="top"
-                content={({ x, y, value, index }) => {
+                content={({ x, y, value }) => {
                   const cantidad = Number(value);
                   if (!cantidad || x == null || y == null) return null;
-                  const seleccionado =
-                    typeof index === "number" ? puntos[index] : undefined;
                   return (
                     <text
                       x={Number(x)}
                       y={Number(y) - 10}
                       textAnchor="middle"
-                      className="fill-foreground cursor-pointer text-[10px] font-bold"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (seleccionado) {
-                          fijarPunto(seleccionado, {
-                            x: Number(x),
-                            y: Number(y),
-                          });
-                        }
-                      }}
+                      className="fill-foreground text-[10px] font-bold"
                     >
                       {cantidad}
                     </text>
@@ -298,7 +290,11 @@ export function GraficasIngresosVehiculos({
             onDismiss={clearPin}
             {...tooltipHandlers}
           >
-            <IngresosTooltipBody punto={punto} pinned={pinned} />
+            <IngresosTooltipBody
+              punto={punto}
+              pinned={pinned}
+              onClose={pinned ? clearPin : undefined}
+            />
           </ReporteriaChartTooltipFloat>
         ) : null}
         {pinned && !ejeCompacto ? (

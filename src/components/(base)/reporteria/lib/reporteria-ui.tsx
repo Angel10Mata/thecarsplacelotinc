@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Ban as BanNode, X } from "lucide";
+import { X as XIcon } from "lucide-react";
 import {
   ModalFooter,
   ModalShell,
@@ -67,19 +68,34 @@ export const REPORTERIA_CHART_TOOLTIP_SCROLL_MIN = 4;
 export function ReporteriaChartTooltipShell({
   children,
   pinned,
+  onClose,
 }: {
   children: ReactNode;
   pinned?: boolean;
+  onClose?: () => void;
 }) {
   return (
     <div
       className={cn(
-        "pointer-events-auto w-max max-w-[min(calc(100vw-2rem),20rem)] rounded-xl border bg-white px-3 py-2.5 shadow-md dark:bg-zinc-900",
+        "relative pointer-events-auto w-max max-w-[min(calc(100vw-2rem),20rem)] rounded-xl border bg-white px-3 py-2.5 shadow-md dark:bg-zinc-900",
         pinned
           ? "border-brand dark:border-brand-bright"
           : "border-zinc-200 dark:border-zinc-700",
       )}
     >
+      {onClose ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onClose();
+          }}
+          className="absolute right-1.5 top-1.5 z-10 flex size-7 cursor-pointer items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+          aria-label="Cerrar"
+        >
+          <XIcon className="size-4" strokeWidth={2.25} />
+        </button>
+      ) : null}
       {children}
     </div>
   );
@@ -88,16 +104,23 @@ export function ReporteriaChartTooltipShell({
 export function ReporteriaChartTooltipHeader({
   title,
   trailing,
+  withClose,
 }: {
   title: string;
   trailing: ReactNode;
+  withClose?: boolean;
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
       <p className="min-w-0 text-xs font-bold uppercase tracking-widest text-brand dark:text-brand-bright">
         {title}
       </p>
-      <p className="shrink-0 text-right text-sm font-semibold tabular-nums text-foreground">
+      <p
+        className={cn(
+          "shrink-0 text-right text-sm font-semibold tabular-nums text-foreground",
+          withClose && "pr-7",
+        )}
+      >
         {trailing}
       </p>
     </div>
@@ -365,7 +388,7 @@ export function ReporteriaChartTooltipFloat({
       style={{
         left: at.x,
         top: at.y,
-        transform: "translate(-50%, calc(-100% + 6px))",
+        transform: "translate(-50%, calc(-100% - 14px))",
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -554,11 +577,12 @@ export function ReporteriaVehiculosModal({
 }
 
 export function formatMontoCompactoUsd(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "";
+  const monto = Number.isFinite(value) ? Math.max(0, value) : 0;
+  if (monto === 0) return "$0";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     notation: "compact",
     maximumFractionDigits: 1,
-  }).format(value);
+  }).format(monto);
 }

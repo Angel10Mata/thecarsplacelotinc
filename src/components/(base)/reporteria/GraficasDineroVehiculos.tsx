@@ -38,14 +38,17 @@ const COLOR_COMPRA_SALIDA = TCPL_BRAND_RED.primary;
 function DineroTooltipBody({
   punto,
   pinned,
+  onClose,
 }: {
   punto: DineroMesPunto;
   pinned?: boolean;
+  onClose?: () => void;
 }) {
   return (
-    <ReporteriaChartTooltipShell pinned={pinned}>
+    <ReporteriaChartTooltipShell pinned={pinned} onClose={onClose}>
       <ReporteriaChartTooltipHeader
         title={tituloPeriodoReporteria(punto.mes, punto.label)}
+        withClose={Boolean(onClose)}
         trailing={
           punto.vendido <= 0
             ? "Sin compras"
@@ -216,7 +219,11 @@ export function GraficasDineroVehiculos({
             onDismiss={clearPin}
             {...tooltipHandlers}
           >
-            <DineroTooltipBody punto={punto} pinned={pinned} />
+            <DineroTooltipBody
+              punto={punto}
+              pinned={pinned}
+              onClose={pinned ? clearPin : undefined}
+            />
           </ReporteriaChartTooltipFloat>
         ) : null}
         {pinned && !ejeCompacto ? (

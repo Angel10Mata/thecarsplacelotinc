@@ -45,6 +45,8 @@ export function useCrearCar() {
       qc.invalidateQueries({ queryKey: carsQueryKey });
       qc.invalidateQueries({ queryKey: publicInventoryQueryKey });
       qc.invalidateQueries({ queryKey: customersQueryKey });
+      qc.invalidateQueries({ queryKey: ["clientes", "detalle"] });
+      qc.invalidateQueries({ queryKey: ["clientes", "vehiculos"] });
     },
   });
 }
@@ -73,6 +75,8 @@ export function useActualizarCar() {
       qc.invalidateQueries({ queryKey: carsQueryKey });
       qc.invalidateQueries({ queryKey: publicInventoryQueryKey });
       qc.invalidateQueries({ queryKey: customersQueryKey });
+      qc.invalidateQueries({ queryKey: ["clientes", "detalle"] });
+      qc.invalidateQueries({ queryKey: ["clientes", "vehiculos"] });
     },
   });
 }

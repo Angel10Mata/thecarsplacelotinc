@@ -10,25 +10,37 @@ import {
 import { cn } from "@/lib/utils";
 
 const SETTLE_MS = 50;
+const WAIT_FOR_QUERIES_MS = 400;
 
 export function ModuleRouteReady({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const fetching = useIsFetching();
   const fetchingRef = useRef(fetching);
   fetchingRef.current = fetching;
+  const sawFetchingRef = useRef(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setReady(false);
+    sawFetchingRef.current = false;
   }, [pathname]);
 
   useEffect(() => {
+    if (fetching > 0) {
+      sawFetchingRef.current = true;
+    }
+  }, [fetching]);
+
+  useEffect(() => {
     if (ready) return;
+    if (fetching > 0) return;
+
+    const delay = sawFetchingRef.current ? SETTLE_MS : WAIT_FOR_QUERIES_MS;
     const id = window.setTimeout(() => {
       if (fetchingRef.current === 0) {
         setReady(true);
       }
-    }, SETTLE_MS);
+    }, delay);
     return () => window.clearTimeout(id);
   }, [pathname, fetching, ready]);
 

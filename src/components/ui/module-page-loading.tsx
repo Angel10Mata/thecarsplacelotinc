@@ -25,7 +25,10 @@ export function ModuleDataLoadingIndicator({
         className="size-9 animate-spin text-brand dark:text-brand-bright"
         aria-hidden
       />
-      <p className="text-sm font-semibold text-muted-foreground">
+      <p
+        className="text-sm font-semibold text-muted-foreground"
+        suppressHydrationWarning
+      >
         {MODULE_DATA_LOADING_LABEL}
       </p>
     </div>
@@ -50,6 +53,7 @@ export function ModuleDataLoadingOverlay({
       role="status"
       aria-live="polite"
       aria-label={MODULE_DATA_LOADING_LABEL}
+      suppressHydrationWarning
     >
       <ModuleLoadingSurface />
     </div>

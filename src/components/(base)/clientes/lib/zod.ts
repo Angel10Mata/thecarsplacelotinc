@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { VehiculoListRow } from "@/components/(base)/vehiculos/lib/zod";
 
 export const customerRowSchema = z.object({
   id: z.string().uuid(),
@@ -43,6 +44,11 @@ export const customerRefSchema = z
   });
 
 export type CustomerRef = z.infer<typeof customerRefSchema>;
+
+export type ClienteDetalleData = {
+  cliente: ClienteListRow;
+  vehiculos: VehiculoListRow[];
+};
 
 export type ClienteVehiculoItem = {
   id: string;

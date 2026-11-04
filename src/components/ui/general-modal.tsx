@@ -32,13 +32,29 @@ import {
   parseFechaManualGt,
 } from "@/lib/fechas-gt";
 import { cn } from "@/lib/utils";
+import {
+  MODULE_DATA_LOADING_LABEL,
+  ModuleLoadingSurface,
+} from "@/components/ui/module-page-loading";
 
-const MODAL_SHELL_EASE = [0.22, 1, 0.36, 1] as const;
+const MODAL_SHELL_EASE = [0.16, 1, 0.3, 1] as const;
 
-const MODAL_SHELL_TRANSITION = {
-  duration: 0.24,
+const MODAL_ROOT_TRANSITION = {
+  duration: 0.38,
   ease: MODAL_SHELL_EASE,
 } as const;
+
+const MODAL_PANEL_TRANSITION = {
+  duration: 0.44,
+  ease: MODAL_SHELL_EASE,
+  delay: 0.03,
+} as const;
+
+/** @deprecated Usar MODAL_ROOT_TRANSITION / MODAL_PANEL_TRANSITION */
+const MODAL_SHELL_TRANSITION = MODAL_PANEL_TRANSITION;
+
+/** @deprecated Usar MODAL_ROOT_TRANSITION */
+const MODAL_OVERLAY_FADE_TRANSITION = MODAL_ROOT_TRANSITION;
 
 const PAGE_SCROLL_OVERFLOW = new Set(["auto", "scroll", "overlay"]);
 const PAGE_SCROLL_KEYS = new Set([
@@ -241,15 +257,15 @@ export function ModalLoadingBody({
   return (
     <div
       className={cn(
-        "flex w-full flex-1 items-center justify-center",
+        "flex w-full flex-1 items-center justify-center bg-transparent",
         minHeightClass,
         className,
       )}
       role="status"
       aria-live="polite"
-      aria-label="Cargando"
+      aria-label={MODULE_DATA_LOADING_LABEL}
     >
-      <Loader2 className="size-9 animate-spin text-brand dark:text-brand-bright" />
+      <ModuleLoadingSurface />
     </div>
   );
 }
@@ -1014,6 +1030,7 @@ export function ModalShell({
   hideCloseButton = false,
   hideHeaderOnMobile = false,
   className,
+  frameClassName,
 }: {
   open?: boolean;
   isOpen?: boolean;
@@ -1032,6 +1049,7 @@ export function ModalShell({
   hideCloseButton?: boolean;
   hideHeaderOnMobile?: boolean;
   className?: string;
+  frameClassName?: string;
 }) {
   const visible = open ?? isOpen ?? false;
   const resolvedSubtitle = subtitle ?? description;
@@ -1043,29 +1061,29 @@ export function ModalShell({
 
   if (typeof document === "undefined") return null;
 
-  const shellEnter = fullscreen
-    ? { opacity: 0 }
+  const panelEnter = fullscreen
+    ? { y: 8 }
     : fullHeight
-      ? { opacity: 0 }
-      : { opacity: 0, scale: 0.97 };
-  const shellAnimate = fullscreen
-    ? { opacity: 1 }
-    : fullHeight
-      ? { opacity: 1 }
-      : { opacity: 1, scale: 1 };
-  const shellExit = shellEnter;
+      ? { y: 10, scale: 0.992 }
+      : { y: 12, scale: 0.988 };
+  const panelAnimate = fullscreen
+    ? { y: 0 }
+    : { y: 0, scale: 1 };
+  const panelExit = fullscreen
+    ? { y: 6 }
+    : { y: 8, scale: 0.992 };
 
   return createPortal(
     <AnimatePresence>
       {visible ? (
         <motion.div
-          key={title}
-          initial={shellEnter}
-          animate={shellAnimate}
-          exit={shellExit}
-          transition={MODAL_SHELL_TRANSITION}
+          key={`${title}-root`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={MODAL_ROOT_TRANSITION}
           className={cn(
-            "fixed inset-0 z-[200] flex flex-col overflow-hidden overscroll-none md:overflow-y-auto md:overscroll-contain",
+            "fixed inset-0 z-[201] flex flex-col overflow-hidden overscroll-none md:overflow-y-auto md:overscroll-contain",
             fullscreen
               ? "bg-zinc-100 dark:bg-zinc-900"
               : fullHeight
@@ -1076,10 +1094,14 @@ export function ModalShell({
           {!fullscreen ? (
             <div
               aria-hidden
-              className="absolute inset-0 hidden bg-black/40 backdrop-blur-xl md:block dark:bg-black/55"
+              className="pointer-events-none absolute inset-0 z-0 hidden bg-black/40 md:block dark:bg-black/55"
             />
           ) : null}
-          <div
+          <motion.div
+            initial={panelEnter}
+            animate={panelAnimate}
+            exit={panelExit}
+            transition={MODAL_PANEL_TRANSITION}
             className={cn(
               "relative z-10 flex min-h-0 w-full max-h-full flex-col overflow-hidden",
               fullscreen && "h-dvh max-w-none",
@@ -1103,7 +1125,8 @@ export function ModalShell({
               className={cn(
                 fullscreen &&
                   "rounded-none border-0 shadow-none dark:bg-zinc-900 md:rounded-none",
-                fullHeight && "max-md:h-full md:h-full md:min-h-0",
+                fullHeight && "max-md:h-full md:h-full md:min-h-0 md:max-h-full",
+                frameClassName,
               )}
             >
               <div
@@ -1178,7 +1201,7 @@ export function ModalShell({
                 {children}
               </div>
             </ModalFrame>
-          </div>
+          </motion.div>
         </motion.div>
       ) : null}
     </AnimatePresence>,

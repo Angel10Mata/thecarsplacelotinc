@@ -6,7 +6,12 @@ import { AboutSection } from "@/components/(base)/(home)/about";
 import { ContactSection } from "@/components/(base)/(home)/contact";
 import { ServicesSection } from "@/components/(base)/(home)/services";
 import { cn } from "@/lib/utils";
-import { modulePageHeaderClass, modulePageHeaderRowClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
+import {
+  modulePageHeaderClass,
+  modulePageHeaderStackClass,
+  modulePageShellClass,
+  modulePageTitleClass,
+} from "@/lib/module-layout";
 import { VEHICULOS_INVENTARIO_PATH, VEHICULOS_MODULE_PATH } from "@/lib/app-config";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import { VehiculoGaleriaViewerModal } from "@/components/(base)/vehiculos/forms/VehiculoGaleriaViewerModal";
@@ -59,13 +64,12 @@ export function VerInventarioGrid({
       >
         {fromVehiculosModule ? (
           <header className={modulePageHeaderClass}>
-            <div className={modulePageHeaderRowClass}>
+            <div className={modulePageHeaderStackClass}>
               <ModuleHeaderBackButton
-                size="sm"
                 href={VEHICULOS_MODULE_PATH}
-                ariaLabel="Volver a vehículos"
+                label="Volver a vehículos"
               />
-              <h1 className={modulePageTitleClass}>Volver a vehículos</h1>
+              <h1 className={modulePageTitleClass}>Inventario público</h1>
             </div>
           </header>
         ) : null}

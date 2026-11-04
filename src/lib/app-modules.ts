@@ -72,9 +72,9 @@ export const APP_MODULES: AppModuleConfig[] = [
   {
     id: "reporteria",
     title: "Reportería",
-    subtitle: "Compras",
-    desc: "Compras de vehículos, montos y métricas por periodo.",
-    badge: "Análisis de compras",
+    subtitle: "Estadística",
+    desc: "Ingresos de vehículos, montos y métricas por periodo.",
+    badge: "Análisis y métricas",
     cta: "Entrar a Reportería",
     href: `${APP_BASE_PATH}/reporteria`,
     allowedRoles: ["super", "admin", "user"],

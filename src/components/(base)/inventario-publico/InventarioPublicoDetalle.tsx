@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Copy, FileText, Images, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { lockPageScroll } from "@/components/ui/general-modal";
@@ -28,9 +28,20 @@ const inventarioDetalleToggleBtnClass = cn(
 const inventarioDetalleInvoicePanelClass =
   "relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-900";
 
+const overlayFadeTransition = {
+  duration: 0.38,
+  ease: [0.16, 1, 0.3, 1] as const,
+};
+
+const panelEnterTransition = {
+  duration: 0.44,
+  ease: [0.16, 1, 0.3, 1] as const,
+  delay: 0.03,
+};
+
 const viewFadeTransition = {
   duration: 0.38,
-  ease: [0.22, 1, 0.36, 1] as const,
+  ease: [0.16, 1, 0.3, 1] as const,
 };
 
 type InventarioPublicoDetalleProps = {
@@ -82,13 +93,14 @@ export function InventarioPublicoDetalle({
     );
   }, [isOpen, itemId, invoiceRow, invoiceSource?.kind]);
 
-  if (!isOpen || !item || !invoiceSource || typeof document === "undefined") {
+  if (!item || !invoiceSource || typeof document === "undefined") {
     return null;
   }
 
   const images = item.imageUrls.length > 0 ? item.imageUrls : [];
   const activeSrc = images[activeImage];
   const showingPhotos = viewMode === "photos";
+  const statusAvailable = item.status === "AVAILABLE";
 
   const copyVin = () => {
     if (!item.vin) return;
@@ -97,21 +109,43 @@ export function InventarioPublicoDetalle({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const statusAvailable = item.status === "AVAILABLE";
-
   return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center overflow-hidden overscroll-none p-0 sm:p-4">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-2xl dark:bg-black/80"
-        onClick={onClose}
-        aria-hidden
-      />
-
-      <div
-        className="relative flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-none border-y border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-black sm:rounded-lg sm:border"
-        onClick={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
-      >
+    <AnimatePresence>
+      {isOpen ? (
+        <>
+          <motion.div
+            key="inventario-detalle-blur"
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={overlayFadeTransition}
+            className="pointer-events-none fixed inset-0 z-[109] backdrop-blur-xl"
+          />
+          <motion.button
+            key="inventario-detalle-scrim"
+            type="button"
+            aria-label="Cerrar"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={overlayFadeTransition}
+            className="fixed inset-0 z-[110] cursor-default bg-black/40 dark:bg-black/80"
+            onClick={onClose}
+          />
+          <motion.div
+            key="inventario-detalle-panel"
+            initial={{ opacity: 0, y: 10, scale: 0.992 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.992 }}
+            transition={panelEnterTransition}
+            className="fixed inset-0 z-[111] flex items-center justify-center overflow-hidden overscroll-none p-0 sm:p-4"
+          >
+            <div
+              className="relative flex h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-none border-y border-black/10 bg-white shadow-2xl dark:border-white/10 dark:bg-black sm:rounded-lg sm:border"
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
         <button
           type="button"
           onClick={onClose}
@@ -192,10 +226,10 @@ export function InventarioPublicoDetalle({
                     alt={item.title}
                     fill
                     className={cn(
-                      "object-cover transition-all duration-700",
+                      "object-cover transition-[opacity,transform] duration-500 ease-out",
                       isImageLoading
-                        ? "scale-95 opacity-0 blur-sm"
-                        : "scale-100 opacity-100 blur-0",
+                        ? "scale-[0.98] opacity-0"
+                        : "scale-100 opacity-100",
                     )}
                     sizes="(max-width: 768px) 100vw, 80vw"
                     priority
@@ -265,8 +299,11 @@ export function InventarioPublicoDetalle({
             )}
           </button>
         </div>
-      </div>
-    </div>,
+            </div>
+          </motion.div>
+        </>
+      ) : null}
+    </AnimatePresence>,
     document.body,
   );
 }

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Ban as BanNode, X } from "lucide";
 import {
   ModalFooter,
@@ -61,13 +62,64 @@ export function ReporteriaCard({
   );
 }
 
-export const REPORTERIA_CHART_TOOLTIP_SCROLL_MIN = 8;
+export const REPORTERIA_CHART_TOOLTIP_SCROLL_MIN = 4;
 
-export function ReporteriaChartTooltipShell({ children }: { children: ReactNode }) {
+export function ReporteriaChartTooltipShell({
+  children,
+  pinned,
+}: {
+  children: ReactNode;
+  pinned?: boolean;
+}) {
   return (
-    <div className="pointer-events-auto w-[min(calc(100vw-2rem),20rem)] rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+    <div
+      className={cn(
+        "pointer-events-auto w-max max-w-[min(calc(100vw-2rem),20rem)] rounded-xl border bg-white px-3 py-2.5 shadow-md dark:bg-zinc-900",
+        pinned
+          ? "border-brand dark:border-brand-bright"
+          : "border-zinc-200 dark:border-zinc-700",
+      )}
+    >
       {children}
     </div>
+  );
+}
+
+export function ReporteriaChartTooltipHeader({
+  title,
+  trailing,
+}: {
+  title: string;
+  trailing: ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <p className="min-w-0 text-xs font-bold uppercase tracking-widest text-brand dark:text-brand-bright">
+        {title}
+      </p>
+      <p className="shrink-0 text-right text-sm font-semibold tabular-nums text-foreground">
+        {trailing}
+      </p>
+    </div>
+  );
+}
+
+export function ReporteriaChartTooltipVehiculoRow({
+  titulo,
+  montoLabel,
+}: {
+  titulo: string;
+  montoLabel: string;
+}) {
+  return (
+    <li className="flex items-start gap-2 text-xs font-medium text-muted-foreground">
+      <span className="min-w-0 flex-1 break-words font-bold text-foreground">
+        {titulo}
+      </span>
+      <span className="shrink-0 text-right tabular-nums font-semibold text-foreground">
+        {montoLabel}
+      </span>
+    </li>
   );
 }
 
@@ -101,7 +153,7 @@ export function ReporteriaChartTooltipList({
       className={cn(
         "mt-2 space-y-1",
         scrollable &&
-          "max-h-[11.25rem] overflow-y-auto overscroll-contain pr-1 [-webkit-overflow-scrolling:touch]",
+          "max-h-[10rem] overflow-y-auto overscroll-contain scrollbar-hidden [-webkit-overflow-scrolling:touch]",
       )}
     >
       {children}
@@ -130,10 +182,45 @@ export function reporteriaChartHoverFromState<TPayload>(
   return { x, y, payload };
 }
 
+export function reporteriaChartTooltipAtFromBarTarget(
+  nativeEvent: Event | undefined,
+  plotEl: HTMLElement | null,
+): ReporteriaChartHoverAt | null {
+  if (!nativeEvent || !plotEl) return null;
+  const target = nativeEvent.target;
+  if (!(target instanceof SVGGraphicsElement)) return null;
+
+  try {
+    const bbox = target.getBBox();
+    const svg = target.ownerSVGElement;
+    const matrix = target.getScreenCTM();
+    if (!svg || !matrix) return null;
+
+    const plotRect = plotEl.getBoundingClientRect();
+    const point = svg.createSVGPoint();
+    point.x = bbox.x + bbox.width / 2;
+    point.y = bbox.y;
+    const screen = point.matrixTransform(matrix);
+
+    return {
+      x: screen.x - plotRect.left,
+      y: screen.y - plotRect.top,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function useReporteriaChartPinnedTooltip<TPayload>() {
   const [at, setAt] = useState<ReporteriaChartHoverAt | null>(null);
   const [punto, setPunto] = useState<TPayload | null>(null);
+  const [pinned, setPinned] = useState(false);
   const overTooltipRef = useRef(false);
+
+  const applyHit = (hit: ReporteriaChartHoverAt & { payload: TPayload }) => {
+    setAt({ x: hit.x, y: hit.y });
+    setPunto(hit.payload);
+  };
 
   const syncFromChart = (
     state:
@@ -146,23 +233,53 @@ export function useReporteriaChartPinnedTooltip<TPayload>() {
   ) => {
     const hit = reporteriaChartHoverFromState(state);
     if (!hit) {
-      if (!overTooltipRef.current) {
+      if (!pinned && !overTooltipRef.current) {
         setAt(null);
         setPunto(null);
       }
       return;
     }
-    setAt({ x: hit.x, y: hit.y });
-    setPunto(hit.payload);
+    if (!pinned) {
+      applyHit(hit);
+    }
   };
 
   const leaveChart = () => {
     window.setTimeout(() => {
-      if (!overTooltipRef.current) {
+      if (!pinned && !overTooltipRef.current) {
         setAt(null);
         setPunto(null);
       }
     }, 80);
+  };
+
+  const pinPunto = (payload: TPayload, position: ReporteriaChartHoverAt) => {
+    setPinned(true);
+    setAt(position);
+    setPunto(payload);
+  };
+
+  const showAt = (payload: TPayload, position: ReporteriaChartHoverAt) => {
+    if (pinned) return;
+    applyHit({ ...position, payload });
+  };
+
+  const togglePinFromHover = () => {
+    if (pinned) {
+      setPinned(false);
+      setAt(null);
+      setPunto(null);
+      return;
+    }
+    if (punto && at) {
+      setPinned(true);
+    }
+  };
+
+  const clearPin = () => {
+    setPinned(false);
+    setAt(null);
+    setPunto(null);
   };
 
   const tooltipHandlers = {
@@ -171,34 +288,84 @@ export function useReporteriaChartPinnedTooltip<TPayload>() {
     },
     onMouseLeave: () => {
       overTooltipRef.current = false;
-      setAt(null);
-      setPunto(null);
+      if (!pinned) {
+        setAt(null);
+        setPunto(null);
+      }
     },
   };
 
-  return { at, punto, syncFromChart, leaveChart, tooltipHandlers };
+  return {
+    at,
+    punto,
+    pinned,
+    syncFromChart,
+    leaveChart,
+    pinPunto,
+    showAt,
+    togglePinFromHover,
+    clearPin,
+    tooltipHandlers,
+  };
 }
 
 export function ReporteriaChartTooltipFloat({
   at,
+  pinned,
+  onDismiss,
   onMouseEnter,
   onMouseLeave,
   children,
 }: {
   at: ReporteriaChartHoverAt | null;
+  pinned?: boolean;
+  onDismiss?: () => void;
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   children: ReactNode;
 }) {
+  const compact = useReporteriaEjeCompacto();
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
   if (!at) return null;
+
+  if (compact && pinned) {
+    if (!portalReady) return null;
+
+    return createPortal(
+      <>
+        <button
+          type="button"
+          aria-label="Cerrar detalle"
+          className="fixed inset-0 z-[200] cursor-default bg-black/25"
+          onClick={onDismiss}
+        />
+        <div
+          className="fixed left-1/2 top-1/2 z-[210] flex max-h-[min(70dvh,calc(100dvh-6rem))] w-max max-w-[min(calc(100vw-2rem),20rem)] -translate-x-1/2 -translate-y-1/2 pointer-events-auto"
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          {children}
+        </div>
+      </>,
+      document.body,
+    );
+  }
 
   return (
     <div
-      className="pointer-events-none absolute z-[60]"
+      className={cn(
+        "absolute z-[60] pointer-events-auto",
+        pinned && "z-[70]",
+      )}
       style={{
         left: at.x,
         top: at.y,
-        transform: "translate(-50%, calc(-100% - 12px))",
+        transform: "translate(-50%, calc(-100% + 6px))",
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
@@ -216,7 +383,7 @@ export const reporteriaChartTooltipCursorOnlyStyle = {
   overflow: "hidden" as const,
 };
 
-export const reporteriaChartPlotOuterClass = "px-1 pb-4 md:px-3";
+export const reporteriaChartPlotOuterClass = "overflow-x-visible px-2 pb-4 md:px-4";
 
 export const reporteriaChartPlotClass = "relative h-[22rem] w-full min-w-0";
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
 import {
   Bar,
   BarChart,
@@ -16,15 +16,17 @@ import { formatMonedaUsd, tituloPeriodoReporteria } from "./lib/helpers";
 import {
   ReporteriaCard,
   ReporteriaChartTooltipFloat,
+  ReporteriaChartTooltipHeader,
   ReporteriaChartTooltipList,
   ReporteriaChartTooltipShell,
+  ReporteriaChartTooltipVehiculoRow,
   formatMontoCompactoUsd,
   reporteriaChartPlotClass,
   reporteriaChartPlotOuterClass,
+  reporteriaChartTooltipAtFromBarTarget,
   reporteriaChartTooltipCursorOnlyStyle,
   reporteriaPuntoDesdeClick,
   ReporteriaChartXTick,
-  ReporteriaVehiculosModal,
   intervaloEjeReporteria,
   useReporteriaChartPinnedTooltip,
   useReporteriaEjeCompacto,
@@ -33,28 +35,31 @@ import type { DineroMesPunto } from "./lib/zod";
 
 const COLOR_COMPRA_SALIDA = TCPL_BRAND_RED.primary;
 
-function DineroTooltipBody({ punto }: { punto: DineroMesPunto }) {
+function DineroTooltipBody({
+  punto,
+  pinned,
+}: {
+  punto: DineroMesPunto;
+  pinned?: boolean;
+}) {
   return (
-    <ReporteriaChartTooltipShell>
-      <p className="text-xs font-bold uppercase tracking-widest text-brand dark:text-brand-bright">
-        {punto.label}
-      </p>
-      <p className="mt-1 text-sm font-semibold text-foreground">
-        {punto.vendido <= 0
-          ? "Sin compras"
-          : `Compra de: ${formatMonedaUsd(punto.vendido)}`}
-      </p>
+    <ReporteriaChartTooltipShell pinned={pinned}>
+      <ReporteriaChartTooltipHeader
+        title={tituloPeriodoReporteria(punto.mes, punto.label)}
+        trailing={
+          punto.vendido <= 0
+            ? "Sin compras"
+            : formatMonedaUsd(punto.vendido)
+        }
+      />
       {punto.vehiculos.length > 0 ? (
         <ReporteriaChartTooltipList count={punto.vehiculos.length}>
           {punto.vehiculos.map((vehiculo) => (
-            <li
+            <ReporteriaChartTooltipVehiculoRow
               key={vehiculo.id}
-              className="break-words text-xs font-medium text-muted-foreground"
-            >
-              <span className="font-bold text-foreground">{vehiculo.titulo}</span>
-              {" · "}
-              {formatMonedaUsd(vehiculo.monto)}
-            </li>
+              titulo={vehiculo.titulo}
+              montoLabel={formatMonedaUsd(vehiculo.monto)}
+            />
           ))}
         </ReporteriaChartTooltipList>
       ) : null}
@@ -71,13 +76,41 @@ export function GraficasDineroVehiculos({
   puntos,
   vendido,
 }: GraficasDineroVehiculosProps) {
-  const { at, punto, syncFromChart, leaveChart, tooltipHandlers } =
-    useReporteriaChartPinnedTooltip<DineroMesPunto>();
+  const {
+    at,
+    punto,
+    pinned,
+    leaveChart,
+    pinPunto,
+    showAt,
+    togglePinFromHover,
+    clearPin,
+    tooltipHandlers,
+  } = useReporteriaChartPinnedTooltip<DineroMesPunto>();
+  const plotRef = useRef<HTMLDivElement>(null);
   const ejeCompacto = useReporteriaEjeCompacto();
-  const [detalle, setDetalle] = useState<DineroMesPunto | null>(null);
 
-  const abrirDetalle = (seleccion: DineroMesPunto | null) => {
-    if (seleccion) setDetalle(seleccion);
+  const posicionDesdeBar = (nativeEvent: Event | undefined) =>
+    reporteriaChartTooltipAtFromBarTarget(nativeEvent, plotRef.current);
+
+  const fijarDesdeBar = (
+    data: unknown,
+    index: unknown,
+    nativeEvent?: Event,
+  ) => {
+    const seleccion = reporteriaPuntoDesdeClick(data, index, puntos);
+    if (!seleccion) return;
+    const position = posicionDesdeBar(nativeEvent);
+    if (!position) return;
+    pinPunto(seleccion, position);
+  };
+
+  const hoverBar = (data: unknown, index: unknown, nativeEvent?: Event) => {
+    if (pinned) return;
+    const seleccion = reporteriaPuntoDesdeClick(data, index, puntos);
+    const position = posicionDesdeBar(nativeEvent);
+    if (!seleccion || !position) return;
+    showAt(seleccion, position);
   };
 
   return (
@@ -90,13 +123,16 @@ export function GraficasDineroVehiculos({
       }
     >
       <div className={reporteriaChartPlotOuterClass}>
-        <div className={reporteriaChartPlotClass}>
+        <div ref={plotRef} className={reporteriaChartPlotClass}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={puntos}
-            margin={{ top: 28, right: 10, left: 4, bottom: ejeCompacto ? 22 : 8 }}
-            onMouseMove={syncFromChart}
+            margin={{ top: 28, right: 24, left: 4, bottom: ejeCompacto ? 22 : 12 }}
             onMouseLeave={leaveChart}
+            onClick={(_state, event) => {
+              event?.stopPropagation?.();
+              togglePinFromHover();
+            }}
           >
             <CartesianGrid
               strokeDasharray="4 6"
@@ -144,9 +180,13 @@ export function GraficasDineroVehiculos({
               fill={COLOR_COMPRA_SALIDA}
               radius={[8, 8, 0, 0]}
               className="cursor-pointer"
-              onClick={(data, index) =>
-                abrirDetalle(reporteriaPuntoDesdeClick(data, index, puntos))
-              }
+              onMouseEnter={(_entry, index, event) => {
+                hoverBar(_entry, index, event.nativeEvent);
+              }}
+              onClick={(data, index, event) => {
+                event?.stopPropagation();
+                fijarDesdeBar(data, index, event.nativeEvent);
+              }}
             >
               <LabelList
                 dataKey="vendido"
@@ -169,26 +209,26 @@ export function GraficasDineroVehiculos({
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-        {punto ? (
-          <ReporteriaChartTooltipFloat at={at} {...tooltipHandlers}>
-            <DineroTooltipBody punto={punto} />
+        {punto && at ? (
+          <ReporteriaChartTooltipFloat
+            at={at}
+            pinned={pinned}
+            onDismiss={clearPin}
+            {...tooltipHandlers}
+          >
+            <DineroTooltipBody punto={punto} pinned={pinned} />
           </ReporteriaChartTooltipFloat>
+        ) : null}
+        {pinned && !ejeCompacto ? (
+          <button
+            type="button"
+            aria-label="Cerrar detalle"
+            className="absolute inset-0 z-[50] cursor-default"
+            onClick={clearPin}
+          />
         ) : null}
         </div>
       </div>
-      <ReporteriaVehiculosModal
-        open={detalle !== null}
-        onClose={() => setDetalle(null)}
-        title={detalle ? tituloPeriodoReporteria(detalle.mes, detalle.label) : ""}
-        lead={
-          detalle
-            ? detalle.vendido <= 0
-              ? "Sin compras"
-              : `Compra de: ${formatMonedaUsd(detalle.vendido)}`
-            : ""
-        }
-        vehiculos={detalle?.vehiculos ?? []}
-      />
     </ReporteriaCard>
   );
 }

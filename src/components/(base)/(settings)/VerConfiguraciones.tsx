@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useAppSettings, useUpdateAppSettings } from "./hooks";
-import { Shield, Key, Loader2 } from "lucide-react";
+import { Shield, Key } from "lucide-react";
+import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { AppLogo } from "@/components/(base)/brand/AppLogo";
 import { Card } from "@/components/ui/card";
 import { modulePageCenteredClass } from "@/lib/module-layout";
@@ -28,11 +29,7 @@ export default function VerConfiguraciones() {
   }, [settings]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center w-full h-40">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <ModuleDataLoadingPanel minHeightClass="min-h-[10rem]" />;
   }
 
   if (isError) {
@@ -68,13 +65,11 @@ const handleAuthChange = (checked: boolean) => {
         <AppLogo size={140} />
       </div>
 
-      <div className="flex flex-col gap-1 w-full text-center items-center">
-        <div className="flex items-center gap-3">
-          <ModuleHeaderBackButton size="sm" />
-          <h1 className="text-2xl font-bold tracking-tighter text-foreground">
-            Configuraciones
-          </h1>
-        </div>
+      <div className="flex w-full flex-col gap-1 text-center items-center">
+        <ModuleHeaderBackButton className="self-start px-3 sm:px-4 md:px-0" />
+        <h1 className="text-2xl font-bold tracking-tighter text-foreground">
+          Configuraciones
+        </h1>
         <p className="text-sm text-muted-foreground ml-0.5">
           Ajustes generales del sistema y seguridad.
         </p>

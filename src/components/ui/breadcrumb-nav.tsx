@@ -3,18 +3,19 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { APP_BASE_PATH } from "@/lib/app-config";
+import {
+  APP_BASE_PATH,
+  APP_ROUTE_SEGMENT,
+} from "@/lib/app-config";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
 
 const SEGMENT_LABELS: Record<string, string> = {
-  TheCarsPlace: "THE CARS PLACE LOT INC",
   vehiculos: "Vehículos",
   inventario: "Inventario",
   clientes: "Clientes",
   cliente: "Clientes",
   detalles: "Detalles",
   reporteria: "Reportería",
-  admin: "Administración",
   usuarios: "Gestión de Usuarios",
   configuraciones: "Configuraciones",
   perfil: "Mi Perfil",
@@ -22,6 +23,16 @@ const SEGMENT_LABELS: Record<string, string> = {
   editar: "Editar",
   ver: "Ver",
 };
+
+function segmentLabel(segment: string, index: number): string | null {
+  if (segment === APP_ROUTE_SEGMENT && index === 0) {
+    return "Admin";
+  }
+  if (segment === "admin" && index > 0) {
+    return "Administración";
+  }
+  return SEGMENT_LABELS[segment] ?? null;
+}
 
 const SEGMENT_HREF: Partial<Record<string, string>> = {
   cliente: `${APP_BASE_PATH}/clientes`,
@@ -38,13 +49,13 @@ export function BreadcrumbNav() {
 
   const visibleSegments = rawSegments
     .map((segment, index) => {
-      const label = SEGMENT_LABELS[segment];
+      const label = segmentLabel(segment, index);
       if (!label) return null;
 
       const parts = rawSegments.slice(0, index + 1);
       let nextIdx = index + 1;
-      while (nextIdx < rawSegments.length && !SEGMENT_LABELS[rawSegments[nextIdx]]) {
-        parts.push(rawSegments[nextIdx]);
+      while (nextIdx < rawSegments.length && !segmentLabel(rawSegments[nextIdx]!, nextIdx)) {
+        parts.push(rawSegments[nextIdx]!);
         nextIdx++;
       }
       const href = SEGMENT_HREF[segment] ?? "/" + parts.join("/");

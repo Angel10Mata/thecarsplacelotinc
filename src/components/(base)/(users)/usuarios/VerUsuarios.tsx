@@ -4,8 +4,9 @@ import { useState, useMemo, Fragment, useEffect } from "react";
 import { useUsers } from "./lib/hooks";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { canCreateUsers, ROLE_LABELS } from "./lib/permissions";
-import { Loader2, UserX, Search } from "lucide-react";
+import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { UserPlus, Check } from "lucide";
+import { UserX, Search } from "lucide-react";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import SignUp from "@/components/(base)/(auth)/signup/SignUp";
@@ -112,11 +113,7 @@ export function VerUsuarios() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex h-40 w-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <ModuleDataLoadingPanel minHeightClass="min-h-[10rem]" />;
   }
 
   if (isError) {
@@ -131,9 +128,9 @@ export function VerUsuarios() {
   return (
     <>
       <div className={modulePageScrollClass}>
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <ModuleHeaderBackButton size="sm" />
+        <div className="mb-2 flex items-center justify-between gap-3 px-3 sm:px-4 md:px-0">
+          <div className="flex min-w-0 flex-col items-start gap-1.5">
+            <ModuleHeaderBackButton />
             <div className="min-w-0">
               <h2 className="min-w-0 text-xl font-black uppercase leading-none tracking-tight text-foreground sm:text-2xl md:text-3xl">
                 Gestión de Usuarios

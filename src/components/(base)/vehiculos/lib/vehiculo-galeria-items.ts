@@ -15,10 +15,17 @@ export function rowHasUploadedPdf(row: VehiculoListRow): boolean {
   return row.imageUrls.some((url) => carMediaPublicUrlIsPdf(url));
 }
 
+function photoIndexFromPublicUrl(url: string): number {
+  const segment = (url.split("?")[0] ?? url).split("/").pop() ?? "";
+  const match = segment.match(/^(\d+)\.jpg$/i);
+  return match ? Number(match[1]) : 0;
+}
+
 export function buildVehiculoPhotoItems(row: VehiculoListRow): VehiculoPhotoItem[] {
-  return row.imageUrls
+  const urls = row.imageUrls
     .filter((url) => !carMediaPublicUrlIsPdf(url))
-    .map((url) => ({ kind: "image" as const, url }));
+    .sort((a, b) => photoIndexFromPublicUrl(a) - photoIndexFromPublicUrl(b));
+  return urls.map((url) => ({ kind: "image" as const, url }));
 }
 
 export function resolveVehiculoInvoiceSource(

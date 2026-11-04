@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { MapPin, IdCard } from "lucide-react";
+import { MapPin, IdCard, CarFront } from "lucide-react";
 import {
   SigetMobileRecordFooter,
   SigetMobileRecordHeader,
@@ -12,16 +12,20 @@ import {
   sigetMobileRecordMetaIconClass,
 } from "@/components/ui/siget-mobile-record";
 import type { ClienteListRow } from "./lib/zod";
+import { clientesTablaAccentTextClass } from "./lib/tabla-clientes-ui";
+import { cn } from "@/lib/utils";
 
 type ClientesTablaMobileCardsProps = {
   items: ClienteListRow[];
   rowOffset: number;
+  onVerVehiculos: (row: ClienteListRow) => void;
   renderAcciones: (row: ClienteListRow) => ReactNode;
 };
 
 export function ClientesTablaMobileCards({
   items,
   rowOffset,
+  onVerVehiculos,
   renderAcciones,
 }: ClientesTablaMobileCardsProps) {
   return (
@@ -44,6 +48,19 @@ export function ClientesTablaMobileCards({
           <SigetMobileRecordMeta>
             <SigetMobileRecordMetaRow icon={<IdCard className={sigetMobileRecordMetaIconClass} />}>
               <span className="font-mono tabular-nums">{row.nit ?? "—"}</span>
+            </SigetMobileRecordMetaRow>
+            <SigetMobileRecordMetaRow icon={<CarFront className={sigetMobileRecordMetaIconClass} />}>
+              <button
+                type="button"
+                onClick={() => onVerVehiculos(row)}
+                className={cn(
+                  "cursor-pointer tabular-nums text-base font-bold underline-offset-2 hover:underline",
+                  clientesTablaAccentTextClass,
+                )}
+                aria-label={`Ver vehículos de ${row.nombre} en detalle`}
+              >
+                {row.vehiculosCount} vehículo{row.vehiculosCount === 1 ? "" : "s"}
+              </button>
             </SigetMobileRecordMetaRow>
             <SigetMobileRecordMetaRow icon={<MapPin className={sigetMobileRecordMetaIconClass} />}>
               <span className="line-clamp-3">{row.direccion ?? "—"}</span>

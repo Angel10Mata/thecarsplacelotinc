@@ -14,7 +14,9 @@ import { mapCustomerToListRow } from "./helpers";
 import {
   actualizarCustomerSchema,
   crearCustomerSchema,
+  customerRefSchema,
   customerRowSchema,
+  type ClienteListRow,
   type CustomerRow,
 } from "./zod";
 
@@ -35,7 +37,7 @@ export async function listCustomersAction(search?: string) {
 
     const term = search?.trim() ?? "";
     if (term.length > 0 && term.length < 3) {
-      return { ok: true as const, data: [] as CustomerRow[] };
+      return { ok: true as const, data: [] as ClienteListRow[] };
     }
 
     let query = supabase
@@ -62,7 +64,30 @@ export async function listCustomersAction(search?: string) {
       .filter((r) => r.success)
       .map((r) => r.data);
 
-    return { ok: true as const, data: parsed };
+    const { data: carLinks, error: carsError } = await supabase
+      .from("cars")
+      .select("customer_id");
+
+    if (carsError) {
+      console.error("listCustomers counts:", carsError.message);
+      return { ok: false as const, code: "DB_ERROR" };
+    }
+
+    const vehiculosPorCliente = new Map<string, number>();
+    for (const link of carLinks ?? []) {
+      const customerId = link.customer_id;
+      if (typeof customerId !== "string") continue;
+      vehiculosPorCliente.set(
+        customerId,
+        (vehiculosPorCliente.get(customerId) ?? 0) + 1,
+      );
+    }
+
+    const list = parsed.map((row) =>
+      mapCustomerToListRow(row, vehiculosPorCliente.get(row.id) ?? 0),
+    );
+
+    return { ok: true as const, data: list };
   } catch {
     return { ok: false as const, code: "UNKNOWN" };
   }
@@ -153,6 +178,68 @@ export async function actualizarCustomerAction(raw: unknown) {
   }
 }
 
+export async function getCustomerByRefAction(rawRef: unknown) {
+  const parsedRef = customerRefSchema.safeParse(rawRef);
+  if (!parsedRef.success) {
+    return { ok: false as const, code: "VALIDATION" };
+  }
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
+
+    let query = supabase.from("customers").select("*");
+    const nit = parsedRef.data.nit?.trim();
+    const nombre = parsedRef.data.nombre?.trim();
+    if (nit) {
+      query = query.eq("customer_nit", nit);
+    }
+    if (nombre) {
+      query = query.ilike("customer_name", nombre);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("getCustomerByRef:", error.message);
+      return { ok: false as const, code: "DB_ERROR" };
+    }
+
+    const rows = (data ?? [])
+      .map((row) => customerRowSchema.safeParse(row))
+      .filter((r) => r.success)
+      .map((r) => r.data);
+
+    if (rows.length === 0) {
+      return { ok: false as const, code: "NOT_FOUND" };
+    }
+    if (rows.length > 1) {
+      return { ok: false as const, code: "AMBIGUOUS" };
+    }
+
+    const customer = rows[0]!;
+
+    const { count, error: countError } = await supabase
+      .from("cars")
+      .select("id", { count: "exact", head: true })
+      .eq("customer_id", customer.id);
+
+    if (countError) {
+      console.error("getCustomerByRef count:", countError.message);
+      return { ok: false as const, code: "DB_ERROR" };
+    }
+
+    return {
+      ok: true as const,
+      data: mapCustomerToListRow(customer, count ?? 0),
+    };
+  } catch {
+    return { ok: false as const, code: "UNKNOWN" };
+  }
+}
+
 export async function getCustomerByIdAction(rawCustomerId: unknown) {
   const parsedId = customerIdParamSchema.safeParse(rawCustomerId);
   if (!parsedId.success) {
@@ -186,7 +273,20 @@ export async function getCustomerByIdAction(rawCustomerId: unknown) {
       return { ok: false as const, code: "DB_ERROR" };
     }
 
-    return { ok: true as const, data: mapCustomerToListRow(row.data) };
+    const { count, error: countError } = await supabase
+      .from("cars")
+      .select("id", { count: "exact", head: true })
+      .eq("customer_id", parsedId.data);
+
+    if (countError) {
+      console.error("getCustomerById count:", countError.message);
+      return { ok: false as const, code: "DB_ERROR" };
+    }
+
+    return {
+      ok: true as const,
+      data: mapCustomerToListRow(row.data, count ?? 0),
+    };
   } catch {
     return { ok: false as const, code: "UNKNOWN" };
   }

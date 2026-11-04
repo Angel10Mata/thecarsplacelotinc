@@ -1,15 +1,19 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { mapCustomerToListRow } from "./helpers";
 import {
   actualizarCustomerAction,
   crearCustomerAction,
   getCustomerByIdAction,
+  getCustomerByRefAction,
   listCarsByCustomerAction,
   listCustomersAction,
 } from "./actions";
-import type { ActualizarCustomerInput, CrearCustomerInput } from "./zod";
+import type {
+  ActualizarCustomerInput,
+  CrearCustomerInput,
+  CustomerRef,
+} from "./zod";
 
 export const customersQueryKey = ["clientes", "list"] as const;
 export const customersSearchQueryKey = ["clientes", "search"] as const;
@@ -20,6 +24,32 @@ export function clienteVehiculosQueryKey(customerId: string) {
 
 export function customerDetailQueryKey(customerId: string) {
   return ["clientes", "detail", customerId] as const;
+}
+
+export function customerDetailRefQueryKey(ref: CustomerRef) {
+  return [
+    "clientes",
+    "detail",
+    "ref",
+    ref.nit?.trim() ?? "",
+    ref.nombre?.trim() ?? "",
+  ] as const;
+}
+
+export function useCustomerByRef(ref: CustomerRef | null, enabled = true) {
+  const hasRef = Boolean(ref?.nit?.trim() || ref?.nombre?.trim());
+  return useQuery({
+    queryKey: ref
+      ? customerDetailRefQueryKey(ref)
+      : (["clientes", "detail", "ref", "none"] as const),
+    queryFn: async () => {
+      if (!ref || !hasRef) return null;
+      const res = await getCustomerByRefAction(ref);
+      if (!res.ok) throw new Error(res.code);
+      return res.data;
+    },
+    enabled: enabled && hasRef,
+  });
 }
 
 export function useCustomer(customerId: string | null, enabled = true) {
@@ -56,7 +86,7 @@ export function useCustomers() {
     queryFn: async () => {
       const res = await listCustomersAction();
       if (!res.ok) throw new Error(res.code);
-      return res.data.map(mapCustomerToListRow);
+      return res.data;
     },
   });
 }

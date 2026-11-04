@@ -1,4 +1,4 @@
-import { APP_BASE_PATH } from "@/lib/app-config";
+import { APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 
 export function getModuleBackHref(pathname: string): string | null {
   if (pathname === APP_BASE_PATH || pathname === `${APP_BASE_PATH}/`) {
@@ -40,4 +40,45 @@ export function getModuleBackHref(pathname: string): string | null {
   }
 
   return backHref;
+}
+
+function normalizeHref(href: string): string {
+  if (href === PUBLIC_CATALOG_PATH) return PUBLIC_CATALOG_PATH;
+  return href.replace(/\/$/, "") || "/";
+}
+
+export function getModuleBackLabel(pathname: string, backHref: string): string {
+  const normalized = normalizeHref(backHref);
+
+  if (normalized === APP_BASE_PATH) {
+    return "Volver al panel";
+  }
+
+  if (normalized === PUBLIC_CATALOG_PATH) {
+    return "Volver al inventario";
+  }
+
+  const byHref: Record<string, string> = {
+    [`${APP_BASE_PATH}/vehiculos`]: "Volver a vehículos",
+    [`${APP_BASE_PATH}/clientes`]: "Volver a clientes",
+    [`${APP_BASE_PATH}/reporteria`]: "Volver a reportería",
+    [`${APP_BASE_PATH}/admin`]: "Volver a administración",
+    [`${APP_BASE_PATH}/usuarios`]: "Volver a usuarios",
+    [`${APP_BASE_PATH}/configuraciones`]: "Volver a configuraciones",
+    [`${APP_BASE_PATH}/devices`]: "Volver a dispositivos",
+  };
+
+  if (byHref[normalized]) {
+    return byHref[normalized];
+  }
+
+  if (/\/ver\/[^/]+$/.test(normalized)) {
+    if (pathname.includes("/cliente/")) {
+      return "Volver al cliente";
+    }
+    return "Volver al detalle";
+  }
+
+  const segment = normalized.split("/").pop() ?? "";
+  return segment ? `Volver a ${segment}` : "Volver";
 }

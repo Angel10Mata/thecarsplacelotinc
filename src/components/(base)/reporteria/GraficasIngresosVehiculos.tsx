@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -12,21 +11,22 @@ import {
   YAxis,
 } from "recharts";
 import { TCPL_BRAND_RED } from "@/lib/brand-colors";
-import { formatFechaManualGt } from "@/lib/fechas-gt";
 import { formatMonedaUsd, tituloPeriodoReporteria } from "./lib/helpers";
 import {
   ReporteriaCard,
   ReporteriaChartTooltipFloat,
+  ReporteriaChartTooltipHeader,
   ReporteriaChartTooltipList,
   ReporteriaChartTooltipShell,
+  ReporteriaChartTooltipVehiculoRow,
   reporteriaChartPlotClass,
   reporteriaChartPlotOuterClass,
   reporteriaChartTooltipCursorOnlyStyle,
   ReporteriaChartXTick,
-  ReporteriaVehiculosModal,
   intervaloEjeReporteria,
   useReporteriaChartPinnedTooltip,
   useReporteriaEjeCompacto,
+  type ReporteriaChartHoverAt,
 } from "./lib/reporteria-ui";
 import type { IngresoVehiculoPunto } from "./lib/zod";
 
@@ -42,7 +42,7 @@ function IngresosDot({
   payload,
   onSelect,
 }: IngresosDotProps & {
-  onSelect?: (punto: IngresoVehiculoPunto) => void;
+  onSelect?: (punto: IngresoVehiculoPunto, at: ReporteriaChartHoverAt) => void;
 }) {
   if (cx == null || cy == null || !payload || payload.ingresos <= 0) {
     return null;
@@ -56,7 +56,7 @@ function IngresosDot({
       className="cursor-pointer"
       onClick={(event) => {
         event.stopPropagation();
-        onSelect?.(payload);
+        onSelect?.(payload, { x: cx, y: cy });
       }}
     >
       <circle cx={cx} cy={cy} r={18} fill="transparent" />
@@ -85,7 +85,7 @@ function IngresosActiveDot({
   payload,
   onSelect,
 }: IngresosDotProps & {
-  onSelect?: (punto: IngresoVehiculoPunto) => void;
+  onSelect?: (punto: IngresoVehiculoPunto, at: ReporteriaChartHoverAt) => void;
 }) {
   if (cx == null || cy == null || !payload) return null;
 
@@ -94,7 +94,7 @@ function IngresosActiveDot({
       className="cursor-pointer"
       onClick={(event) => {
         event.stopPropagation();
-        onSelect?.(payload);
+        onSelect?.(payload, { x: cx, y: cy });
       }}
     >
       <circle cx={cx} cy={cy} r={20} fill="transparent" />
@@ -110,33 +110,33 @@ function IngresosActiveDot({
   );
 }
 
-function IngresosTooltipBody({ punto }: { punto: IngresoVehiculoPunto }) {
-  const tituloFecha =
-    punto.fecha.length === 10
-      ? formatFechaManualGt(punto.fecha)
-      : punto.label;
+function IngresosTooltipBody({
+  punto,
+  pinned,
+}: {
+  punto: IngresoVehiculoPunto;
+  pinned?: boolean;
+}) {
+  const tituloFecha = tituloPeriodoReporteria(punto.fecha, punto.label);
 
   return (
-    <ReporteriaChartTooltipShell>
-      <p className="text-xs font-bold uppercase tracking-widest text-brand dark:text-brand-bright">
-        {tituloFecha}
-      </p>
-      <p className="mt-1 text-sm font-semibold text-foreground">
-        {punto.ingresos === 0
-          ? "Sin compras"
-          : `${punto.ingresos} compra${punto.ingresos === 1 ? "" : "s"}`}
-      </p>
+    <ReporteriaChartTooltipShell pinned={pinned}>
+      <ReporteriaChartTooltipHeader
+        title={tituloFecha}
+        trailing={
+          punto.ingresos === 0
+            ? "Sin compras"
+            : `${punto.ingresos} compra${punto.ingresos === 1 ? "" : "s"}`
+        }
+      />
       {punto.vehiculos.length > 0 ? (
         <ReporteriaChartTooltipList count={punto.vehiculos.length}>
           {punto.vehiculos.map((vehiculo) => (
-            <li
+            <ReporteriaChartTooltipVehiculoRow
               key={vehiculo.id}
-              className="break-words text-xs font-medium text-muted-foreground"
-            >
-              <span className="font-bold text-foreground">{vehiculo.titulo}</span>
-              {" · "}
-              {formatMonedaUsd(vehiculo.monto)}
-            </li>
+              titulo={vehiculo.titulo}
+              montoLabel={formatMonedaUsd(vehiculo.monto)}
+            />
           ))}
         </ReporteriaChartTooltipList>
       ) : null}
@@ -153,23 +153,25 @@ export function GraficasIngresosVehiculos({
   puntos,
   registrados,
 }: GraficasIngresosVehiculosProps) {
-  const { at, punto, syncFromChart, leaveChart, tooltipHandlers } =
-    useReporteriaChartPinnedTooltip<IngresoVehiculoPunto>();
+  const {
+    at,
+    punto,
+    pinned,
+    syncFromChart,
+    leaveChart,
+    pinPunto,
+    togglePinFromHover,
+    clearPin,
+    tooltipHandlers,
+  } = useReporteriaChartPinnedTooltip<IngresoVehiculoPunto>();
   const ejeCompacto = useReporteriaEjeCompacto();
-  const [detalle, setDetalle] = useState<IngresoVehiculoPunto | null>(null);
 
-  const abrirDetalle = (seleccion: IngresoVehiculoPunto | null) => {
-    if (seleccion) setDetalle(seleccion);
+  const fijarPunto = (
+    seleccion: IngresoVehiculoPunto,
+    position: ReporteriaChartHoverAt,
+  ) => {
+    pinPunto(seleccion, position);
   };
-
-  const tituloDetalle = detalle
-    ? tituloPeriodoReporteria(detalle.fecha, detalle.label)
-    : "";
-  const leadDetalle = detalle
-    ? detalle.ingresos === 0
-      ? "Sin compras"
-      : `${detalle.ingresos} compra${detalle.ingresos === 1 ? "" : "s"}`
-    : "";
 
   return (
     <ReporteriaCard
@@ -185,10 +187,13 @@ export function GraficasIngresosVehiculos({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={puntos}
-            margin={{ top: 28, right: 12, left: 0, bottom: ejeCompacto ? 22 : 8 }}
+            margin={{ top: 28, right: 24, left: 0, bottom: ejeCompacto ? 22 : 12 }}
             onMouseMove={syncFromChart}
             onMouseLeave={leaveChart}
-            onClick={() => abrirDetalle(punto)}
+            onClick={(_state, event) => {
+              event?.stopPropagation?.();
+              togglePinFromHover();
+            }}
           >
             <defs>
               <linearGradient id="ingresosVehiculosFill" x1="0" y1="0" x2="0" y2="1">
@@ -249,9 +254,9 @@ export function GraficasIngresosVehiculos({
               stroke={TCPL_BRAND_RED.primary}
               strokeWidth={2.5}
               fill="url(#ingresosVehiculosFill)"
-              dot={<IngresosDot onSelect={abrirDetalle} />}
+              dot={<IngresosDot onSelect={fijarPunto} />}
               activeDot={(props) => (
-                <IngresosActiveDot {...props} onSelect={abrirDetalle} />
+                <IngresosActiveDot {...props} onSelect={fijarPunto} />
               )}
             >
               <LabelList
@@ -270,7 +275,12 @@ export function GraficasIngresosVehiculos({
                       className="fill-foreground cursor-pointer text-[10px] font-bold"
                       onClick={(event) => {
                         event.stopPropagation();
-                        if (seleccionado) abrirDetalle(seleccionado);
+                        if (seleccionado) {
+                          fijarPunto(seleccionado, {
+                            x: Number(x),
+                            y: Number(y),
+                          });
+                        }
                       }}
                     >
                       {cantidad}
@@ -281,20 +291,26 @@ export function GraficasIngresosVehiculos({
             </Area>
           </AreaChart>
         </ResponsiveContainer>
-        {punto ? (
-          <ReporteriaChartTooltipFloat at={at} {...tooltipHandlers}>
-            <IngresosTooltipBody punto={punto} />
+        {punto && at ? (
+          <ReporteriaChartTooltipFloat
+            at={at}
+            pinned={pinned}
+            onDismiss={clearPin}
+            {...tooltipHandlers}
+          >
+            <IngresosTooltipBody punto={punto} pinned={pinned} />
           </ReporteriaChartTooltipFloat>
+        ) : null}
+        {pinned && !ejeCompacto ? (
+          <button
+            type="button"
+            aria-label="Cerrar detalle"
+            className="absolute inset-0 z-[50] cursor-default"
+            onClick={clearPin}
+          />
         ) : null}
         </div>
       </div>
-      <ReporteriaVehiculosModal
-        open={detalle !== null}
-        onClose={() => setDetalle(null)}
-        title={tituloDetalle}
-        lead={leadDetalle}
-        vehiculos={detalle?.vehiculos ?? []}
-      />
     </ReporteriaCard>
   );
 }

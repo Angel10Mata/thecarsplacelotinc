@@ -1,7 +1,5 @@
 "use client";
 
-import { useId } from "react"
-
 import { cn } from "@/lib/utils"
 
 interface HexagonPatternProps extends React.SVGProps<SVGSVGElement> {
@@ -45,11 +43,32 @@ interface HexagonPatternProps extends React.SVGProps<SVGSVGElement> {
    * GridPattern.
    */
   hexagons?: Array<[col: number, row: number]>
+  /**
+   * Stable SVG id for pattern/gradient refs (SSR-safe). Defaults to a deterministic id from geometry props.
+   */
+  patternId?: string
   className?: string
   [key: string]: unknown
 }
 
+function buildDefaultPatternId(
+  radius: number,
+  gap: number,
+  x: number,
+  y: number,
+  direction: "horizontal" | "vertical",
+): string {
+  return `hexagon-pattern-${direction}-${radius}-${gap}-${x}-${y}`
+}
+
 type HexPoint = readonly [number, number]
+
+const GEO_PRECISION = 5
+
+function roundGeo(n: number): number {
+  const factor = 10 ** GEO_PRECISION
+  return Math.round(n * factor) / factor
+}
 
 function hexVertexList(
   cx: number,
@@ -60,7 +79,10 @@ function hexVertexList(
   const startAngle = direction === "horizontal" ? 0 : 30
   return Array.from({ length: 6 }, (_, i) => {
     const angle = ((startAngle + i * 60) * Math.PI) / 180
-    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)] as const
+    return [
+      roundGeo(cx + r * Math.cos(angle)),
+      roundGeo(cy + r * Math.sin(angle)),
+    ] as const
   })
 }
 
@@ -123,25 +145,25 @@ function getHexSpacing(
   // `gap` should match the visible edge-to-edge spacing, so we add it along
   // the shared-edge normal instead of directly on the raw x/y axes.
   if (direction === "horizontal") {
-    const colStep = (3 * r) / 2 + (sqrt3 * gap) / 2
-    const rowStep = sqrt3 * r + gap
+    const colStep = roundGeo((3 * r) / 2 + (sqrt3 * gap) / 2)
+    const rowStep = roundGeo(sqrt3 * r + gap)
 
     return {
       colStep,
       rowStep,
-      tileW: colStep * 2,
+      tileW: roundGeo(colStep * 2),
       tileH: rowStep,
     }
   }
 
-  const colStep = sqrt3 * r + gap
-  const rowStep = (3 * r) / 2 + (sqrt3 * gap) / 2
+  const colStep = roundGeo(sqrt3 * r + gap)
+  const rowStep = roundGeo((3 * r) / 2 + (sqrt3 * gap) / 2)
 
   return {
     colStep,
     rowStep,
     tileW: colStep,
-    tileH: rowStep * 2,
+    tileH: roundGeo(rowStep * 2),
   }
 }
 
@@ -163,17 +185,22 @@ function getTileGeometry(
     ]
 
     const centers: [number, number][] = []
-    for (const [cx, cy] of canonical) {
+    for (const [rawCx, rawCy] of canonical) {
+      const cx = roundGeo(rawCx)
+      const cy = roundGeo(rawCy)
       centers.push([cx, cy])
-      if (cy - r < 0) centers.push([cx, cy + tileH])
-      if (cy + r > tileH) centers.push([cx, cy - tileH])
-      if (cx - r < 0) centers.push([cx + tileW, cy])
-      if (cx + r > tileW) centers.push([cx - tileW, cy])
-      if (cy - r < 0 && cx - r < 0) centers.push([cx + tileW, cy + tileH])
-      if (cy - r < 0 && cx + r > tileW) centers.push([cx - tileW, cy + tileH])
-      if (cy + r > tileH && cx - r < 0) centers.push([cx + tileW, cy - tileH])
+      if (cy - r < 0) centers.push([cx, roundGeo(cy + tileH)])
+      if (cy + r > tileH) centers.push([cx, roundGeo(cy - tileH)])
+      if (cx - r < 0) centers.push([roundGeo(cx + tileW), cy])
+      if (cx + r > tileW) centers.push([roundGeo(cx - tileW), cy])
+      if (cy - r < 0 && cx - r < 0)
+        centers.push([roundGeo(cx + tileW), roundGeo(cy + tileH)])
+      if (cy - r < 0 && cx + r > tileW)
+        centers.push([roundGeo(cx - tileW), roundGeo(cy + tileH)])
+      if (cy + r > tileH && cx - r < 0)
+        centers.push([roundGeo(cx + tileW), roundGeo(cy - tileH)])
       if (cy + r > tileH && cx + r > tileW)
-        centers.push([cx - tileW, cy - tileH])
+        centers.push([roundGeo(cx - tileW), roundGeo(cy - tileH)])
     }
 
     return { tileW, tileH, centers }
@@ -186,17 +213,22 @@ function getTileGeometry(
     ]
 
     const centers: [number, number][] = []
-    for (const [cx, cy] of canonical) {
+    for (const [rawCx, rawCy] of canonical) {
+      const cx = roundGeo(rawCx)
+      const cy = roundGeo(rawCy)
       centers.push([cx, cy])
-      if (cy - r < 0) centers.push([cx, cy + tileH])
-      if (cy + r > tileH) centers.push([cx, cy - tileH])
-      if (cx - r < 0) centers.push([cx + tileW, cy])
-      if (cx + r > tileW) centers.push([cx - tileW, cy])
-      if (cy - r < 0 && cx - r < 0) centers.push([cx + tileW, cy + tileH])
-      if (cy - r < 0 && cx + r > tileW) centers.push([cx - tileW, cy + tileH])
-      if (cy + r > tileH && cx - r < 0) centers.push([cx + tileW, cy - tileH])
+      if (cy - r < 0) centers.push([cx, roundGeo(cy + tileH)])
+      if (cy + r > tileH) centers.push([cx, roundGeo(cy - tileH)])
+      if (cx - r < 0) centers.push([roundGeo(cx + tileW), cy])
+      if (cx + r > tileW) centers.push([roundGeo(cx - tileW), cy])
+      if (cy - r < 0 && cx - r < 0)
+        centers.push([roundGeo(cx + tileW), roundGeo(cy + tileH)])
+      if (cy - r < 0 && cx + r > tileW)
+        centers.push([roundGeo(cx - tileW), roundGeo(cy + tileH)])
+      if (cy + r > tileH && cx - r < 0)
+        centers.push([roundGeo(cx + tileW), roundGeo(cy - tileH)])
       if (cy + r > tileH && cx + r > tileW)
-        centers.push([cx - tileW, cy - tileH])
+        centers.push([roundGeo(cx - tileW), roundGeo(cy - tileH)])
     }
 
     return { tileW, tileH, centers }
@@ -212,13 +244,17 @@ function hexCenter(
 ): [number, number] {
   if (direction === "horizontal") {
     const { colStep, rowStep } = getHexSpacing(r, direction, gap)
-    const x = col * colStep + colStep / 2
-    const y = row * rowStep + rowStep / 2 + (col % 2 !== 0 ? rowStep / 2 : 0)
+    const x = roundGeo(col * colStep + colStep / 2)
+    const y = roundGeo(
+      row * rowStep + rowStep / 2 + (col % 2 !== 0 ? rowStep / 2 : 0),
+    )
     return [x, y]
   } else {
     const { colStep, rowStep } = getHexSpacing(r, direction, gap)
-    const x = col * colStep + colStep / 2 + (row % 2 !== 0 ? colStep / 2 : 0)
-    const y = row * rowStep + rowStep / 2
+    const x = roundGeo(
+      col * colStep + colStep / 2 + (row % 2 !== 0 ? colStep / 2 : 0),
+    )
+    const y = roundGeo(row * rowStep + rowStep / 2)
     return [x, y]
   }
 }
@@ -231,10 +267,13 @@ export function HexagonPattern({
   strokeDasharray = "0",
   direction = "horizontal",
   hexagons,
+  patternId,
   className,
   ...props
 }: HexagonPatternProps) {
-  const id = useId()
+  const id =
+    patternId ??
+    buildDefaultPatternId(radius, gap, x, y, direction)
 
   const { tileW, tileH, centers } = getTileGeometry(radius, direction, gap)
   const solidStroke = isSolidStrokeDasharray(strokeDasharray)
@@ -290,10 +329,10 @@ export function HexagonPattern({
                 <line
                   className="fill-none"
                   key={edgeLexKey(a, b)}
-                  x1={a[0]}
-                  x2={b[0]}
-                  y1={a[1]}
-                  y2={b[1]}
+                  x1={roundGeo(a[0])}
+                  x2={roundGeo(b[0])}
+                  y1={roundGeo(a[1])}
+                  y2={roundGeo(b[1])}
                   strokeDasharray={strokeDasharray}
                 />
               ))}

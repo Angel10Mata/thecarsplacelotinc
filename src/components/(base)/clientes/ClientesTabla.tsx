@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   EllipsisVertical,
-  Eye,
   Loader2,
   PenSquare,
   Plus,
@@ -50,6 +49,7 @@ import {
   clientesTablaAnchoNit,
   clientesTablaAnchoNombre,
   clientesTablaAnchoNo,
+  clientesTablaAnchoVeh,
   clientesTablaColAnchoStyle,
   clientesTablaDesktopTableWrapClass,
   clientesTablaMobileCardsWrapClass,
@@ -58,7 +58,7 @@ import { ClientesTablaMobileCards } from "./ClientesTablaMobileCards";
 import CrearClienteModal from "./forms/Crear";
 import EditarClienteModal from "./forms/Editar";
 import { useCustomers } from "./lib/hooks";
-import { clienteDetallePath } from "./lib/rutas-clientes";
+import { clienteDetallePath, guardarClienteDetalleEnSesion } from "./lib/rutas-clientes";
 import type { ClienteListRow } from "./lib/zod";
 
 const cellPad = "px-3 py-3.5";
@@ -67,11 +67,9 @@ type PageSize = SigetTablaPageSizeValue;
 
 function ClienteFilaMenu({
   row,
-  onDetalles,
   onEditar,
 }: {
   row: ClienteListRow;
-  onDetalles: () => void;
   onEditar: () => void;
 }) {
   return (
@@ -91,13 +89,6 @@ function ClienteFilaMenu({
         sideOffset={6}
         className="z-[200] w-auto min-w-0 border-border bg-white p-1 opacity-100 dark:border-zinc-700 dark:bg-zinc-900"
       >
-        <DropdownMenuItem
-          className="cursor-pointer gap-2 px-2.5 py-2 font-semibold"
-          onSelect={() => onDetalles()}
-        >
-          <Eye className="size-4 text-brand dark:text-brand-bright" />
-          Detalles
-        </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer gap-2 px-2.5 py-2 font-semibold"
           onSelect={() => onEditar()}
@@ -153,6 +144,11 @@ export function ClientesTabla() {
   const rowOffset = showAll ? 0 : (pageSafe - 1) * pageSize;
   const sliceSize = showAll ? filtered.length : pageSize;
   const pageItems = filtered.slice(rowOffset, rowOffset + sliceSize);
+
+  const abrirDetalleCliente = (row: ClienteListRow) => {
+    guardarClienteDetalleEnSesion(row.id);
+    router.push(clienteDetallePath());
+  };
 
   return (
     <>
@@ -236,6 +232,7 @@ export function ClientesTabla() {
                   />
                   <col style={clientesTablaColAnchoStyle(clientesTablaAnchoNit)} />
                   <col />
+                  <col style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)} />
                   <col style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)} />
                 </colgroup>
                 <thead>
@@ -280,6 +277,16 @@ export function ClientesTabla() {
                       Dirección
                     </th>
                     <th
+                      className={cn(
+                        cellPadEstrecho,
+                        clientesTablaCellDividerClass,
+                        "w-0 whitespace-nowrap text-center",
+                      )}
+                      style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)}
+                    >
+                      Veh.
+                    </th>
+                    <th
                       className={sigetTablaCeldaBotonHeaderClass}
                       style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
                     >
@@ -291,7 +298,7 @@ export function ClientesTabla() {
                   {pageItems.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={6}
                         className="px-4 py-14 text-center text-sm font-semibold text-muted-foreground"
                       >
                         {search.trim()
@@ -342,13 +349,32 @@ export function ClientesTabla() {
                           {row.direccion ?? "—"}
                         </td>
                         <td
+                          className={cn(
+                            cellPadEstrecho,
+                            clientesTablaCellDividerClass,
+                            "w-0 whitespace-nowrap text-center",
+                          )}
+                          style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => abrirDetalleCliente(row)}
+                            className={cn(
+                              "cursor-pointer tabular-nums text-sm font-bold underline-offset-2 hover:underline",
+                              clientesTablaAccentTextClass,
+                            )}
+                            aria-label={`Ver vehículos de ${row.nombre} en detalle`}
+                          >
+                            {row.vehiculosCount}
+                          </button>
+                        </td>
+                        <td
                           className={sigetTablaCeldaAccionesClass}
                           style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
                         >
                           <div className={sigetTablaCeldaBotonCentrarClass}>
                             <ClienteFilaMenu
                               row={row}
-                              onDetalles={() => router.push(clienteDetallePath(row.id))}
                               onEditar={() => setEditarCliente(row)}
                             />
                           </div>
@@ -371,10 +397,10 @@ export function ClientesTabla() {
                 <ClientesTablaMobileCards
                   items={pageItems}
                   rowOffset={rowOffset}
+                  onVerVehiculos={abrirDetalleCliente}
                   renderAcciones={(row) => (
                     <ClienteFilaMenu
                       row={row}
-                      onDetalles={() => router.push(clienteDetallePath(row.id))}
                       onEditar={() => setEditarCliente(row)}
                     />
                   )}

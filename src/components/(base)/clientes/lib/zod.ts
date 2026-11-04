@@ -29,7 +29,20 @@ export type ClienteListRow = {
   nombre: string;
   nit: string | null;
   direccion: string | null;
+  created_at: string;
+  vehiculosCount: number;
 };
+
+export const customerRefSchema = z
+  .object({
+    nit: z.string().trim().min(1).optional(),
+    nombre: z.string().trim().min(1).optional(),
+  })
+  .refine((value) => Boolean(value.nit?.length || value.nombre?.length), {
+    message: "Referencia de cliente requerida",
+  });
+
+export type CustomerRef = z.infer<typeof customerRefSchema>;
 
 export type ClienteVehiculoItem = {
   id: string;

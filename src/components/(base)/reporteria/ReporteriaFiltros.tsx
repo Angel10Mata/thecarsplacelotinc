@@ -1,34 +1,32 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { ModalFechaCalendario } from "@/components/ui/general-modal";
 import {
   Popover,
-  PopoverContent,
   PopoverTrigger,
+  usePopoverMountReady,
 } from "@/components/ui/popover";
+import { FiltroAnioMesPopoverContent } from "@/components/ui/filtro-anio-mes-popover";
 import {
   Select,
   SelectContent,
   SelectItem,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
+  aplicarAlcanceMesSelect,
   cambiarVistaFiltro,
-  etiquetaMesLargo,
-  etiquetaRangoSemanaCorto,
-  opcionesSemanaMes,
-  rangoSemanaMes,
+  etiquetaAlcanceMesTrigger,
+  etiquetaAnioPicker,
+  opcionesAlcanceMesSelect,
+  seleccionarAnioMesPicker,
+  seleccionarMesMesPicker,
 } from "./lib/helpers";
-import type {
-  ReporteriaFiltroCalendario,
-  ReporteriaSemana,
-  ReporteriaVista,
-} from "./lib/zod";
+import type { ReporteriaFiltroCalendario, ReporteriaVista } from "./lib/zod";
 
 const VISTAS: Array<{ value: ReporteriaVista; label: string }> = [
   { value: "mes", label: "Mes" },
@@ -138,19 +136,14 @@ export function ReporteriaFiltros({
           <div
             className={cn(
               "grid w-full grid-cols-1 items-center gap-2 border-t border-zinc-100 pt-2.5 dark:border-zinc-800",
+              "sm:grid-cols-[auto_1fr]",
               "lg:flex lg:w-auto lg:flex-nowrap lg:border-0 lg:border-l lg:border-zinc-100 lg:pt-0 lg:pl-2 lg:pr-1 dark:lg:border-zinc-800",
             )}
           >
-            <MesPicker
-              mes={filtro.mes}
-              onMes={(mes) =>
-                onFiltro({ ...filtro, mes, semana: "all", dia: `${mes}-01` })
-              }
-            />
-            <SemanaMesSelect
-              filtro={filtro}
-              onSemana={(semana) => onFiltro({ ...filtro, semana })}
-            />
+            <AnioPicker filtro={filtro} onFiltro={onFiltro} />
+            {filtro.alcance !== "year" ? (
+              <AlcanceMesSelect filtro={filtro} onFiltro={onFiltro} />
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -173,16 +166,26 @@ const MESES_CORTOS = [
   "Dic",
 ] as const;
 
-function MesPicker({
-  mes,
-  onMes,
+function filtroBrandPillTriggerClass(extra?: string) {
+  return cn(
+    filtroBrandPillClass,
+    "inline-flex shrink-0 cursor-pointer items-center gap-1.5",
+    filtroBrandPillMobileCenterClass,
+    "lg:w-auto lg:min-w-[9.5rem] lg:justify-between lg:px-3",
+    extra,
+  );
+}
+
+function AnioPicker({
+  filtro,
+  onFiltro,
 }: {
-  mes: string;
-  onMes: (mes: string) => void;
+  filtro: ReporteriaFiltroCalendario;
+  onFiltro: (value: ReporteriaFiltroCalendario) => void;
 }) {
+  const mes = filtro.mes;
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const [panelWidth, setPanelWidth] = useState<number>();
+  const popoverReady = usePopoverMountReady();
   const selectedYear = Number(mes.slice(0, 4));
   const selectedMonth = Number(mes.slice(5, 7));
   const [draftYear, setDraftYear] = useState(selectedYear);
@@ -191,81 +194,84 @@ function MesPicker({
     if (open) setDraftYear(selectedYear);
   }, [open, selectedYear]);
 
-  useLayoutEffect(() => {
-    if (!open) return;
-    const syncWidth = () => {
-      const width = triggerRef.current?.getBoundingClientRect().width;
-      if (width && width > 0) setPanelWidth(Math.round(width));
-    };
-    syncWidth();
-    const node = triggerRef.current;
-    if (!node) return;
-    const observer = new ResizeObserver(syncWidth);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [open]);
+  const irAnio = (year: number) => {
+    setDraftYear(year);
+    onFiltro(seleccionarAnioMesPicker(filtro, year));
+  };
 
-  const etiqueta = etiquetaMesLargo(mes);
+  const triggerButton = (
+    <button
+      type="button"
+      className={filtroBrandPillTriggerClass("lg:min-w-[6.5rem]")}
+      aria-label="Elegir año y mes"
+    >
+      <span className="flex-1 whitespace-nowrap text-center text-brand tabular-nums max-lg:text-center lg:text-left dark:text-brand-bright">
+        {etiquetaAnioPicker(mes)}
+      </span>
+      <ChevronDown
+        className="size-4 shrink-0 text-brand opacity-70 dark:text-brand-bright"
+        aria-hidden
+      />
+    </button>
+  );
+
+  if (!popoverReady) {
+    return triggerButton;
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          ref={triggerRef}
-          type="button"
-          className={cn(
-            filtroBrandPillClass,
-            "inline-flex shrink-0 cursor-pointer items-center gap-1.5",
-            filtroBrandPillMobileCenterClass,
-            "lg:w-auto lg:min-w-[13.75rem] lg:justify-between lg:px-3",
-          )}
-          aria-label="Elegir mes"
-        >
-          <CalendarDays
-            className="size-4 shrink-0 text-brand max-lg:hidden lg:block dark:text-brand-bright"
-            aria-hidden
-          />
-          <span className="flex-1 whitespace-nowrap text-center text-brand max-lg:text-center lg:text-left dark:text-brand-bright">
-            {etiqueta}
-          </span>
-          <ChevronDown
-            className="size-4 shrink-0 text-brand opacity-70 dark:text-brand-bright"
-            aria-hidden
-          />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        sideOffset={8}
-        style={panelWidth != null ? { width: panelWidth } : undefined}
-        className={cn(
-          "z-[200] w-auto max-w-none rounded-2xl border border-zinc-100 bg-white p-2 opacity-100 shadow-[0_16px_48px_rgba(15,23,42,0.12)]",
-          "dark:border-zinc-700 dark:bg-zinc-900",
-        )}
-      >
-        <div className="mb-2 flex items-center justify-between px-0.5">
+      <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
+      <FiltroAnioMesPopoverContent>
+        <div className="mb-1.5 flex items-center justify-between gap-2 px-0.5">
           <NavChevron
             label="Año anterior"
-            onClick={() => setDraftYear((year) => year - 1)}
+            onClick={() => irAnio(draftYear - 1)}
           />
-          <span className="min-w-[2.75rem] text-center text-xs font-bold tabular-nums text-zinc-800 dark:text-zinc-100 sm:text-sm">
+          <button
+            type="button"
+            onClick={() => {
+              irAnio(draftYear);
+              setOpen(false);
+            }}
+            className="min-w-[3rem] cursor-pointer rounded-lg px-1 text-center text-sm font-bold tabular-nums text-zinc-800 transition-colors hover:bg-brand/10 hover:text-brand dark:text-zinc-100 dark:hover:bg-brand-bright/15 dark:hover:text-brand-bright"
+            aria-label={`Ver todo el año ${draftYear}`}
+          >
             {draftYear}
-          </span>
+          </button>
           <NavChevron
             label="Año siguiente"
-            onClick={() => setDraftYear((year) => year + 1)}
+            onClick={() => irAnio(draftYear + 1)}
           />
         </div>
+        <button
+          type="button"
+          onClick={() => {
+            irAnio(draftYear);
+            setOpen(false);
+          }}
+          className={cn(
+            "mb-1 h-8 w-full cursor-pointer rounded-full text-xs font-bold transition-colors",
+            filtro.alcance === "year" && selectedYear === draftYear
+              ? "bg-brand text-white dark:bg-brand-bright dark:text-zinc-950"
+              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700",
+          )}
+        >
+          Todos
+        </button>
         <div className="grid grid-cols-3 gap-0.5">
           {MESES_CORTOS.map((label, index) => {
             const monthValue = `${draftYear}-${String(index + 1).padStart(2, "0")}`;
-            const active = draftYear === selectedYear && index + 1 === selectedMonth;
+            const active =
+              filtro.alcance !== "year" &&
+              draftYear === selectedYear &&
+              index + 1 === selectedMonth;
             return (
               <button
                 key={monthValue}
                 type="button"
                 onClick={() => {
-                  onMes(monthValue);
+                  onFiltro(seleccionarMesMesPicker(filtro, monthValue));
                   setOpen(false);
                 }}
                 className={cn(
@@ -280,7 +286,7 @@ function MesPicker({
             );
           })}
         </div>
-      </PopoverContent>
+      </FiltroAnioMesPopoverContent>
     </Popover>
   );
 }
@@ -306,29 +312,26 @@ const semanaSelectItemClass = cn(
   "[&_[data-slot=select-item-indicator]_svg]:text-brand dark:[&_[data-slot=select-item-indicator]_svg]:text-white",
 );
 
-const semanaSelectItemTodoClass = cn(
-  semanaSelectItemClass,
-  "rounded-none py-3.5 text-[15px] font-bold",
-  "data-[state=checked]:bg-brand/15 dark:data-[state=checked]:bg-brand/40",
-);
-
-function SemanaMesSelect({
+function AlcanceMesSelect({
   filtro,
-  onSemana,
+  onFiltro,
 }: {
   filtro: ReporteriaFiltroCalendario;
-  onSemana: (semana: ReporteriaSemana) => void;
+  onFiltro: (value: ReporteriaFiltroCalendario) => void;
 }) {
-  const semanas = opcionesSemanaMes(filtro.mes);
-  const [opcionTodo, ...opcionesSemana] = semanas;
-  const value = String(filtro.semana);
+  const opciones = opcionesAlcanceMesSelect(filtro.mes);
+  const value =
+    filtro.alcance === "week" ? String(filtro.semana) : "month";
 
   return (
     <Select
       value={value}
       onValueChange={(raw) => {
-        const semana: ReporteriaSemana = raw === "all" ? "all" : Number(raw);
-        onSemana(semana);
+        if (raw === "month") {
+          onFiltro({ ...filtro, alcance: "month", semana: 1 });
+          return;
+        }
+        onFiltro(aplicarAlcanceMesSelect(filtro, raw));
       }}
     >
       <SelectTrigger
@@ -342,7 +345,7 @@ function SemanaMesSelect({
         )}
       >
         <SelectValue placeholder="Semana">
-          {etiquetaSemanaTrigger(filtro.semana, filtro.mes)}
+          {etiquetaAlcanceMesTrigger(filtro)}
         </SelectValue>
       </SelectTrigger>
       <SelectContent
@@ -351,14 +354,15 @@ function SemanaMesSelect({
         align="start"
         className={semanaSelectContentClass}
       >
-        {opcionTodo ? (
-          <SelectItem value={String(opcionTodo.value)} className={semanaSelectItemTodoClass}>
-            {opcionTodo.label}
-          </SelectItem>
-        ) : null}
-        <SelectSeparator className="my-0 bg-zinc-200 dark:bg-zinc-700" />
+        <SelectItem
+          value="month"
+          disabled
+          className="pointer-events-none absolute h-0 overflow-hidden border-0 p-0 opacity-0"
+        >
+          Mes
+        </SelectItem>
         <div className="flex max-h-64 flex-col gap-0.5 overflow-y-auto p-1.5">
-          {opcionesSemana.map((opcion) => (
+          {opciones.map((opcion) => (
             <SelectItem
               key={String(opcion.value)}
               value={String(opcion.value)}
@@ -371,12 +375,6 @@ function SemanaMesSelect({
       </SelectContent>
     </Select>
   );
-}
-
-function etiquetaSemanaTrigger(semana: ReporteriaSemana, mes: string): string {
-  if (semana === "all") return "Todo el mes";
-  const { inicio, fin } = rangoSemanaMes(mes, semana);
-  return etiquetaRangoSemanaCorto(inicio, fin);
 }
 
 function NavChevron({

@@ -76,13 +76,14 @@ export type RankingCliente = z.infer<typeof rankingClienteSchema>;
 export type ReporteriaPeriodo = 7 | 30 | 90 | "all";
 export type ReporteriaCampoFecha = "factura" | "registro";
 export type ReporteriaVista = "dia" | "mes" | "rango";
-export type ReporteriaSemana = number | "all";
+export type ReporteriaAlcanceMes = "year" | "month" | "week";
 
 export type ReporteriaFiltroCalendario = {
   vista: ReporteriaVista;
   dia: string;
   mes: string;
-  semana: ReporteriaSemana;
+  alcance: ReporteriaAlcanceMes;
+  semana: number;
   rangoInicio: string;
   rangoFin: string;
 };

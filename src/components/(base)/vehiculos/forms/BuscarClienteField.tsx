@@ -11,6 +11,7 @@ import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-but
 import { cn } from "@/lib/utils";
 import CrearClienteModal from "@/components/(base)/clientes/forms/Crear";
 import { useCustomersSearch } from "@/components/(base)/clientes/lib/hooks";
+import { customerRowFromClienteListRow } from "@/components/(base)/clientes/lib/helpers";
 import type { CustomerRow } from "@/components/(base)/clientes/lib/zod";
 
 const MIN_SEARCH = 3;
@@ -97,14 +98,14 @@ export function BuscarClienteField({
                     key={row.id}
                     type="button"
                     onClick={() => {
-                      onSelect(row);
+                      onSelect(customerRowFromClienteListRow(row));
                       setOpen(false);
                     }}
                     className="flex w-full cursor-pointer flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   >
-                    <span className="font-semibold text-foreground">{row.customer_name}</span>
-                    {row.customer_nit ? (
-                      <span className="text-xs text-muted-foreground">NIT {row.customer_nit}</span>
+                    <span className="font-semibold text-foreground">{row.nombre}</span>
+                    {row.nit ? (
+                      <span className="text-xs text-muted-foreground">NIT {row.nit}</span>
                     ) : null}
                   </button>
                 ))

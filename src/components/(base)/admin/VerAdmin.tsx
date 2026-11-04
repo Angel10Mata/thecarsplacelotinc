@@ -1,7 +1,7 @@
 import { getPendingDevicesCount } from "@/components/(base)/admin/lib/actions";
 import { AlertTriangle } from "lucide-react";
 import { AdminCards } from "./AdminCards";
-import { adminPageShellClass, modulePageHeaderRowInsetClass } from "@/lib/module-layout";
+import { adminPageShellClass, modulePageHeaderStackClass } from "@/lib/module-layout";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 
 // Admin
@@ -11,8 +11,8 @@ export async function VerAdmin() {
   return (
     <div className={adminPageShellClass}>
       <div className="flex flex-col gap-1">
-        <div className={modulePageHeaderRowInsetClass}>
-          <ModuleHeaderBackButton size="sm" />
+        <div className={modulePageHeaderStackClass}>
+          <ModuleHeaderBackButton />
           <h1 className="text-2xl font-bold tracking-tighter text-foreground">
             Administración
           </h1>

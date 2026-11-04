@@ -66,6 +66,9 @@ export const modulePageHeaderClass = "mb-0 pt-3 md:pt-0";
 export const modulePageHeaderRowClass =
   "flex items-center gap-3 px-3 sm:px-4 md:px-0";
 
+export const modulePageHeaderStackClass =
+  "flex flex-col items-start gap-1.5 px-3 sm:px-4 md:px-0";
+
 export const modulePageHeaderRowInsetClass = "flex items-center gap-3";
 
 export const modulePageTitleClass =

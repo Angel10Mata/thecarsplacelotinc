@@ -1,21 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { modalAccentClass } from "@/components/ui/general-modal";
 import { cn } from "@/lib/utils";
-import { modulePageHeaderClass, modulePageHeaderRowClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
+import { modulePageHeaderClass, modulePageHeaderStackClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import EditarVehiculoModal from "@/components/(base)/vehiculos/forms/Editar";
 import { VehiculoGaleriaViewerModal } from "@/components/(base)/vehiculos/forms/VehiculoGaleriaViewerModal";
 import type { VehiculoListRow } from "@/components/(base)/vehiculos/lib/zod";
 import { ClienteDetalleVehiculosTabla } from "./ClienteDetalleVehiculosTabla";
-import { clientesTablaAccentBarClass } from "./lib/tabla-clientes-ui";
+import { getCustomerByRefAction } from "./lib/actions";
 import { useClienteVehiculos, useCustomer } from "./lib/hooks";
-
-type VerDetalleClienteProps = {
-  customerId: string;
-};
+import {
+  clienteDetallePath,
+  guardarClienteDetalleEnSesion,
+  leerClienteDetalleEnSesion,
+} from "./lib/rutas-clientes";
+import { clientesTablaAccentBarClass } from "./lib/tabla-clientes-ui";
 
 function DetalleLabel({ children }: { children: string }) {
   return (
@@ -25,21 +28,67 @@ function DetalleLabel({ children }: { children: string }) {
   );
 }
 
-export function VerDetalleCliente({ customerId }: VerDetalleClienteProps) {
+export function VerDetalleCliente() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [entradaLista, setEntradaLista] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function resolverEntrada() {
+      const nit = searchParams.get("nit")?.trim() ?? "";
+      const nombre = searchParams.get("nombre")?.trim() ?? "";
+      const tieneQueryLegacy = nit.length > 0 || nombre.length > 0;
+
+      if (tieneQueryLegacy) {
+        const res = await getCustomerByRefAction({
+          nit: nit || undefined,
+          nombre: nombre || undefined,
+        });
+        if (cancelled) return;
+        if (res.ok) {
+          guardarClienteDetalleEnSesion(res.data.id);
+          setCustomerId(res.data.id);
+          router.replace(clienteDetallePath(), { scroll: false });
+        } else {
+          setCustomerId(null);
+        }
+        setEntradaLista(false);
+        return;
+      }
+
+      const id = leerClienteDetalleEnSesion();
+      if (cancelled) return;
+      setCustomerId(id);
+      setEntradaLista(false);
+    }
+
+    void resolverEntrada();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, searchParams]);
+
   const {
     data: cliente,
     isLoading: clienteLoading,
     isError: clienteError,
-  } = useCustomer(customerId);
+  } = useCustomer(customerId, Boolean(customerId) && !entradaLista);
   const {
     data: vehiculos,
     isLoading: vehiculosLoading,
     isError: vehiculosError,
-  } = useClienteVehiculos(customerId, Boolean(customerId));
+  } = useClienteVehiculos(customerId, Boolean(customerId) && !entradaLista);
   const [galeriaRow, setGaleriaRow] = useState<VehiculoListRow | null>(null);
   const [editarCarId, setEditarCarId] = useState<string | null>(null);
 
   const rows = vehiculos ?? [];
+  const cargandoCliente = entradaLista || (Boolean(customerId) && clienteLoading);
+  const sinCliente =
+    !entradaLista && (!customerId || clienteError || (!clienteLoading && !cliente));
 
   return (
     <>
@@ -56,25 +105,25 @@ export function VerDetalleCliente({ customerId }: VerDetalleClienteProps) {
       />
       <div className={cn(modulePageShellClass, "min-h-0 gap-2 pt-0 pb-0 md:pt-0 md:pb-8 mt-0 md:mt-4")}>
         <header className={modulePageHeaderClass}>
-          <div className={modulePageHeaderRowClass}>
-            <ModuleHeaderBackButton size="sm" />
+          <div className={modulePageHeaderStackClass}>
+            <ModuleHeaderBackButton />
             <h1 className={modulePageTitleClass}>Detalles del cliente</h1>
           </div>
         </header>
 
-        {clienteLoading ? <ModuleDataLoadingPanel minHeightClass="min-h-[16rem]" /> : null}
+        {cargandoCliente ? <ModuleDataLoadingPanel minHeightClass="min-h-[16rem]" /> : null}
 
-        {!clienteLoading && (clienteError || !cliente) ? (
+        {!cargandoCliente && sinCliente ? (
           <p className="rounded-2xl border border-border py-14 text-center text-sm font-semibold text-destructive dark:border-zinc-700">
             No se encontró el cliente o no tienes permiso para verlo.
           </p>
         ) : null}
 
-        {!clienteLoading && cliente ? (
+        {!cargandoCliente && cliente ? (
           <div className="flex flex-col gap-4">
             <section
               className={cn(
-                "overflow-hidden rounded-2xl border border-border bg-zinc-50 shadow-sm dark:border-zinc-700 dark:bg-zinc-800/40",
+                "overflow-hidden rounded-2xl border border-border bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900",
               )}
             >
               <div className={clientesTablaAccentBarClass} aria-hidden />

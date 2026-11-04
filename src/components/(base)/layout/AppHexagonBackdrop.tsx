@@ -19,6 +19,7 @@ const APP_HEXAGON_HIGHLIGHTS: Array<[number, number]> = [
 export function AppHexagonBackdrop() {
   return (
     <HexagonPattern
+      patternId="app-hexagon-backdrop"
       radius={34}
       gap={8}
       x={-1}

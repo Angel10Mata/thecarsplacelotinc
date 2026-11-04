@@ -46,7 +46,7 @@ Prohibido dispersar lógica del módulo fuera de su carpeta.
 
 ## Enrutamiento (`src/app/`)
 
-- Rutas de negocio bajo `src/app/TheCarsPlace/`.
+- Rutas de negocio bajo `src/app/admin/`.
 - `page.tsx` solo importa el componente principal dentro de `<Suspense>`.
 - Prohibido UI compleja, lógica de negocio o estado en `page.tsx`.
 

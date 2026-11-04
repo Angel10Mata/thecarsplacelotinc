@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { cn } from "@/lib/utils";
-import { modulePageHeaderClass, modulePageHeaderRowClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
+import { modulePageHeaderClass, modulePageHeaderStackClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
 import { GraficasDineroVehiculos } from "./GraficasDineroVehiculos";
 import { GraficasIngresosVehiculos } from "./GraficasIngresosVehiculos";
 import { ReporteriaFiltros } from "./ReporteriaFiltros";
@@ -13,7 +13,7 @@ import {
   buildIngresosVehiculosSerie,
   filasEnPeriodo,
   filtroCalendarioInicial,
-  resolverRangoGraficaCompras,
+  resolverRangoCalendario,
   resumenDineroVehiculos,
   resumenIngresosVehiculos,
 } from "./lib/helpers";
@@ -32,7 +32,7 @@ export function VerReporteria() {
   }, []);
 
   const rangoGrafica = useMemo(
-    () => (mounted && filtro ? resolverRangoGraficaCompras(filtro) : null),
+    () => (mounted && filtro ? resolverRangoCalendario(filtro) : null),
     [filtro, mounted],
   );
 
@@ -90,8 +90,8 @@ export function VerReporteria() {
       )}
     >
       <header className={modulePageHeaderClass}>
-        <div className={modulePageHeaderRowClass}>
-          <ModuleHeaderBackButton size="sm" />
+        <div className={modulePageHeaderStackClass}>
+          <ModuleHeaderBackButton />
           <h1 className={modulePageTitleClass}>Reportería</h1>
         </div>
       </header>

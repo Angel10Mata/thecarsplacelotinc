@@ -22,7 +22,7 @@ import Swal from "sweetalert2";
 import { AuroraText } from "@/components/ui/aurora-text";
 import AppLogoLogin from "@/components/(base)/brand/AppLogoLogin";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
-import { modulePageHeaderRowClass } from "@/lib/module-layout";
+import { modulePageHeaderStackClass } from "@/lib/module-layout";
 import { APP_BASE_PATH, APP_NAME, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 
 export default function IniciarSesion() {
@@ -137,17 +137,10 @@ export default function IniciarSesion() {
         className={cn(
           "fixed z-20 mx-auto w-full max-w-screen-2xl",
           "left-0 right-0 top-[calc(var(--banner-height,0px)+var(--app-header-height,var(--header-row-height))+0.75rem)]",
-          modulePageHeaderRowClass,
+          modulePageHeaderStackClass,
         )}
       >
-        <ModuleHeaderBackButton
-          size="sm"
-          href={PUBLIC_CATALOG_PATH}
-          ariaLabel="Volver al inventario"
-        />
-        <p className="min-w-0 text-sm font-bold uppercase tracking-tight text-foreground sm:text-base">
-          Volver al inventario
-        </p>
+        <ModuleHeaderBackButton href={PUBLIC_CATALOG_PATH} />
       </div>
       <motion.div
         initial={{ opacity: 0, y: 28 }}

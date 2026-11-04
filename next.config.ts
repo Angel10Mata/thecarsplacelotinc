@@ -2,45 +2,60 @@ import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
+const APP_BASE = "/admin";
+const LEGACY_APP_BASES = ["/TheCarsPlace", "/TheCarsPlaceLotInc"] as const;
+
 const nextConfig: NextConfig = {
-  // React Compiler en dev compila mucho y suele dejar el overlay en "Compiling" minutos u horas.
   reactCompiler: isProd,
   experimental: {
     serverActions: {
-      // Fotos (comprimidas) y PDF de factura hasta 10 MB vía FormData en uploadCarImageStorageAction.
       bodySizeLimit: "11mb",
     },
   },
   async redirects() {
+    const legacyRedirects = LEGACY_APP_BASES.flatMap((legacy) => [
+      {
+        source: legacy,
+        destination: APP_BASE,
+        permanent: true,
+      },
+      {
+        source: `${legacy}/:path*`,
+        destination: `${APP_BASE}/:path*`,
+        permanent: true,
+      },
+    ]);
+
     return [
+      ...legacyRedirects,
       {
         source: "/farmacia-la-salud",
-        destination: "/TheCarsPlace",
+        destination: APP_BASE,
         permanent: true,
       },
       {
         source: "/farmacia-la-salud/:path*",
-        destination: "/TheCarsPlace/:path*",
+        destination: `${APP_BASE}/:path*`,
         permanent: true,
       },
       {
         source: "/farmamuni",
-        destination: "/TheCarsPlace",
+        destination: APP_BASE,
         permanent: true,
       },
       {
         source: "/farmamuni/:path*",
-        destination: "/TheCarsPlace/:path*",
+        destination: `${APP_BASE}/:path*`,
         permanent: true,
       },
       {
-        source: "/TheCarsPlace/flota-vehicular",
-        destination: "/TheCarsPlace/vehiculos",
+        source: `${APP_BASE}/flota-vehicular`,
+        destination: `${APP_BASE}/vehiculos`,
         permanent: true,
       },
       {
-        source: "/TheCarsPlace/flota-vehicular/:path*",
-        destination: "/TheCarsPlace/vehiculos/:path*",
+        source: `${APP_BASE}/flota-vehicular/:path*`,
+        destination: `${APP_BASE}/vehiculos/:path*`,
         permanent: true,
       },
       {
@@ -56,7 +71,7 @@ const nextConfig: NextConfig = {
       {
         source: "/",
         has: [{ type: "query", key: "from", value: "vehiculos" }],
-        destination: "/TheCarsPlace/vehiculos/inventario",
+        destination: `${APP_BASE}/vehiculos/inventario`,
         permanent: false,
       },
     ];

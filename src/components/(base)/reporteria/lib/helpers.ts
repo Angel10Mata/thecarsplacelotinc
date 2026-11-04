@@ -17,7 +17,6 @@ import type {
   ReporteriaCampoFecha,
   ReporteriaFiltroCalendario,
   ReporteriaPeriodo,
-  ReporteriaSemana,
   ReporteriaVehiculoRow,
   ReporteriaVista,
 } from "./zod";
@@ -163,10 +162,7 @@ export function buildIngresosVehiculosSerie(
       const vehiculos = porClave.get(mes) ?? [];
       puntos.push({
         fecha: mes,
-        label: formatFechaCalendarioGt(`${mes}-01`, {
-          month: "short",
-          year: "numeric",
-        }),
+        label: etiquetaEjeMesGrafica(mes, inicio, fin),
         ingresos: vehiculos.length,
         vehiculos,
       });
@@ -306,10 +302,7 @@ export function buildDineroPorMes(
       const valores = porMes.get(mes) ?? vacioDineroBucket();
       puntos.push({
         mes,
-        label: formatFechaCalendarioGt(`${mes}-01`, {
-          month: "short",
-          year: "numeric",
-        }),
+        label: etiquetaEjeMesGrafica(mes, inicio, fin),
         vendido: valores.vendido,
         lote: valores.lote,
         vehiculos: valores.vehiculos,
@@ -396,6 +389,15 @@ function pad2(value: number): string {
   return String(value).padStart(2, "0");
 }
 
+function etiquetaEjeMesGrafica(mes: string, inicio: string, fin: string): string {
+  const mismoAnio = inicio.slice(0, 4) === fin.slice(0, 4);
+  const masDeUnMes = diasEntre(inicio, fin) > 31;
+  return formatFechaCalendarioGt(`${mes}-01`, {
+    month: "short",
+    ...(mismoAnio && masDeUnMes ? {} : { year: "numeric" }),
+  });
+}
+
 function ultimoDiaMes(mes: string): string {
   const [year, month] = mes.split("-").map(Number);
   return `${mes}-${pad2(ultimoDiaMesCalendario(year, month))}`;
@@ -409,10 +411,28 @@ export function filtroCalendarioInicial(
     vista: "mes",
     dia: hoy,
     mes,
-    semana: "all",
+    alcance: "year",
+    semana: 1,
     rangoInicio: `${mes}-01`,
     rangoFin: hoy,
   };
+}
+
+export function etiquetaSoloMes(mes: string): string {
+  const month = Number(mes.slice(5, 7));
+  const nombre = MESES_LARGOS[month - 1];
+  return nombre ?? mes;
+}
+
+export function etiquetaMesPickerTrigger(
+  filtro: Pick<ReporteriaFiltroCalendario, "alcance" | "mes">,
+): string {
+  if (filtro.alcance === "year") return "Todos los meses";
+  return etiquetaSoloMes(filtro.mes);
+}
+
+export function etiquetaAnioPicker(mes: string): string {
+  return mes.slice(0, 4);
 }
 
 export function etiquetaMesLargo(mes: string): string {
@@ -467,13 +487,11 @@ export function etiquetaRangoSemanaCorto(inicio: string, fin: string): string {
   return `${parte(inicio)} - ${parte(fin)}`;
 }
 
-export function opcionesSemanaMes(
+export function opcionesAlcanceMesSelect(
   mes: string,
-): Array<{ value: ReporteriaSemana; label: string }> {
+): Array<{ value: number; label: string }> {
   const total = totalSemanasMes(mes);
-  const opciones: Array<{ value: ReporteriaSemana; label: string }> = [
-    { value: "all", label: "Todo el mes" },
-  ];
+  const opciones: Array<{ value: number; label: string }> = [];
   for (let semana = 1; semana <= total; semana += 1) {
     const { inicio, fin } = rangoSemanaMes(mes, semana);
     opciones.push({
@@ -482,6 +500,23 @@ export function opcionesSemanaMes(
     });
   }
   return opciones;
+}
+
+export function etiquetaAlcanceMesTrigger(
+  filtro: Pick<ReporteriaFiltroCalendario, "alcance" | "mes" | "semana">,
+): string {
+  if (filtro.alcance === "year") return "Todo el año";
+  if (filtro.alcance === "month") return "Semana";
+  const { inicio, fin } = rangoSemanaMes(filtro.mes, filtro.semana);
+  return etiquetaRangoSemanaCorto(inicio, fin);
+}
+
+export function aplicarAlcanceMesSelect(
+  filtro: ReporteriaFiltroCalendario,
+  raw: string,
+): ReporteriaFiltroCalendario {
+  const semana = Number(raw);
+  return { ...filtro, alcance: "week", semana };
 }
 
 export function rangoSemanaMes(
@@ -514,7 +549,11 @@ export function resolverRangoCalendario(
         : filtro.rangoInicio;
     return { inicio, fin };
   }
-  if (filtro.semana === "all") {
+  if (filtro.alcance === "year") {
+    const year = filtro.mes.slice(0, 4);
+    return { inicio: `${year}-01-01`, fin: `${year}-12-31` };
+  }
+  if (filtro.alcance === "month") {
     return { inicio: `${filtro.mes}-01`, fin: ultimoDiaMes(filtro.mes) };
   }
   return rangoSemanaMes(filtro.mes, filtro.semana);
@@ -523,13 +562,6 @@ export function resolverRangoCalendario(
 export function resolverRangoGraficaCompras(
   filtro: ReporteriaFiltroCalendario,
 ): { inicio: string; fin: string } {
-  if (filtro.vista === "dia") {
-    return { inicio: `${filtro.mes}-01`, fin: ultimoDiaMes(filtro.mes) };
-  }
-  if (filtro.vista === "mes") {
-    const year = filtro.mes.slice(0, 4);
-    return { inicio: `${year}-01-01`, fin: `${year}-12-31` };
-  }
   return resolverRangoCalendario(filtro);
 }
 
@@ -549,7 +581,34 @@ export function moverAnioFiltroCalendario(
 ): ReporteriaFiltroCalendario {
   const [year, month] = filtro.mes.split("-").map(Number);
   const mes = `${year + direccion}-${pad2(month)}`;
-  return { ...filtro, mes, semana: "all", dia: `${mes}-01` };
+  return { ...filtro, mes, alcance: "month", semana: 1, dia: `${mes}-01` };
+}
+
+export function seleccionarAnioMesPicker(
+  filtro: ReporteriaFiltroCalendario,
+  year: number,
+): ReporteriaFiltroCalendario {
+  const mes = `${year}-${filtro.mes.slice(5, 7)}`;
+  return {
+    ...filtro,
+    mes,
+    alcance: "year",
+    semana: 1,
+    dia: `${mes}-01`,
+  };
+}
+
+export function seleccionarMesMesPicker(
+  filtro: ReporteriaFiltroCalendario,
+  mes: string,
+): ReporteriaFiltroCalendario {
+  return {
+    ...filtro,
+    mes,
+    alcance: "month",
+    semana: 1,
+    dia: `${mes}-01`,
+  };
 }
 
 export function etiquetaFiltroCalendario(
@@ -562,7 +621,10 @@ export function etiquetaFiltroCalendario(
     const { inicio, fin } = resolverRangoCalendario(filtro);
     return `${formatFechaManualGt(inicio)} – ${formatFechaManualGt(fin)}`;
   }
-  if (filtro.semana === "all") {
+  if (filtro.alcance === "year") {
+    return `Año ${filtro.mes.slice(0, 4)}`;
+  }
+  if (filtro.alcance === "month") {
     return etiquetaMesLargo(filtro.mes);
   }
   return `${etiquetaMesLargo(filtro.mes)}, semana ${filtro.semana}`;
@@ -574,7 +636,13 @@ export function moverFiltroCalendario(
 ): ReporteriaFiltroCalendario {
   if (filtro.vista === "dia") {
     const dia = addDaysCalendario(filtro.dia, direccion);
-    return { ...filtro, dia, mes: dia.slice(0, 7), semana: "all" };
+    return {
+      ...filtro,
+      dia,
+      mes: dia.slice(0, 7),
+      alcance: "month",
+      semana: 1,
+    };
   }
   if (filtro.vista === "rango") {
     const { inicio, fin } = resolverRangoCalendario(filtro);
@@ -586,7 +654,7 @@ export function moverFiltroCalendario(
     };
   }
   const mes = addMonthsCalendario(filtro.mes, direccion);
-  return { ...filtro, mes, semana: "all", dia: `${mes}-01` };
+  return { ...filtro, mes, alcance: "month", semana: 1, dia: `${mes}-01` };
 }
 
 export function cambiarVistaFiltro(
@@ -609,5 +677,11 @@ export function cambiarVistaFiltro(
       rangoFin: ultimoDiaMes(filtro.mes),
     };
   }
-  return { ...filtro, vista, mes: filtro.dia.slice(0, 7), semana: "all" };
+  return {
+    ...filtro,
+    vista,
+    mes: filtro.dia.slice(0, 7),
+    alcance: "year",
+    semana: 1,
+  };
 }

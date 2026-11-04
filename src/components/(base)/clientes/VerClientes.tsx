@@ -1,6 +1,6 @@
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import { cn } from "@/lib/utils";
-import { modulePageHeaderClass, modulePageHeaderRowClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
+import { modulePageHeaderClass, modulePageHeaderStackClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
 import { ClientesTabla } from "@/components/(base)/clientes/ClientesTabla";
 
 export function VerClientes() {
@@ -12,8 +12,8 @@ export function VerClientes() {
       )}
     >
       <header className={modulePageHeaderClass}>
-        <div className={modulePageHeaderRowClass}>
-          <ModuleHeaderBackButton size="sm" />
+        <div className={modulePageHeaderStackClass}>
+          <ModuleHeaderBackButton />
           <h1 className={modulePageTitleClass}>Gestión de clientes</h1>
         </div>
       </header>

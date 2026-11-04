@@ -1,9 +1,18 @@
 "use client"
 
 import * as React from "react"
+import { useEffect, useState } from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
+
+export function usePopoverMountReady(): boolean {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    setReady(true)
+  }, [])
+  return ready
+}
 
 function Popover({
   ...props

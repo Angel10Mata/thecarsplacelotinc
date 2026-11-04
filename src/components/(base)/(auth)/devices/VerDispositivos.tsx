@@ -1,7 +1,7 @@
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { AlertCircle } from "lucide-react";
 import { AcordeonDispositivos } from "./AcordeonDispositivos";
-import { adminPageShellClass, modulePageHeaderRowInsetClass } from "@/lib/module-layout";
+import { adminPageShellClass, modulePageHeaderStackClass } from "@/lib/module-layout";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 
 // Tipos
@@ -76,8 +76,8 @@ export async function VerDispositivos() {
   return (
     <div className={adminPageShellClass}>
       <div className="flex flex-col gap-1 mb-4">
-        <div className={modulePageHeaderRowInsetClass}>
-          <ModuleHeaderBackButton size="sm" />
+        <div className={modulePageHeaderStackClass}>
+          <ModuleHeaderBackButton />
           <div>
             <h1 className="text-xl md:text-2xl font-black tracking-tight text-zinc-900 dark:text-white leading-none">
               Dispositivos

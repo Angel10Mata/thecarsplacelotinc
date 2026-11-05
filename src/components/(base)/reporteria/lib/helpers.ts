@@ -431,8 +431,11 @@ export function etiquetaMesPickerTrigger(
   return etiquetaSoloMes(filtro.mes);
 }
 
-export function etiquetaAnioPicker(mes: string): string {
-  return mes.slice(0, 4);
+export function etiquetaAnioPicker(
+  filtro: Pick<ReporteriaFiltroCalendario, "alcance" | "mes">,
+): string {
+  if (filtro.alcance === "year") return filtro.mes.slice(0, 4);
+  return etiquetaSoloMes(filtro.mes);
 }
 
 export function etiquetaMesLargo(mes: string): string {

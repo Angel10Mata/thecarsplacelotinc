@@ -192,7 +192,7 @@ function AnioPicker({
   const [open, setOpen] = useState(false);
   const popoverReady = usePopoverMountReady();
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const etiquetaTrigger = etiquetaAnioPicker(mes);
+  const etiquetaTrigger = etiquetaAnioPicker(filtro);
   const triggerWidth = usePopoverTriggerWidth(triggerRef, etiquetaTrigger);
   const selectedYear = Number(mes.slice(0, 4));
   const selectedMonth = Number(mes.slice(5, 7));
@@ -240,10 +240,15 @@ function AnioPicker({
           <button
             type="button"
             onClick={() => {
-              irAnio(draftYear);
+              onFiltro(seleccionarAnioMesPicker(filtro, draftYear));
               setOpen(false);
             }}
-            className="min-w-[4rem] cursor-pointer rounded-xl px-2 py-1 text-center text-base font-black tabular-nums text-zinc-800 transition-colors hover:bg-brand/10 hover:text-brand dark:text-zinc-100 dark:hover:bg-brand-bright/15 dark:hover:text-brand-bright"
+            className={cn(
+              "min-w-[4rem] cursor-pointer rounded-xl px-2 py-1 text-center text-base font-black tabular-nums text-zinc-800 transition-colors hover:bg-brand/10 hover:text-brand dark:text-zinc-100 dark:hover:bg-brand-bright/15 dark:hover:text-brand-bright",
+              filtro.alcance === "year" &&
+                draftYear === selectedYear &&
+                "bg-brand/10 text-brand dark:bg-brand-bright/15 dark:text-brand-bright",
+            )}
             aria-label={`Ver todo el año ${draftYear}`}
           >
             {draftYear}
@@ -253,21 +258,6 @@ function AnioPicker({
             onClick={() => irAnio(draftYear + 1)}
           />
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            irAnio(draftYear);
-            setOpen(false);
-          }}
-          className={cn(
-            "mb-2 h-9 w-full cursor-pointer rounded-full text-sm font-bold transition-colors",
-            filtro.alcance === "year" && selectedYear === draftYear
-              ? "bg-brand text-white dark:bg-brand-bright dark:text-zinc-950"
-              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700",
-          )}
-        >
-          Todos
-        </button>
         <div className={filtroAnioMesMesesGridClass}>
           {MESES_CORTOS.map((label, index) => {
             const monthValue = `${draftYear}-${String(index + 1).padStart(2, "0")}`;

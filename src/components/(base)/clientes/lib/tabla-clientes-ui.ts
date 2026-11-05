@@ -31,9 +31,9 @@ export const clientesTablaAnchoNit: ClientesTablaColAncho = {
 };
 
 export const clientesTablaAnchoVeh: ClientesTablaColAncho = {
-  width: "4.75rem",
-  minWidth: "4.75rem",
-  maxWidth: "4.75rem",
+  width: sigetTablaAnchoAccionesRem,
+  minWidth: sigetTablaAnchoAccionesRem,
+  maxWidth: sigetTablaAnchoAccionesRem,
 };
 
 export const clientesTablaAnchoAcc: ClientesTablaColAncho = {

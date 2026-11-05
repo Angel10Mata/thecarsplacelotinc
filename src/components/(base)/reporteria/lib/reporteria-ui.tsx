@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Ban as BanNode, X } from "lucide";
 import { X as XIcon } from "lucide-react";
@@ -64,6 +64,29 @@ export function ReporteriaCard({
 }
 
 export const REPORTERIA_CHART_TOOLTIP_SCROLL_MIN = 4;
+
+const REPORTERIA_CHART_TOOLTIP_EDGE_INSET = 12;
+const REPORTERIA_CHART_TOOLTIP_MAX_WIDTH_PX = 320;
+
+function reporteriaChartTooltipTransform(
+  x: number,
+  plotWidth: number,
+): string {
+  const yPart = "calc(-100% - 14px)";
+  const pad = REPORTERIA_CHART_TOOLTIP_EDGE_INSET;
+  const half = REPORTERIA_CHART_TOOLTIP_MAX_WIDTH_PX / 2;
+
+  if (plotWidth <= 0) {
+    return `translate(-50%, ${yPart})`;
+  }
+  if (x < half + pad) {
+    return `translate(${pad}px, ${yPart})`;
+  }
+  if (x > plotWidth - half - pad) {
+    return `translate(calc(-100% - ${pad}px), ${yPart})`;
+  }
+  return `translate(-50%, ${yPart})`;
+}
 
 export function ReporteriaChartTooltipShell({
   children,
@@ -349,10 +372,27 @@ export function ReporteriaChartTooltipFloat({
 }) {
   const compact = useReporteriaEjeCompacto();
   const [portalReady, setPortalReady] = useState(false);
+  const floatRef = useRef<HTMLDivElement>(null);
+  const [plotWidth, setPlotWidth] = useState(0);
 
   useEffect(() => {
     setPortalReady(true);
   }, []);
+
+  useLayoutEffect(() => {
+    const plot = floatRef.current?.offsetParent;
+    if (!(plot instanceof HTMLElement)) {
+      setPlotWidth(0);
+      return;
+    }
+
+    const sync = () => setPlotWidth(plot.clientWidth);
+    sync();
+
+    const observer = new ResizeObserver(sync);
+    observer.observe(plot);
+    return () => observer.disconnect();
+  }, [at]);
 
   if (!at) return null;
 
@@ -381,6 +421,7 @@ export function ReporteriaChartTooltipFloat({
 
   return (
     <div
+      ref={floatRef}
       className={cn(
         "absolute z-[60] pointer-events-auto",
         pinned && "z-[70]",
@@ -388,7 +429,7 @@ export function ReporteriaChartTooltipFloat({
       style={{
         left: at.x,
         top: at.y,
-        transform: "translate(-50%, calc(-100% - 14px))",
+        transform: reporteriaChartTooltipTransform(at.x, plotWidth),
       }}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}

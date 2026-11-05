@@ -307,6 +307,7 @@ export function GraficasIngresosVehiculos({
           />
         ) : null}
         </div>
+        <ReporteriaChartClickHint label="Haz clic en un punto para ver los vehículos." />
       </div>
     </ReporteriaCard>
   );

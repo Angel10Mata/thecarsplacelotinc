@@ -352,21 +352,22 @@ export function ClientesTabla() {
                           className={cn(
                             sigetTablaCeldaBotonCompactClass,
                             clientesTablaCellDividerClass,
-                            "p-0",
                           )}
                           style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)}
                         >
-                          <button
-                            type="button"
-                            onClick={() => abrirDetalleCliente(row)}
-                            className={cn(
-                              "flex min-h-[3.5rem] w-full cursor-pointer items-center justify-center tabular-nums text-sm font-bold underline-offset-2 transition-colors hover:bg-brand/10 hover:underline dark:hover:bg-brand-bright/10",
-                              clientesTablaAccentTextClass,
-                            )}
-                            aria-label={`Ver vehículos de ${row.nombre} en detalle`}
-                          >
-                            {row.vehiculosCount}
-                          </button>
+                          <div className={sigetTablaCeldaBotonCentrarClass}>
+                            <button
+                              type="button"
+                              onClick={() => abrirDetalleCliente(row)}
+                              className={cn(
+                                sigetTablaAccionesMenuBotonClass,
+                                "h-9 min-w-9 w-auto px-1.5 text-sm font-bold tabular-nums",
+                              )}
+                              aria-label={`Ver vehículos de ${row.nombre} en detalle`}
+                            >
+                              {row.vehiculosCount}
+                            </button>
+                          </div>
                         </td>
                         <td
                           className={sigetTablaCeldaAccionesClass}

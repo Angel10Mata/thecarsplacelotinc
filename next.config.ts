@@ -1,4 +1,25 @@
+import { createRequire } from "node:module";
+import fs from "node:fs";
+import path from "node:path";
 import type { NextConfig } from "next";
+
+const require = createRequire(import.meta.url);
+
+function ensurePdfWorker() {
+  try {
+    const reactPdfDir = path.dirname(require.resolve("react-pdf/package.json"));
+    const workerSrc = require.resolve("pdfjs-dist/build/pdf.worker.min.mjs", {
+      paths: [reactPdfDir],
+    });
+    const destDir = path.join(process.cwd(), "public");
+    fs.mkdirSync(destDir, { recursive: true });
+    fs.copyFileSync(workerSrc, path.join(destDir, "pdf.worker.min.mjs"));
+  } catch {
+    /* ignore */
+  }
+}
+
+ensurePdfWorker();
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -7,6 +28,7 @@ const LEGACY_APP_BASES = ["/TheCarsPlace", "/TheCarsPlaceLotInc"] as const;
 
 const nextConfig: NextConfig = {
   reactCompiler: isProd,
+  transpilePackages: ["react-pdf", "pdfjs-dist"],
   experimental: {
     serverActions: {
       bodySizeLimit: "11mb",

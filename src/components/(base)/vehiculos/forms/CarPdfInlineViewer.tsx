@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Document, Page } from "react-pdf";
+import { Component, useCallback, useEffect, useRef, useState } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import "../lib/pdfjs-worker";
+import { Document, Page } from "../lib/pdfjs-setup";
 
 type CarPdfInlineViewerProps = {
   url: string;
@@ -12,19 +12,56 @@ type CarPdfInlineViewerProps = {
   fullDocument?: boolean;
 };
 
-async function loadPdfFile(url: string): Promise<ArrayBuffer | string> {
+type PdfFile = { data: Uint8Array };
+
+class PdfErrorBoundary extends Component<
+  { children: ReactNode; onError: () => void },
+  { crashed: boolean }
+> {
+  state = { crashed: false };
+
+  static getDerivedStateFromError(): { crashed: boolean } {
+    return { crashed: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("invoice pdf viewer:", error, info.componentStack);
+    this.props.onError();
+  }
+
+  render() {
+    if (this.state.crashed) return null;
+    return this.props.children;
+  }
+}
+
+async function loadPdfFile(url: string): Promise<PdfFile> {
   const trimmed = url.trim();
   if (!trimmed) {
     throw new Error("EMPTY_URL");
-  }
-  if (trimmed.startsWith("blob:") || trimmed.startsWith("data:")) {
-    return trimmed;
   }
   const res = await fetch(trimmed, { mode: "cors", credentials: "omit" });
   if (!res.ok) {
     throw new Error("FETCH");
   }
-  return res.arrayBuffer();
+  const buffer = await res.arrayBuffer();
+  return { data: new Uint8Array(buffer) };
+}
+
+function InvoiceLoadError() {
+  return (
+    <div className="flex min-h-[14rem] flex-1 items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground">
+      No se pudo mostrar la factura.
+    </div>
+  );
+}
+
+function InvoiceSpinner() {
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
+      <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
+    </div>
+  );
 }
 
 export function CarPdfInlineViewer({
@@ -34,7 +71,7 @@ export function CarPdfInlineViewer({
 }: CarPdfInlineViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pageWidth, setPageWidth] = useState(0);
-  const [pdfFile, setPdfFile] = useState<ArrayBuffer | string | null>(null);
+  const [pdfFile, setPdfFile] = useState<PdfFile | null>(null);
   const [numPages, setNumPages] = useState(0);
   const [loadError, setLoadError] = useState(false);
 
@@ -93,15 +130,7 @@ export function CarPdfInlineViewer({
         className,
       )}
     >
-      {loadError ? (
-        <div className="flex min-h-[14rem] flex-1 items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground">
-          No se pudo mostrar la factura.
-        </div>
-      ) : !pdfFile || pageWidth <= 0 ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-white">
-          <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
-        </div>
-      ) : null}
+      {loadError ? <InvoiceLoadError /> : !pdfFile || pageWidth <= 0 ? <InvoiceSpinner /> : null}
 
       <div
         ref={scrollRef}
@@ -110,32 +139,35 @@ export function CarPdfInlineViewer({
           fullDocument ? "h-full" : "min-h-[28rem]",
         )}
       >
-        {pdfFile && pageWidth > 0 ? (
-          <Document
-            file={pdfFile}
-            onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={() => setLoadError(true)}
-            loading={
-              <div className="flex min-h-[14rem] items-center justify-center">
-                <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
-              </div>
-            }
-            className="flex flex-col items-center gap-2 py-2"
-          >
-            {pageNumbers.map((pageNumber) => (
-              <Page
-                key={pageNumber}
-                pageNumber={pageNumber}
-                width={pageWidth}
-                devicePixelRatio={
-                  typeof window !== "undefined" ? window.devicePixelRatio : 1
-                }
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                className="shadow-sm"
-              />
-            ))}
-          </Document>
+        {pdfFile && pageWidth > 0 && !loadError ? (
+          <PdfErrorBoundary onError={() => setLoadError(true)}>
+            <Document
+              file={pdfFile}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={() => setLoadError(true)}
+              onSourceError={() => setLoadError(true)}
+              loading={
+                <div className="flex min-h-[14rem] items-center justify-center">
+                  <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
+                </div>
+              }
+              className="flex flex-col items-center gap-2 py-2"
+            >
+              {pageNumbers.map((pageNumber) => (
+                <Page
+                  key={pageNumber}
+                  pageNumber={pageNumber}
+                  width={pageWidth}
+                  devicePixelRatio={Math.min(
+                    typeof window !== "undefined" ? window.devicePixelRatio : 1,
+                    2,
+                  )}
+                  renderTextLayer={false}
+                  renderAnnotationLayer={false}
+                />
+              ))}
+            </Document>
+          </PdfErrorBoundary>
         ) : null}
       </div>
     </div>

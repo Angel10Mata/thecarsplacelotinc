@@ -17,7 +17,15 @@ const invoiceLoading = (
 
 const CarPdfInlineViewer = dynamic(
   () =>
-    import("./CarPdfInlineViewer").then((m) => m.CarPdfInlineViewer),
+    import("./CarPdfInlineViewer")
+      .then((m) => m.CarPdfInlineViewer)
+      .catch(() => function InvoiceViewerFallback() {
+        return (
+          <div className="flex min-h-[14rem] flex-1 items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground">
+            No se pudo mostrar la factura.
+          </div>
+        );
+      }),
   { ssr: false, loading: () => invoiceLoading },
 );
 

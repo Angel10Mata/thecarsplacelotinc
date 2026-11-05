@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const isProd = process.env.NODE_ENV === "production";
 
-const APP_BASE = "/admin";
+const APP_BASE = "/panel";
 const LEGACY_APP_BASES = ["/TheCarsPlace", "/TheCarsPlaceLotInc"] as const;
 
 const nextConfig: NextConfig = {

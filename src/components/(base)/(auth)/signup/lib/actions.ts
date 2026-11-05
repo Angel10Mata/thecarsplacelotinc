@@ -3,7 +3,7 @@
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
-import { APP_BASE_PATH } from "@/lib/app-config";
+import { APP_AJUSTES_PATH, APP_BASE_PATH } from "@/lib/app-config";
 import { authSchema, INITIAL_USER_PASSWORD } from "./zod";
 import { mensajeErrorEs } from "@/lib/supabase-errors-es";
 import { mensajeSiServiceRoleKeyInvalida } from "@/lib/supabase-service-role-env";
@@ -151,7 +151,7 @@ export async function signup(
       }
     }
 
-    revalidatePath(`${APP_BASE_PATH}/admin/usuarios`);
+    revalidatePath(`${APP_AJUSTES_PATH}/usuarios`);
 
     return { success: true };
   } catch (err: unknown) {

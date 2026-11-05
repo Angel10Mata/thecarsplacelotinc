@@ -14,7 +14,7 @@ import { AuroraText } from "@/components/ui/aurora-text";
 import { PushNotificationToggle } from "@/components/ui/PushNotificationToggle";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { ADMIN_MENU_ITEMS, APP_MODULES } from "@/lib/app-modules";
-import { APP_BASE_PATH, APP_NAME, LOGOUT_PATH } from "@/lib/app-config";
+import { APP_AJUSTES_PATH, APP_BASE_PATH, APP_NAME, LOGOUT_PATH } from "@/lib/app-config";
 import {
   adminIconColors,
   adminMorphIcons,

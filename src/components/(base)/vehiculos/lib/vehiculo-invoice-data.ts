@@ -63,6 +63,11 @@ export function buildVehiculoFacturaPdfData(
 }
 
 export function vehiculoFacturaPdfFileName(invoiceNumber: string): string {
-  const safe = invoiceNumber.replace(/[^\w.-]+/g, "_").trim() || "factura";
-  return `invoice-${safe}.pdf`;
+  const safe =
+    invoiceNumber
+      .trim()
+      .replace(/[^\w.-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "") || "factura";
+  return `${safe}.pdf`;
 }

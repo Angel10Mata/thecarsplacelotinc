@@ -5,26 +5,26 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { MorphIconBox } from "@/components/ui/morph-hover-icon";
 import { adminIconColors, adminMorphIcons } from "@/lib/morph-icons";
-import { APP_BASE_PATH } from "@/lib/app-config";
+import { APP_AJUSTES_PATH, APP_BASE_PATH } from "@/lib/app-config";
 
 const adminOptions = [
   {
     id: "dispositivos",
-    href: `${APP_BASE_PATH}/admin/dispositivos`,
+    href: `${APP_AJUSTES_PATH}/dispositivos`,
     title: "Dispositivos",
     desc: "Autorizar o rechazar solicitudes de acceso por dispositivo.",
     color: "border-amber-500/20 bg-amber-500/5 dark:border-amber-500/40",
   },
   {
     id: "usuarios",
-    href: `${APP_BASE_PATH}/admin/usuarios`,
+    href: `${APP_AJUSTES_PATH}/usuarios`,
     title: "Usuarios",
     desc: "Gestionar cuentas de usuario, roles y permisos.",
     color: "border-purple-500/20 bg-purple-500/5 dark:border-purple-500/40",
   },
   {
     id: "configuraciones",
-    href: `${APP_BASE_PATH}/admin/configuraciones`,
+    href: `${APP_AJUSTES_PATH}/configuraciones`,
     title: "Configuraciones",
     desc: "Ajustes generales del sistema y seguridad.",
     color: "border-blue-500/20 bg-blue-500/5 dark:border-blue-500/40",

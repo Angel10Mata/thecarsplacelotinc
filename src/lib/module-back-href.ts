@@ -1,4 +1,4 @@
-import { APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
+import { APP_AJUSTES_PATH, APP_BASE_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
 
 export function getModuleBackHref(pathname: string): string | null {
   if (pathname === APP_BASE_PATH || pathname === `${APP_BASE_PATH}/`) {
@@ -62,7 +62,7 @@ export function getModuleBackLabel(pathname: string, backHref: string): string {
     [`${APP_BASE_PATH}/vehiculos`]: "Volver a vehículos",
     [`${APP_BASE_PATH}/clientes`]: "Volver a clientes",
     [`${APP_BASE_PATH}/reporteria`]: "Volver a reportería",
-    [`${APP_BASE_PATH}/admin`]: "Volver a administración",
+    [APP_AJUSTES_PATH]: "Volver a administración",
     [`${APP_BASE_PATH}/usuarios`]: "Volver a usuarios",
     [`${APP_BASE_PATH}/configuraciones`]: "Volver a configuraciones",
     [`${APP_BASE_PATH}/devices`]: "Volver a dispositivos",

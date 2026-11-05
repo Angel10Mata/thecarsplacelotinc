@@ -135,7 +135,7 @@ export function ReporteriaChartTooltipVehiculoRow({
   montoLabel: string;
 }) {
   return (
-    <li className="flex items-start gap-2 text-xs font-medium text-muted-foreground">
+    <li className="flex items-start gap-3 py-2.5 text-xs font-medium text-muted-foreground first:pt-0">
       <span className="min-w-0 flex-1 break-words font-bold text-foreground">
         {titulo}
       </span>
@@ -409,6 +409,17 @@ export const reporteriaChartTooltipCursorOnlyStyle = {
 export const reporteriaChartPlotOuterClass = "overflow-x-visible px-2 pb-4 md:px-4";
 
 export const reporteriaChartPlotClass = "relative h-[22rem] w-full min-w-0";
+export function ReporteriaChartClickHint({
+  label = "Haz clic en un punto para ver los vehículos.",
+}: {
+  label?: string;
+}) {
+  return (
+    <p className="mt-2 border-t border-zinc-200/80 px-1 pt-3 text-center text-[11px] font-semibold leading-snug text-muted-foreground dark:border-zinc-700">
+      {label}
+    </p>
+  );
+}
 
 export function useReporteriaEjeCompacto() {
   const [compact, setCompact] = useState(false);

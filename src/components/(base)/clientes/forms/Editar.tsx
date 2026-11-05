@@ -15,6 +15,11 @@ import {
 } from "@/components/ui/general-modal";
 import { useActualizarCustomer } from "../lib/hooks";
 import type { ClienteListRow } from "../lib/zod";
+import {
+  clienteFormInvalidVacio,
+  validarClienteFormulario,
+  type ClienteFormInvalid,
+} from "../lib/cliente-form-validacion";
 
 type EditarClienteModalProps = {
   open: boolean;
@@ -31,12 +36,16 @@ export default function EditarClienteModal({
   const [customerName, setCustomerName] = useState("");
   const [customerNit, setCustomerNit] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+  const [invalid, setInvalid] = useState<ClienteFormInvalid>(
+    clienteFormInvalidVacio,
+  );
 
   useEffect(() => {
     if (!open || !cliente) return;
     setCustomerName(cliente.nombre);
     setCustomerNit(cliente.nit ?? "");
     setCustomerAddress(cliente.direccion ?? "");
+    setInvalid(clienteFormInvalidVacio);
   }, [open, cliente]);
 
   const handleClose = () => {
@@ -55,16 +64,22 @@ export default function EditarClienteModal({
         onSubmit={async (e) => {
           e.preventDefault();
           if (!cliente) return;
-          if (!customerName.trim()) {
-            toast.warn("Indica el nombre del cliente.");
+          const errores = validarClienteFormulario({
+            nombre: customerName,
+            nit: customerNit,
+            direccion: customerAddress,
+          });
+          if (errores) {
+            setInvalid(errores);
             return;
           }
+          setInvalid(clienteFormInvalidVacio);
           try {
             await actualizar.mutateAsync({
               id: cliente.id,
               customer_name: customerName,
-              customer_nit: customerNit || undefined,
-              customer_address: customerAddress || undefined,
+              customer_nit: customerNit,
+              customer_address: customerAddress,
             });
             toast.success("Cliente actualizado.");
             handleClose();
@@ -80,19 +95,40 @@ export default function EditarClienteModal({
           <ModalLabel>Nombre</ModalLabel>
           <ModalInput
             value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
+            invalid={invalid.nombre}
+            onChange={(e) => {
+              setCustomerName(e.target.value);
+              if (invalid.nombre) {
+                setInvalid((prev) => ({ ...prev, nombre: false }));
+              }
+            }}
             autoFocus
           />
         </ModalField>
         <ModalField>
           <ModalLabel>NIT</ModalLabel>
-          <ModalInput value={customerNit} onChange={(e) => setCustomerNit(e.target.value)} />
+          <ModalInput
+            value={customerNit}
+            invalid={invalid.nit}
+            onChange={(e) => {
+              setCustomerNit(e.target.value);
+              if (invalid.nit) {
+                setInvalid((prev) => ({ ...prev, nit: false }));
+              }
+            }}
+          />
         </ModalField>
         <ModalField>
           <ModalLabel>Dirección</ModalLabel>
           <ModalInput
             value={customerAddress}
-            onChange={(e) => setCustomerAddress(e.target.value)}
+            invalid={invalid.direccion}
+            onChange={(e) => {
+              setCustomerAddress(e.target.value);
+              if (invalid.direccion) {
+                setInvalid((prev) => ({ ...prev, direccion: false }));
+              }
+            }}
           />
         </ModalField>
         <ModalFooter>

@@ -8,7 +8,10 @@ import { cn } from "@/lib/utils";
 import { modulePageHeaderClass, modulePageHeaderStackClass, modulePageShellClass, modulePageTitleClass } from "@/lib/module-layout";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import EditarVehiculoModal from "@/components/(base)/vehiculos/forms/Editar";
-import { VehiculoGaleriaViewerModal } from "@/components/(base)/vehiculos/forms/VehiculoGaleriaViewerModal";
+import {
+  VehiculoGaleriaViewerModal,
+  type VehiculoGaleriaView,
+} from "@/components/(base)/vehiculos/forms/VehiculoGaleriaViewerModal";
 import type { VehiculoListRow } from "@/components/(base)/vehiculos/lib/zod";
 import { ClienteDetalleVehiculosTabla } from "./ClienteDetalleVehiculosTabla";
 import { getCustomerByRefAction } from "./lib/actions";
@@ -78,7 +81,16 @@ export function VerDetalleCliente() {
     isError: detalleError,
   } = useClienteDetalle(customerId, Boolean(customerId) && !entradaLista);
   const [galeriaRow, setGaleriaRow] = useState<VehiculoListRow | null>(null);
+  const [galeriaView, setGaleriaView] = useState<VehiculoGaleriaView>("photos");
   const [editarCarId, setEditarCarId] = useState<string | null>(null);
+
+  const abrirGaleria = (
+    row: VehiculoListRow,
+    view: VehiculoGaleriaView = "photos",
+  ) => {
+    setGaleriaView(view);
+    setGaleriaRow(row);
+  };
 
   const cliente = detalle?.cliente ?? null;
   const rows = detalle?.vehiculos ?? [];
@@ -92,6 +104,7 @@ export function VerDetalleCliente() {
     <>
       <VehiculoGaleriaViewerModal
         row={galeriaRow}
+        initialView={galeriaView}
         onClose={() => setGaleriaRow(null)}
       />
       <EditarVehiculoModal
@@ -150,7 +163,8 @@ export function VerDetalleCliente() {
               rows={rows}
               isLoading={false}
               isError={false}
-              onVerGaleria={setGaleriaRow}
+              onVerGaleria={abrirGaleria}
+              onVerFactura={(row) => abrirGaleria(row, "invoice")}
               onEditar={(row) => setEditarCarId(row.id)}
             />
           </div>

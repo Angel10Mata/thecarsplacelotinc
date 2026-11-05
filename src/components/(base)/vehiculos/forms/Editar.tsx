@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, ChevronLeft, type IconNode } from "lucide";
 import { normalizarFechaCalendario } from "@/lib/fechas-gt";
 import {
@@ -35,6 +35,7 @@ import {
   formatMarcaModeloDisplay,
   parseMarcaModeloInput,
 } from "../lib/helpers";
+import { isCarPdfStoragePath } from "../lib/car-images";
 import { BuscarClienteField } from "./BuscarClienteField";
 import {
   removeCarImageFromStorage,
@@ -42,12 +43,19 @@ import {
 } from "./VehiculoFotosGaleria";
 import type { CustomerRow } from "@/components/(base)/clientes/lib/zod";
 import {
+  VEHICULOS_WIZARD_STEPS,
+  vehiculosWizardFacturaStepClass,
   vehiculosWizardFormClass,
   vehiculosWizardModalContentClass,
   vehiculosWizardStepBodyClass,
+  vehiculosWizardStepCaption,
 } from "../lib/vehiculos-wizard-ui";
-
-const WIZARD_STEPS = 2 as const;
+import {
+  erroresVehiculosWizardStep1,
+  quitarErrorCampoWizardStep1,
+  vehiculosWizardStep1TieneErrores,
+  type VehiculosWizardStep1Errores,
+} from "../lib/vehiculos-wizard-validacion";
 
 type EditarVehiculoModalProps = {
   open: boolean;
@@ -67,11 +75,11 @@ function WizardProgress({ step }: { step: number }) {
   return (
     <div className="shrink-0 space-y-1.5">
       <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        Paso {step} de {WIZARD_STEPS} ·{" "}
-        {step === 1 ? "Datos del vehículo" : "Imágenes y PDF"}
+        Paso {step} de {VEHICULOS_WIZARD_STEPS} ·{" "}
+        {vehiculosWizardStepCaption(step)}
       </p>
       <div className="flex gap-1.5">
-        {Array.from({ length: WIZARD_STEPS }, (_, i) => (
+        {Array.from({ length: VEHICULOS_WIZARD_STEPS }, (_, i) => (
           <div
             key={i}
             className={cn(
@@ -84,36 +92,6 @@ function WizardProgress({ step }: { step: number }) {
       </div>
     </div>
   );
-}
-
-function validateStep1(input: {
-  invoiceNumber: string;
-  invoiceDate: string;
-  marcaModelo: string;
-  total: string;
-  terms: string;
-}): boolean {
-  if (!input.invoiceNumber.trim()) {
-    toast.warn("Indica el número de factura.");
-    return false;
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.invoiceDate)) {
-    toast.warn("Indica una fecha de factura válida.");
-    return false;
-  }
-  if (!input.marcaModelo.trim()) {
-    toast.warn("Indica la marca o modelo del vehículo.");
-    return false;
-  }
-  if (input.total === "" || Number(input.total) < 0) {
-    toast.warn("Indica un total válido.");
-    return false;
-  }
-  if (!input.terms.trim()) {
-    toast.warn("Indica los términos de venta.");
-    return false;
-  }
-  return true;
 }
 
 export default function EditarVehiculoModal({
@@ -145,6 +123,9 @@ export default function EditarVehiculoModal({
   const [total, setTotal] = useState("");
   const [terms, setTerms] = useState(DEFAULT_CAR_TERMS);
   const [incoterms, setIncoterms] = useState(DEFAULT_CAR_INCOTERMS);
+  const [step1Errores, setStep1Errores] = useState<VehiculosWizardStep1Errores>(
+    {},
+  );
 
   useEffect(() => {
     if (!open || !data || !carId || hydratedId === carId) return;
@@ -175,6 +156,7 @@ export default function EditarVehiculoModal({
         buildCarStorageFolderName(car.car_title, car.car_model),
     );
     setStep(1);
+    setStep1Errores({});
     setHydratedId(carId);
   }, [open, data, carId, hydratedId]);
 
@@ -211,25 +193,27 @@ export default function EditarVehiculoModal({
   const setPrecioTotal = (value: string) => {
     setCarPrice(value);
     setTotal(value);
+    setStep1Errores((prev) => quitarErrorCampoWizardStep1(prev, "total"));
+  };
+
+  const validarStep1 = () => {
+    const errores = erroresVehiculosWizardStep1({
+      invoiceNumber,
+      invoiceDate,
+      carVin,
+      marcaModelo,
+      total,
+      terms,
+    });
+    setStep1Errores(errores);
+    return !vehiculosWizardStep1TieneErrores(errores);
   };
 
   const goNext = async () => {
-    if (
-      !validateStep1({
-        invoiceNumber,
-        invoiceDate,
-        marcaModelo,
-        total,
-        terms,
-      })
-    ) {
+    if (!validarStep1()) {
       return;
     }
-    const folderFromMarca = carStorageFolderFromMarcaModeloInput(marcaModelo);
-    if (!folderFromMarca) {
-      toast.warn("Indica marca y modelo para la carpeta en Storage.");
-      return;
-    }
+    const folderFromMarca = carStorageFolderFromMarcaModeloInput(marcaModelo)!;
     if (carImagePaths.length > 0) {
       const folderFromPaths = folderFromCarMediaStoragePath(carImagePaths[0] ?? "");
       setCarStorageFolderId(folderFromPaths ?? folderFromMarca);
@@ -238,6 +222,20 @@ export default function EditarVehiculoModal({
     }
     setStep(2);
   };
+
+  const goToFactura = () => {
+    if (!carStorageFolderId) {
+      setStep1Errores((prev) => ({ ...prev, marcaModelo: true }));
+      setStep(1);
+      return;
+    }
+    setStep(3);
+  };
+
+  const hasFacturaPdf = useMemo(
+    () => carImagePaths.some((path) => isCarPdfStoragePath(path)),
+    [carImagePaths],
+  );
 
   return (
     <ModalShell
@@ -254,7 +252,7 @@ export default function EditarVehiculoModal({
           className={vehiculosWizardFormClass}
           onSubmit={async (e) => {
             e.preventDefault();
-            if (step !== WIZARD_STEPS || !carId) return;
+            if (step !== VEHICULOS_WIZARD_STEPS || !carId) return;
             try {
               const { car_title, car_model } = parseMarcaModeloInput(marcaModelo);
               await actualizar.mutateAsync({
@@ -317,14 +315,26 @@ export default function EditarVehiculoModal({
                   <ModalLabel>Número de factura</ModalLabel>
                   <ModalInput
                     value={invoiceNumber}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
+                    invalid={Boolean(step1Errores.invoiceNumber)}
+                    onChange={(e) => {
+                      setInvoiceNumber(e.target.value);
+                      setStep1Errores((prev) =>
+                        quitarErrorCampoWizardStep1(prev, "invoiceNumber"),
+                      );
+                    }}
                   />
                 </ModalField>
                 <ModalField>
                   <ModalLabel>Fecha de factura</ModalLabel>
                   <ModalFechaCalendario
                     value={invoiceDate}
-                    onChange={setInvoiceDate}
+                    invalid={Boolean(step1Errores.invoiceDate)}
+                    onChange={(value) => {
+                      setInvoiceDate(value);
+                      setStep1Errores((prev) =>
+                        quitarErrorCampoWizardStep1(prev, "invoiceDate"),
+                      );
+                    }}
                   />
                 </ModalField>
               </div>
@@ -335,14 +345,26 @@ export default function EditarVehiculoModal({
                   <ModalLabel>VIN</ModalLabel>
                   <ModalInput
                     value={carVin}
-                    onChange={(e) => setCarVin(e.target.value)}
+                    invalid={Boolean(step1Errores.carVin)}
+                    onChange={(e) => {
+                      setCarVin(e.target.value);
+                      setStep1Errores((prev) =>
+                        quitarErrorCampoWizardStep1(prev, "carVin"),
+                      );
+                    }}
                   />
                 </ModalField>
                 <ModalField>
                   <ModalLabel>Marca / Modelo</ModalLabel>
                   <ModalInput
                     value={marcaModelo}
-                    onChange={(e) => setMarcaModelo(e.target.value)}
+                    invalid={Boolean(step1Errores.marcaModelo)}
+                    onChange={(e) => {
+                      setMarcaModelo(e.target.value);
+                      setStep1Errores((prev) =>
+                        quitarErrorCampoWizardStep1(prev, "marcaModelo"),
+                      );
+                    }}
                     placeholder="Marca / Modelo"
                   />
                 </ModalField>
@@ -365,6 +387,7 @@ export default function EditarVehiculoModal({
                     min={0}
                     step="0.01"
                     value={carPrice}
+                    invalid={Boolean(step1Errores.total)}
                     onChange={(e) => setPrecioTotal(e.target.value)}
                   />
                 </ModalField>
@@ -375,6 +398,7 @@ export default function EditarVehiculoModal({
                     min={0}
                     step="0.01"
                     value={total}
+                    invalid={Boolean(step1Errores.total)}
                     onChange={(e) => setPrecioTotal(e.target.value)}
                   />
                 </ModalField>
@@ -391,18 +415,44 @@ export default function EditarVehiculoModal({
                   <ModalLabel>Términos de venta</ModalLabel>
                   <ModalTextarea
                     value={terms}
-                    onChange={(e) => setTerms(e.target.value)}
+                    invalid={Boolean(step1Errores.terms)}
+                    onChange={(e) => {
+                      setTerms(e.target.value);
+                      setStep1Errores((prev) =>
+                        quitarErrorCampoWizardStep1(prev, "terms"),
+                      );
+                    }}
                     rows={1}
                     className="min-h-10 resize-y"
                   />
                 </ModalField>
               </div>
             </div>
-          ) : (
+          ) : step === 2 ? (
             <div className={cn(vehiculosWizardStepBodyClass, "gap-2.5")}>
               <SectionTitle>Fotografías del vehículo</SectionTitle>
               <VehiculoFotosGaleria
+                mode="photos"
                 storageFolderId={carStorageFolderId}
+                paths={carImagePaths}
+                onChange={setCarImagePaths}
+                onBusyChange={setImagesBusy}
+              />
+            </div>
+          ) : (
+            <div
+              className={cn(
+                vehiculosWizardStepBodyClass,
+                hasFacturaPdf && vehiculosWizardFacturaStepClass,
+                "gap-2.5",
+              )}
+            >
+              <SectionTitle>Factura</SectionTitle>
+              <VehiculoFotosGaleria
+                mode="factura"
+                maxPhotos={1}
+                storageFolderId={carStorageFolderId}
+                invoiceNumber={invoiceNumber}
                 paths={carImagePaths}
                 onChange={setCarImagePaths}
                 onBusyChange={setImagesBusy}
@@ -422,7 +472,7 @@ export default function EditarVehiculoModal({
                   morphOnHover={false}
                   onClick={() => void goNext()}
                   disabled={pending}
-                  ariaLabel="Continuar al paso de imágenes"
+                  ariaLabel="Continuar al paso de fotografías"
                   className="w-auto shrink-0"
                 />
               </>
@@ -434,15 +484,29 @@ export default function EditarVehiculoModal({
                   morphFrom={ChevronLeft as IconNode}
                   morphTo={ChevronLeft as IconNode}
                   morphOnHover={false}
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep(step === 3 ? 2 : 1)}
                   disabled={pending}
                   className="w-auto shrink-0"
                 />
                 <ModalCancelButton onClick={handleClose} disabled={pending} />
-                <ModalSubmit
-                  disabled={pending || imagesBusy || !carStorageFolderId}
-                  label="Guardar"
-                />
+                {step === 2 ? (
+                  <SigetActionButton
+                    label="Siguiente"
+                    accentColor={sigetAccent.guardar}
+                    morphFrom={ArrowRight as IconNode}
+                    morphTo={ArrowRight as IconNode}
+                    morphOnHover={false}
+                    onClick={goToFactura}
+                    disabled={pending || imagesBusy || !carStorageFolderId}
+                    ariaLabel="Continuar al paso de factura"
+                    className="w-auto shrink-0"
+                  />
+                ) : (
+                  <ModalSubmit
+                    disabled={pending || imagesBusy || !carStorageFolderId}
+                    label="Guardar"
+                  />
+                )}
               </>
             )}
           </ModalFooter>

@@ -17,7 +17,7 @@ import {
   Wallet,
   Warehouse,
 } from "lucide";
-import { APP_BASE_PATH } from "@/lib/app-config";
+import { APP_AJUSTES_PATH, APP_BASE_PATH } from "@/lib/app-config";
 
 export type AppModuleDashboardFeature = {
   label: string;
@@ -93,19 +93,19 @@ export const APP_MODULES: AppModuleConfig[] = [
 export const ADMIN_MENU_ITEMS = [
   {
     id: "dispositivos",
-    href: `${APP_BASE_PATH}/admin/dispositivos`,
+    href: `${APP_AJUSTES_PATH}/dispositivos`,
     title: "Dispositivos",
     desc: "Autorizar o rechazar solicitudes de acceso por dispositivo.",
   },
   {
     id: "usuarios",
-    href: `${APP_BASE_PATH}/admin/usuarios`,
+    href: `${APP_AJUSTES_PATH}/usuarios`,
     title: "Usuarios",
     desc: "Gestionar cuentas de usuario, roles y permisos.",
   },
   {
     id: "configuraciones",
-    href: `${APP_BASE_PATH}/admin/configuraciones`,
+    href: `${APP_AJUSTES_PATH}/configuraciones`,
     title: "Configuraciones",
     desc: "Ajustes generales del sistema y seguridad.",
   },

@@ -4,7 +4,9 @@ export const CARS_INVOICE_BUCKET = "Facturas";
 export const CAR_IMAGE_MAX_BYTES = 200 * 1024;
 export const CAR_PDF_MAX_BYTES = 10 * 1024 * 1024;
 
-const CAR_MEDIA_PATH_RE = /^([^/]+)\/(\d+)\.(jpg|pdf)$/;
+const CAR_IMAGE_PATH_RE = /^([^/]+)\/(\d+)\.jpg$/i;
+const CAR_PDF_PATH_RE = /^([^/]+)\/[^/]+\.pdf$/i;
+const CAR_LEGACY_MEDIA_PATH_RE = /^([^/]+)\/(\d+)\.(jpg|pdf)$/i;
 
 const PUBLIC_BUCKET_MARKERS = [
   CARS_IMAGE_BUCKET,
@@ -23,31 +25,45 @@ export function carMediaStorageBucketForPath(path: string): string {
   return CARS_IMAGE_BUCKET;
 }
 
+function storagePathFromRaw(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (CAR_IMAGE_PATH_RE.test(trimmed) || CAR_PDF_PATH_RE.test(trimmed)) {
+    return trimmed;
+  }
+  for (const bucket of PUBLIC_BUCKET_MARKERS) {
+    const publicMarker = `/storage/v1/object/public/${bucket}/`;
+    const markerIdx = trimmed.indexOf(publicMarker);
+    if (markerIdx >= 0) {
+      return decodeURIComponent(
+        trimmed.slice(markerIdx + publicMarker.length).split("?")[0] ?? "",
+      );
+    }
+  }
+  return trimmed;
+}
+
 function parseCarMediaStoragePath(
   raw: string,
 ): { folder: string; index: number; ext: "jpg" | "pdf" } | null {
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
+  const path = storagePathFromRaw(raw);
+  if (!path) return null;
 
-  let path = trimmed;
-  if (!CAR_MEDIA_PATH_RE.test(path)) {
-    for (const bucket of PUBLIC_BUCKET_MARKERS) {
-      const publicMarker = `/storage/v1/object/public/${bucket}/`;
-      const markerIdx = trimmed.indexOf(publicMarker);
-      if (markerIdx >= 0) {
-        path = decodeURIComponent(
-          trimmed.slice(markerIdx + publicMarker.length).split("?")[0] ?? "",
-        );
-        break;
-      }
-    }
+  const imageMatch = path.match(CAR_IMAGE_PATH_RE);
+  if (imageMatch?.[1] && imageMatch[2]) {
+    return { folder: imageMatch[1], index: Number(imageMatch[2]), ext: "jpg" };
   }
 
-  const match = path.match(CAR_MEDIA_PATH_RE);
-  if (!match?.[1] || !match[2] || !match[3]) return null;
-  const ext = match[3];
-  if (ext !== "jpg" && ext !== "pdf") return null;
-  return { folder: match[1], index: Number(match[2]), ext };
+  const legacy = path.match(CAR_LEGACY_MEDIA_PATH_RE);
+  if (legacy?.[1] && legacy[2] && legacy[3]?.toLowerCase() === "pdf") {
+    return { folder: legacy[1], index: Number(legacy[2]), ext: "pdf" };
+  }
+
+  const pdfMatch = path.match(CAR_PDF_PATH_RE);
+  if (pdfMatch?.[1]) {
+    return { folder: pdfMatch[1], index: 0, ext: "pdf" };
+  }
+  return null;
 }
 
 export function normalizeCarFolderId(value: string): string | null {
@@ -57,11 +73,13 @@ export function normalizeCarFolderId(value: string): string | null {
 }
 
 export function isCarPdfStoragePath(path: string): boolean {
-  return parseCarMediaStoragePath(path)?.ext === "pdf";
+  const resolved = storagePathFromRaw(path);
+  return CAR_PDF_PATH_RE.test(resolved) || /\.pdf$/i.test(resolved.split("?")[0] ?? "");
 }
 
 export function isValidCarMediaStoragePath(path: string): boolean {
-  return CAR_MEDIA_PATH_RE.test(path.trim());
+  const trimmed = path.trim();
+  return CAR_IMAGE_PATH_RE.test(trimmed) || CAR_PDF_PATH_RE.test(trimmed);
 }
 
 /** @deprecated Usar isValidCarMediaStoragePath */
@@ -93,6 +111,17 @@ export function nextCarImageStoragePath(
   existingPaths: string[],
 ): string {
   return nextCarMediaStoragePath(folderId, existingPaths, "jpg");
+}
+
+export function carInvoiceStoragePath(
+  folderId: string,
+  fileName: string,
+): string {
+  const folder = normalizeCarFolderId(folderId);
+  if (!folder) {
+    throw new Error("INVALID_FOLDER");
+  }
+  return `${folder}/${fileName}`;
 }
 
 export function carStoragePathToPublicUrl(path: string): string {

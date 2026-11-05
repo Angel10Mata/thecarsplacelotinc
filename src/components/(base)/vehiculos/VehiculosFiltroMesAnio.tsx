@@ -112,36 +112,20 @@ function AnioPickerVehiculos({
           <button
             type="button"
             onClick={() => {
-              irAnio(draftYear);
+              onFiltro(seleccionarTodosFiltroVehiculos(filtro));
               setOpen(false);
             }}
             className={cn(
               "min-w-[4rem] cursor-pointer rounded-xl px-2 py-1 text-center text-base font-black tabular-nums text-zinc-800 transition-colors hover:bg-brand/10 hover:text-brand dark:text-zinc-100 dark:hover:bg-brand-bright/15 dark:hover:text-brand-bright",
-              filtro.alcance === "year" &&
-                selectedYear === draftYear &&
+              filtro.alcance === "all" &&
                 "bg-brand/10 text-brand dark:bg-brand-bright/15 dark:text-brand-bright",
             )}
-            aria-label={`Ver todo el año ${draftYear}`}
+            aria-label="Ver todos los registros"
           >
             {draftYear}
           </button>
           <NavChevron label="Año siguiente" onClick={() => irAnio(draftYear + 1)} />
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            onFiltro(seleccionarTodosFiltroVehiculos(filtro));
-            setOpen(false);
-          }}
-          className={cn(
-            "mb-2 h-9 w-full cursor-pointer rounded-full text-sm font-bold transition-colors",
-            filtro.alcance === "all"
-              ? "bg-brand text-white dark:bg-brand-bright dark:text-zinc-950"
-              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700",
-          )}
-        >
-          Todos
-        </button>
         <div className={filtroAnioMesMesesGridClass}>
           {MESES_CORTOS.map((label, index) => {
             const monthValue = `${draftYear}-${String(index + 1).padStart(2, "0")}`;

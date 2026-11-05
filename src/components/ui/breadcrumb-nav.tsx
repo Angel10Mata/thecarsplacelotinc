@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import {
+  APP_AJUSTES_ROUTE_SEGMENT,
   APP_BASE_PATH,
   APP_ROUTE_SEGMENT,
 } from "@/lib/app-config";
@@ -26,9 +27,9 @@ const SEGMENT_LABELS: Record<string, string> = {
 
 function segmentLabel(segment: string, index: number): string | null {
   if (segment === APP_ROUTE_SEGMENT && index === 0) {
-    return "Admin";
+    return "Panel";
   }
-  if (segment === "admin" && index > 0) {
+  if (segment === APP_AJUSTES_ROUTE_SEGMENT && index > 0) {
     return "Administración";
   }
   return SEGMENT_LABELS[segment] ?? null;

@@ -106,14 +106,29 @@ export async function getGeneratedInvoiceBlobUrl(
   return url;
 }
 
-export async function downloadGeneratedInvoicePdf(row: VehiculoListRow) {
-  const blob = await getGeneratedInvoiceBlob(row);
+function triggerPdfDownload(blob: Blob, invoiceNumber: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = vehiculoFacturaPdfFileName(row.placa);
+  a.download = vehiculoFacturaPdfFileName(invoiceNumber);
+  a.rel = "noopener";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export async function downloadInvoicePdfFromUrl(
+  url: string,
+  invoiceNumber: string,
+) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("DOWNLOAD");
+  const blob = await res.blob();
+  triggerPdfDownload(blob, invoiceNumber);
+}
+
+export async function downloadGeneratedInvoicePdf(row: VehiculoListRow) {
+  const blob = await getGeneratedInvoiceBlob(row);
+  triggerPdfDownload(blob, row.placa);
 }
 
 /** @deprecated Usar getGeneratedInvoiceBlobUrl */

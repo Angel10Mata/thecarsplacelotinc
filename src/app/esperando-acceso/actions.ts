@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { headers } from "next/headers";
-import { APP_BASE_PATH } from "@/lib/app-config";
+import { APP_AJUSTES_PATH, APP_BASE_PATH } from "@/lib/app-config";
 import { sendPushToRoles } from "@/utils/push-utils";
 
 // Aviso a administradores
@@ -16,7 +16,7 @@ async function notifySpecialRoles(userName: string, isResend: boolean) {
   await sendPushToRoles(roles, {
     title,
     body,
-    url: `${APP_BASE_PATH}/admin/dispositivos`,
+    url: `${APP_AJUSTES_PATH}/dispositivos`,
   });
 }
 

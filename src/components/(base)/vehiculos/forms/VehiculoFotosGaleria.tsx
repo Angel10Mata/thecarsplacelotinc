@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FileText, Loader2, Plus, X } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Loader2, Plus, X } from "lucide-react";
 import { toast } from "@/components/ui/general-modal";
 import { cn } from "@/lib/utils";
 import ImageEditorModal from "@/components/imgs/ImageEditorModal";
@@ -9,10 +10,12 @@ import { VEHICLE_PHOTO_ASPECT } from "../lib/vehiculo-galeria-items";
 import {
   CAR_IMAGE_MAX_BYTES,
   CAR_PDF_MAX_BYTES,
+  carInvoiceStoragePath,
   carStoragePathToPublicUrl,
   isCarPdfStoragePath,
   nextCarMediaStoragePath,
 } from "../lib/car-images";
+import { vehiculoFacturaPdfFileName } from "../lib/vehiculo-invoice-data";
 import { compressCarPhotoForStorage } from "../lib/compress-car-photo";
 import { carStorageErrorMessage } from "../lib/storage-messages";
 import {
@@ -22,6 +25,25 @@ import {
 
 const TILE_CLASS =
   "relative aspect-[4/3] w-[8.75rem] shrink-0 overflow-hidden rounded-2xl sm:w-36";
+
+const ADD_TILE_BUTTON_CLASS = cn(
+  TILE_CLASS,
+  "flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-brand/25 bg-brand/5 text-brand transition-colors hover:border-brand/40 hover:bg-brand/10 disabled:opacity-60 dark:border-brand-bright/30 dark:bg-brand-bright/5 dark:text-brand-bright dark:hover:bg-brand-bright/10",
+);
+
+const PHOTOS_GRID_CLASS =
+  "mx-auto grid w-fit grid-cols-2 gap-3 sm:grid-cols-4";
+
+const facturaPreviewLoading = (
+  <div className="flex min-h-[32rem] flex-1 items-center justify-center bg-white md:min-h-[36rem]">
+    <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
+  </div>
+);
+
+const CarPdfInlineViewer = dynamic(
+  () => import("./CarPdfInlineViewer").then((m) => m.CarPdfInlineViewer),
+  { ssr: false, loading: () => facturaPreviewLoading },
+);
 
 const IMAGE_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 const PDF_MIME = "application/pdf";
@@ -112,12 +134,16 @@ function galleryPublicSrc(path: string, epoch: number): string {
   return `${url}${sep}v=${epoch}`;
 }
 
+export type VehiculoFotosGaleriaMode = "photos" | "factura";
+
 type VehiculoFotosGaleriaProps = {
   storageFolderId: string | null;
   paths: string[];
   onChange: (paths: string[]) => void;
   onBusyChange?: (busy: boolean) => void;
   maxPhotos?: number;
+  mode?: VehiculoFotosGaleriaMode;
+  invoiceNumber?: string;
 };
 
 export function VehiculoFotosGaleria({
@@ -126,6 +152,8 @@ export function VehiculoFotosGaleria({
   onChange,
   onBusyChange,
   maxPhotos,
+  mode = "photos",
+  invoiceNumber = "",
 }: VehiculoFotosGaleriaProps) {
   const [uploading, setUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -137,7 +165,19 @@ export function VehiculoFotosGaleria({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
   const pathsRef = useRef(paths);
-  const canAdd = maxPhotos === undefined || paths.length < maxPhotos;
+  const visibleEntries = useMemo(
+    () =>
+      paths
+        .map((path, index) => ({ path, index }))
+        .filter(({ path }) =>
+          mode === "factura"
+            ? isCarPdfStoragePath(path)
+            : !isCarPdfStoragePath(path),
+        ),
+    [mode, paths],
+  );
+  const canAdd =
+    maxPhotos === undefined || visibleEntries.length < maxPhotos;
 
   useEffect(() => {
     pathsRef.current = paths;
@@ -156,19 +196,33 @@ export function VehiculoFotosGaleria({
     const classified = await Promise.all(
       files.map(async (file) => ({ file, kind: await sniffMediaKind(file) })),
     );
-    const accepted = classified.filter((item) => item.kind !== null);
+    const accepted = classified.filter((item) => {
+      if (item.kind === null) return false;
+      if (mode === "factura") return item.kind === "pdf";
+      return item.kind === "image";
+    });
     if (accepted.length === 0) {
       const sample = files[0]?.name?.trim();
+      if (mode === "factura") {
+        toast.warn(
+          sample
+            ? `«${sample}» no es una factura PDF.`
+            : "En este paso solo se sube la factura en PDF (máx. 10 MB).",
+        );
+        return;
+      }
       toast.warn(
         sample
-          ? `No se pudo usar «${sample}». Usa JPG, PNG, WebP o PDF.`
-          : "Solo JPG, PNG, WebP o PDF (máx. 10 MB).",
+          ? `No se pudo usar «${sample}». Usa JPG, PNG o WebP.`
+          : "En este paso solo se suben fotografías (JPG, PNG o WebP).",
       );
       return;
     }
 
     const slotsLeft =
-      maxPhotos === undefined ? accepted.length : Math.max(0, maxPhotos - paths.length);
+      maxPhotos === undefined
+        ? accepted.length
+        : Math.max(0, maxPhotos - visibleEntries.length);
     if (slotsLeft === 0) {
       toast.warn("Límite de archivos alcanzado.");
       return;
@@ -344,20 +398,28 @@ export function VehiculoFotosGaleria({
     folderId: string,
   ): Promise<string[] | null> => {
     if (sourceFile.size > CAR_PDF_MAX_BYTES) {
-      toast.warn("El PDF no puede superar 10 MB.");
+      toast.warn("La factura no puede superar 10 MB.");
       return null;
     }
     try {
-      const newPath = nextCarMediaStoragePath(folderId, currentPaths, "pdf");
-      const formData = new FormData();
-      formData.append("file", sourceFile);
-      formData.append("path", newPath);
-
-      let result = await uploadCarImageStorageAction(formData);
-      if (!result.ok && result.code === "STORAGE_DUPLICATE") {
-        formData.append("upsert", "true");
-        result = await uploadCarImageStorageAction(formData);
+      const invoice = invoiceNumber.trim();
+      if (!invoice) {
+        toast.warn("Ingresa el número de factura antes de subir el PDF.");
+        return null;
       }
+      const fileName = vehiculoFacturaPdfFileName(invoice);
+      const namedFile = new File([sourceFile], fileName, {
+        type: "application/pdf",
+        lastModified: sourceFile.lastModified,
+      });
+      const newPath = carInvoiceStoragePath(folderId, fileName);
+      const previousPdfs = currentPaths.filter((path) => isCarPdfStoragePath(path));
+      const formData = new FormData();
+      formData.append("file", namedFile);
+      formData.append("path", newPath);
+      formData.append("upsert", "true");
+
+      const result = await uploadCarImageStorageAction(formData);
       if (!result.ok) {
         let msg = carStorageErrorMessage(
           result.code,
@@ -366,7 +428,7 @@ export function VehiculoFotosGaleria({
         if (result.code === "STORAGE_SIZE") {
           const kb = Math.round(sourceFile.size / 1024);
           if (sourceFile.size > CAR_PDF_MAX_BYTES) {
-            msg = `El PDF supera 10 MB (Facturas). Tamaño: ${kb} KB.`;
+            msg = `La factura supera 10 MB. Tamaño: ${kb} KB.`;
           } else {
             msg = `Supabase rechazó el PDF (${kb} KB). Los PDF van al bucket «Facturas» (10 MB), no a cars-images (200 KB). Ejecuta db/storage-cars.sql si faltan políticas en Facturas.`;
           }
@@ -375,10 +437,17 @@ export function VehiculoFotosGaleria({
         return null;
       }
 
-      return [...currentPaths, result.path];
+      const stalePdfs = previousPdfs.filter((path) => path !== result.path);
+      await Promise.all(
+        stalePdfs.map((path) => removeCarImageStorageAction(path)),
+      );
+      return [
+        ...currentPaths.filter((path) => !isCarPdfStoragePath(path)),
+        result.path,
+      ];
     } catch (err) {
       console.error(err);
-      toast.error("Error al subir el PDF.");
+      toast.error("Error al subir la factura.");
       return null;
     }
   };
@@ -395,51 +464,97 @@ export function VehiculoFotosGaleria({
     setMediaEpoch(Date.now());
   };
 
+  const facturaEntry = mode === "factura" ? visibleEntries[0] : undefined;
+  const facturaUrl = facturaEntry
+    ? galleryPublicSrc(facturaEntry.path, mediaEpoch)
+    : null;
+
   return (
     <>
       <input
         ref={fileInputRef}
         type="file"
-        multiple
+        multiple={mode !== "factura"}
+        accept={
+          mode === "factura"
+            ? "application/pdf,.pdf"
+            : "image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+        }
         className="sr-only"
         onChange={handleFileSelected}
       />
       <div
-        className="flex flex-wrap items-start gap-3"
+        className={cn(
+          mode === "factura"
+            ? facturaEntry
+              ? "relative flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+              : PHOTOS_GRID_CLASS
+            : PHOTOS_GRID_CLASS,
+        )}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        {paths.map((path, index) => {
-          const isPdf = isCarPdfStoragePath(path);
+        {mode === "factura" ? (
+          facturaEntry && facturaUrl ? (
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-700">
+              <CarPdfInlineViewer url={facturaUrl} fullDocument />
+              <button
+                type="button"
+                onClick={() => void removeAt(facturaEntry.index)}
+                disabled={uploading}
+                className="absolute right-2.5 top-2.5 z-20 flex size-7 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-600 shadow-sm transition-colors hover:bg-red-200 disabled:opacity-50 dark:bg-red-950/80 dark:text-red-300 dark:hover:bg-red-900"
+                aria-label="Quitar factura"
+              >
+                <X size={16} strokeWidth={2.5} />
+              </button>
+              {uploading ? (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 dark:bg-zinc-900/70">
+                  <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={uploading || !storageFolderId}
+              onClick={handleAddClick}
+              className={cn(
+                ADD_TILE_BUTTON_CLASS,
+                isDragging &&
+                  storageFolderId &&
+                  !uploading &&
+                  "border-brand bg-brand/15 ring-2 ring-brand/30 dark:border-brand-bright dark:bg-brand-bright/15 dark:ring-brand-bright/30",
+              )}
+            >
+              {uploading ? (
+                <Loader2 size={28} className="animate-spin" />
+              ) : (
+                <>
+                  <Plus size={28} strokeWidth={2.25} />
+                  <span className="text-center text-[11px] font-black uppercase leading-tight tracking-wider">
+                    {isDragging && storageFolderId ? "Soltar" : "Añadir"}
+                  </span>
+                </>
+              )}
+            </button>
+          )
+        ) : (
+        <>
+        {visibleEntries.map(({ path, index }, visibleIndex) => {
           const publicUrl = galleryPublicSrc(path, mediaEpoch);
           return (
             <div
               key={path}
               className={cn(TILE_CLASS, "bg-zinc-100 dark:bg-zinc-800")}
             >
-              {isPdf ? (
-                <a
-                  href={publicUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-brand transition-colors hover:bg-brand/5 dark:text-brand-bright dark:hover:bg-brand-bright/5"
-                  aria-label="Abrir PDF"
-                >
-                  <FileText className="size-10 shrink-0" strokeWidth={1.75} />
-                  <span className="text-[10px] font-black uppercase tracking-wide">
-                    PDF
-                  </span>
-                </a>
-              ) : (
-                <img
-                  src={publicUrl}
-                  alt=""
-                  className="size-full object-cover"
-                />
-              )}
-              {index === principalImageIndex && principalImageIndex >= 0 ? (
+              <img
+                src={publicUrl}
+                alt=""
+                className="size-full object-cover"
+              />
+              {visibleIndex === 0 && principalImageIndex >= 0 ? (
                 <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
                   Principal
                 </span>
@@ -449,39 +564,31 @@ export function VehiculoFotosGaleria({
                 onClick={() => void removeAt(index)}
                 disabled={uploading}
                 className="absolute right-1.5 top-1.5 flex size-7 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-600 shadow-sm transition-colors hover:bg-red-200 disabled:opacity-50 dark:bg-red-950/80 dark:text-red-300 dark:hover:bg-red-900"
-                aria-label="Quitar archivo"
+                aria-label="Quitar foto"
               >
                 <X size={16} strokeWidth={2.5} />
               </button>
             </div>
           );
         })}
-        {localTiles.map((tile, localIndex) => (
-          <div
-            key={tile.key}
-            className={cn(TILE_CLASS, "bg-zinc-100 dark:bg-zinc-800")}
-          >
-            {tile.isPdf ? (
-              <div className="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-brand dark:text-brand-bright">
-                <FileText className="size-10 shrink-0" strokeWidth={1.75} />
-                <span className="text-[10px] font-black uppercase tracking-wide">
-                  PDF
-                </span>
-              </div>
-            ) : (
+        {localTiles
+          .filter((tile) => !tile.isPdf)
+          .map((tile, localIndex) => (
+            <div
+              key={tile.key}
+              className={cn(TILE_CLASS, "bg-zinc-100 dark:bg-zinc-800")}
+            >
               <img src={tile.url} alt="" className="size-full object-cover" />
-            )}
-            {principalImageIndex < 0 &&
-            localIndex === localTiles.findIndex((item) => !item.isPdf) ? (
-              <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                Principal
+              {principalImageIndex < 0 && localIndex === 0 ? (
+                <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
+                  Principal
+                </span>
+              ) : null}
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
+                <Loader2 size={22} className="animate-spin text-white" />
               </span>
-            ) : null}
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
-              <Loader2 size={22} className="animate-spin text-white" />
-            </span>
-          </div>
-        ))}
+            </div>
+          ))}
 
         {canAdd ? (
           <button
@@ -489,8 +596,7 @@ export function VehiculoFotosGaleria({
             disabled={uploading || !storageFolderId}
             onClick={handleAddClick}
             className={cn(
-              TILE_CLASS,
-              "flex flex-col items-center justify-center gap-1.5 border-2 border-dashed border-brand/25 bg-brand/5 text-brand transition-colors hover:border-brand/40 hover:bg-brand/10 disabled:opacity-60 dark:border-brand-bright/30 dark:bg-brand-bright/5 dark:text-brand-bright dark:hover:bg-brand-bright/10",
+              ADD_TILE_BUTTON_CLASS,
               isDragging &&
                 canAdd &&
                 storageFolderId &&
@@ -504,12 +610,16 @@ export function VehiculoFotosGaleria({
               <>
                 <Plus size={28} strokeWidth={2.25} />
                 <span className="text-center text-[11px] font-black uppercase leading-tight tracking-wider">
-                  {isDragging && canAdd && storageFolderId ? "Soltar" : "Añadir"}
+                  {isDragging && canAdd && storageFolderId
+                    ? "Soltar"
+                    : "Añadir"}
                 </span>
               </>
             )}
           </button>
         ) : null}
+        </>
+        )}
       </div>
       {cropQueue[0] ? (
         <ImageEditorModal

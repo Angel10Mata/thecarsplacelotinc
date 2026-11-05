@@ -23,6 +23,7 @@ import {
   formatMontoCompactoUsd,
   reporteriaChartPlotClass,
   reporteriaChartPlotOuterClass,
+  ReporteriaChartClickHint,
   reporteriaChartTooltipAtFromBarTarget,
   reporteriaChartTooltipCursorOnlyStyle,
   reporteriaPuntoDesdeClick,
@@ -235,6 +236,7 @@ export function GraficasDineroVehiculos({
           />
         ) : null}
         </div>
+        <ReporteriaChartClickHint label="Haz clic en una barra para ver los vehículos." />
       </div>
     </ReporteriaCard>
   );

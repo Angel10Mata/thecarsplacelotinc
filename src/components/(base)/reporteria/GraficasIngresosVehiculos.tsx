@@ -21,6 +21,7 @@ import {
   ReporteriaChartTooltipVehiculoRow,
   reporteriaChartPlotClass,
   reporteriaChartPlotOuterClass,
+  ReporteriaChartClickHint,
   reporteriaChartTooltipCursorOnlyStyle,
   ReporteriaChartXTick,
   intervaloEjeReporteria,

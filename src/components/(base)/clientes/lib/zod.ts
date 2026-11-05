@@ -13,8 +13,8 @@ export type CustomerRow = z.infer<typeof customerRowSchema>;
 
 export const crearCustomerSchema = z.object({
   customer_name: z.string().trim().min(1, "Nombre del cliente requerido"),
-  customer_nit: z.string().trim().optional(),
-  customer_address: z.string().trim().optional(),
+  customer_nit: z.string().trim().min(1, "NIT requerido"),
+  customer_address: z.string().trim().min(1, "Dirección requerida"),
 });
 
 export type CrearCustomerInput = z.infer<typeof crearCustomerSchema>;

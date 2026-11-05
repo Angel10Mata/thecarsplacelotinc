@@ -1,5 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { APP_BASE_PATH, LOGOUT_PATH, PUBLIC_CATALOG_PATH } from "@/lib/app-config";
+import {
+  APP_AJUSTES_PATH,
+  APP_BASE_PATH,
+  LOGOUT_PATH,
+  PUBLIC_CATALOG_PATH,
+} from "@/lib/app-config";
 import { isAdminRole, resolveUserRole } from "@/lib/user-role";
 import { clearSupabaseAuthCookies, createClient } from "@/utils/supabase/proxy";
 
@@ -31,7 +36,7 @@ export async function proxy(request: NextRequest) {
   } catch (error) {
     console.error("Supabase auth error in proxy:", error);
   }
-  const adminPrefix = `${APP_BASE_PATH}/admin`;
+  const adminPrefix = APP_AJUSTES_PATH;
 
   if (!user && pathname.startsWith(APP_BASE_PATH)) {
     const url = request.nextUrl.clone();

@@ -17,6 +17,7 @@ import {
   sigetTablaAccionesMenuBotonClass,
   sigetTablaCeldaAccionesClass,
   sigetTablaCeldaBotonCentrarClass,
+  sigetTablaCeldaBotonCompactClass,
   sigetTablaCeldaBotonHeaderClass,
 } from "@/components/ui/siget-tabla-acciones-ui";
 import {
@@ -278,9 +279,8 @@ export function ClientesTabla() {
                     </th>
                     <th
                       className={cn(
-                        cellPadEstrecho,
+                        sigetTablaCeldaBotonHeaderClass,
                         clientesTablaCellDividerClass,
-                        "w-0 whitespace-nowrap text-center",
                       )}
                       style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)}
                     >
@@ -350,9 +350,9 @@ export function ClientesTabla() {
                         </td>
                         <td
                           className={cn(
-                            cellPadEstrecho,
+                            sigetTablaCeldaBotonCompactClass,
                             clientesTablaCellDividerClass,
-                            "w-0 whitespace-nowrap text-center",
+                            "p-0",
                           )}
                           style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)}
                         >
@@ -360,7 +360,7 @@ export function ClientesTabla() {
                             type="button"
                             onClick={() => abrirDetalleCliente(row)}
                             className={cn(
-                              "cursor-pointer tabular-nums text-sm font-bold underline-offset-2 hover:underline",
+                              "flex min-h-[3.5rem] w-full cursor-pointer items-center justify-center tabular-nums text-sm font-bold underline-offset-2 transition-colors hover:bg-brand/10 hover:underline dark:hover:bg-brand-bright/10",
                               clientesTablaAccentTextClass,
                             )}
                             aria-label={`Ver vehículos de ${row.nombre} en detalle`}

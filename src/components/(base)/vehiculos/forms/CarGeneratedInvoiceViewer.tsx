@@ -66,5 +66,5 @@ export function CarGeneratedInvoiceViewer({
     return invoiceLoading;
   }
 
-  return <CarPdfInlineViewer url={blobUrl} className={className} />;
+  return <CarPdfInlineViewer url={blobUrl} className={className} fullDocument />;
 }

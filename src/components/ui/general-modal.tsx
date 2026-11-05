@@ -214,6 +214,16 @@ export {
 export const modalFieldClass =
   "border border-zinc-200/80 dark:border-zinc-700 focus-visible:border-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-400/25 dark:focus-visible:border-zinc-500 dark:focus-visible:ring-zinc-500/30";
 
+export const modalFieldInvalidClass =
+  "border-red-500 focus-visible:border-red-500 focus-visible:ring-2 focus-visible:ring-red-500/25 dark:border-red-400 dark:focus-visible:border-red-400 dark:focus-visible:ring-red-400/30";
+
+export function modalControlFieldClass(
+  invalid?: boolean,
+  className?: string,
+) {
+  return cn(modalFieldClass, invalid && modalFieldInvalidClass, className);
+}
+
 export const modalAccentClass = "font-bold text-brand dark:text-brand-bright";
 
 const modalInputBaseClass =
@@ -239,7 +249,7 @@ export function ModalForm({
       {...props}
       className={cn("flex h-full min-h-0 flex-1 flex-col", className)}
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain">
+      <div className="scrollbar-zinc flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain pr-0.5 [-webkit-overflow-scrolling:touch]">
         {body}
       </div>
       {footer}
@@ -294,24 +304,31 @@ export function ModalLabel({
 
 export function ModalInput({
   className,
+  invalid,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement>) {
+}: React.InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }) {
   return (
     <input
       {...props}
-      className={cn(modalInputBaseClass, modalFieldClass, className)}
+      aria-invalid={invalid || undefined}
+      className={cn(modalInputBaseClass, modalControlFieldClass(invalid, className))}
     />
   );
 }
 
 export function ModalTextarea({
   className,
+  invalid,
   ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }) {
   return (
     <textarea
       {...props}
-      className={cn(modalTextareaBaseClass, modalFieldClass, className)}
+      aria-invalid={invalid || undefined}
+      className={cn(
+        modalTextareaBaseClass,
+        modalControlFieldClass(invalid, className),
+      )}
     />
   );
 }
@@ -400,6 +417,7 @@ export function ModalFechaCalendario({
   onChange,
   id,
   required,
+  invalid,
   className,
   inputClassName,
 }: {
@@ -407,6 +425,7 @@ export function ModalFechaCalendario({
   onChange: (value: string) => void;
   id?: string;
   required?: boolean;
+  invalid?: boolean;
   className?: string;
   inputClassName?: string;
 }) {
@@ -652,6 +671,7 @@ export function ModalFechaCalendario({
           onChange={handleManualChange}
           onBlur={handleManualBlur}
           required={required}
+          invalid={invalid}
           className={cn("w-full pr-12", inputClassName)}
         />
         <button
@@ -1083,7 +1103,7 @@ export function ModalShell({
           exit={{ opacity: 0 }}
           transition={MODAL_ROOT_TRANSITION}
           className={cn(
-            "fixed inset-0 z-[201] flex flex-col overflow-hidden overscroll-none md:overflow-y-auto md:overscroll-contain",
+            "fixed inset-0 z-[201] flex flex-col overflow-hidden",
             fullscreen
               ? "bg-zinc-100 dark:bg-zinc-900"
               : fullHeight

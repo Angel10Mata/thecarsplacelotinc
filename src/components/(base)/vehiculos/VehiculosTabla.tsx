@@ -4,9 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  EllipsisVertical,
   Loader2,
-  PenSquare,
   Plus,
   Search,
 } from "lucide-react";
@@ -23,32 +21,14 @@ import {
   vehiculosGaleriaEntradaYaResuelta,
 } from "@/components/(base)/vehiculos/lib/vehiculos-galeria-entrada";
 import {
-  sigetTablaAccionesMenuBotonClass,
-  sigetTablaAnchoAccionesColStyle,
-  sigetTablaCeldaAccionesClass,
-  sigetTablaCeldaBotonCentrarClass,
-  sigetTablaCeldaBotonHeaderClass,
-  sigetTablaCeldaFotosVerClass,
-  sigetTablaFotosVerBotonClass,
-} from "@/components/ui/siget-tabla-acciones-ui";
-import {
   SigetTablaPageSizeSelect,
   type SigetTablaPageSizeValue,
 } from "@/components/ui/siget-tabla-page-size-select";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   vehiculosTablaAccentBarClass,
   vehiculosTablaAccentTextClass,
   vehiculosTablaAddOutlineButtonClass,
-  vehiculosTablaBodyRowClass,
   vehiculosTablaCardShellClass,
-  vehiculosTablaCellDividerClass,
-  vehiculosTablaHeadRowClass,
   vehiculosTablaPaginationBarClass,
   vehiculosTablaPaginationControlClass,
   vehiculosTablaSearchInputClass,
@@ -57,21 +37,20 @@ import {
   vehiculosTablaToolbarFiltersClass,
   vehiculosTablaToolbarGridClass,
   vehiculosTablaToolbarSectionClass,
-  vehiculosTablaAnchoFactura,
-  vehiculosTablaAnchoCliente,
-  vehiculosTablaAnchoFotos,
-  vehiculosTablaAnchoMarcaModelo,
-  vehiculosTablaAnchoNo,
-  vehiculosTablaAnchoVin,
-  vehiculosTablaColAnchoStyle,
-  vehiculosTablaDesktopTableWrapClass,
   vehiculosTablaMobileCardsWrapClass,
 } from "./lib/tabla-vehiculos-ui";
 import { VehiculosTablaMobileCards } from "./VehiculosTablaMobileCards";
+import {
+  VehiculosTablaDesktop,
+  VehiculoTablaFilaMenu,
+} from "./VehiculosTablaDesktop";
 import { VehiculosFiltroMesAnioControls } from "./VehiculosFiltroMesAnio";
 import CrearVehiculoModal from "./forms/Crear";
 import EditarVehiculoModal from "./forms/Editar";
-import { VehiculoGaleriaViewerModal } from "./forms/VehiculoGaleriaViewerModal";
+import {
+  VehiculoGaleriaViewerModal,
+  type VehiculoGaleriaView,
+} from "./forms/VehiculoGaleriaViewerModal";
 import { useCars } from "./lib/hooks";
 import { sortVehiculosRecientesPrimero } from "./lib/helpers";
 import {
@@ -80,68 +59,8 @@ import {
   type VehiculosFiltroMesAnio,
 } from "./lib/filtro-mes-anio";
 import type { VehiculoListRow } from "./lib/zod";
-import { Image as ImageNode, Images as ImagesNode } from "lucide";
 
-const cellPad = "px-3 py-3.5";
-const cellPadEstrecho = "px-1.5 py-3.5";
-const marcaModeloCell = "pl-2.5 pr-1";
 type PageSize = SigetTablaPageSizeValue;
-
-function VehiculoFilaMenu({
-  row,
-  onEditar,
-}: {
-  row: VehiculoListRow;
-  onEditar: () => void;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={sigetTablaAccionesMenuBotonClass}
-          aria-label={`Acciones para ${row.placa}`}
-        >
-          <EllipsisVertical className="size-5" aria-hidden />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        side="left"
-        align="center"
-        sideOffset={6}
-        className="z-[200] w-auto min-w-0 border-border bg-white p-1 opacity-100 dark:border-zinc-700 dark:bg-zinc-900"
-      >
-        <DropdownMenuItem
-          className="cursor-pointer gap-2 px-2.5 py-2 font-semibold"
-          onSelect={() => onEditar()}
-        >
-          <PenSquare className="size-4 text-brand dark:text-brand-bright" />
-          Editar
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-function FotoCell({
-  row,
-  onOpen,
-}: {
-  row: VehiculoListRow;
-  onOpen: () => void;
-}) {
-  return (
-    <SigetActionButton
-      label="Ver"
-      accentColor={sigetAccent.abrir}
-      morphFrom={ImageNode}
-      morphTo={ImagesNode}
-      onClick={onOpen}
-      className={sigetTablaFotosVerBotonClass}
-      ariaLabel={`Ver fotos y factura de ${row.placa}`}
-    />
-  );
-}
 
 export function VehiculosTabla() {
   const { data: vehiculos, isLoading, isError } = useCars();
@@ -150,11 +69,16 @@ export function VehiculosTabla() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSize>(15);
   const [galeriaRow, setGaleriaRow] = useState<VehiculoListRow | null>(null);
+  const [galeriaView, setGaleriaView] = useState<VehiculoGaleriaView>("photos");
   const [editarCarId, setEditarCarId] = useState<string | null>(null);
   const [filtroMesAnio, setFiltroMesAnio] = useState<VehiculosFiltroMesAnio>(
     filtroMesAnioPorDefecto,
   );
-  const abrirGaleria = (row: VehiculoListRow) => {
+  const abrirGaleria = (
+    row: VehiculoListRow,
+    view: VehiculoGaleriaView = "photos",
+  ) => {
+    setGaleriaView(view);
     setGaleriaRow(row);
   };
 
@@ -218,6 +142,7 @@ export function VehiculosTabla() {
       <CrearVehiculoModal open={crearOpen} onOpenChange={setCrearOpen} />
       <VehiculoGaleriaViewerModal
         row={galeriaRow}
+        initialView={galeriaView}
         onClose={cerrarGaleria}
       />
       <EditarVehiculoModal
@@ -298,191 +223,17 @@ export function VehiculosTabla() {
 
         {!isLoading && !isError ? (
           <>
-          <div className={vehiculosTablaDesktopTableWrapClass}>
-          <table className="w-full table-fixed border-collapse text-base">
-            <colgroup>
-              <col style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoNo)} />
-              <col style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoFactura)} />
-              <col />
-              <col />
-              <col style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoVin)} />
-              <col style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoFotos)} />
-              <col style={sigetTablaAnchoAccionesColStyle} />
-            </colgroup>
-            <thead>
-              <tr className={vehiculosTablaHeadRowClass}>
-                <th
-                  className={cn(
-                    cellPadEstrecho,
-                    vehiculosTablaCellDividerClass,
-                    "text-center",
-                  )}
-                  style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoNo)}
-                >
-                  No.
-                </th>
-                <th
-                  className={cn(
-                    cellPadEstrecho,
-                    vehiculosTablaCellDividerClass,
-                    "whitespace-nowrap text-center",
-                  )}
-                >
-                  Factura
-                </th>
-                <th
-                  className={cn(
-                    cellPad,
-                    vehiculosTablaCellDividerClass,
-                    "min-w-0 text-center",
-                  )}
-                  style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoCliente)}
-                >
-                  Cliente
-                </th>
-                <th
-                  className={cn(
-                    cellPad,
-                    vehiculosTablaCellDividerClass,
-                    "min-w-0 text-center",
-                  )}
-                  style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoMarcaModelo)}
-                >
-                  Marca / Modelo
-                </th>
-                <th
-                  className={cn(cellPad, vehiculosTablaCellDividerClass, "text-center")}
-                  style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoVin)}
-                >
-                  VIN
-                </th>
-                <th
-                  className={cn(
-                    sigetTablaCeldaBotonHeaderClass,
-                    vehiculosTablaCellDividerClass,
-                  )}
-                  style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoFotos)}
-                >
-                  Fotos
-                </th>
-                <th
-                  className={sigetTablaCeldaBotonHeaderClass}
-                  style={sigetTablaAnchoAccionesColStyle}
-                >
-                  ACC
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {pageItems.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="px-4 py-14 text-center text-sm font-semibold text-muted-foreground"
-                  >
-                    {search.trim()
-                      ? "Sin coincidencias con la búsqueda."
-                      : "Sin registro de vehículos."}
-                  </td>
-                </tr>
-              ) : (
-                pageItems.map((row) => (
-                  <tr key={row.id} className={vehiculosTablaBodyRowClass}>
-                    <td
-                      className={cn(
-                        cellPadEstrecho,
-                        vehiculosTablaCellDividerClass,
-                        "whitespace-nowrap text-center align-middle tabular-nums font-medium text-muted-foreground",
-                      )}
-                      style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoNo)}
-                    >
-                      {row.numeroRegistro}
-                    </td>
-                    <td
-                      className={cn(
-                        cellPadEstrecho,
-                        vehiculosTablaCellDividerClass,
-                        "whitespace-nowrap text-center align-middle",
-                      )}
-                    >
-                      <span className="inline-flex w-max max-w-full items-center justify-center whitespace-nowrap rounded-lg bg-zinc-100 px-2.5 py-1 text-sm font-black uppercase tracking-wider text-foreground dark:bg-zinc-700">
-                        {row.placa}
-                      </span>
-                    </td>
-                    <td
-                      className={cn(
-                        cellPad,
-                        vehiculosTablaCellDividerClass,
-                        "min-w-0 align-middle text-left break-words whitespace-normal",
-                        marcaModeloCell,
-                      )}
-                    >
-                      {row.clienteNombre ? (
-                        <span className="font-semibold leading-snug text-foreground">
-                          {row.clienteNombre}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td
-                      className={cn(
-                        cellPad,
-                        vehiculosTablaCellDividerClass,
-                        "min-w-0 text-left align-middle break-words whitespace-normal",
-                        marcaModeloCell,
-                      )}
-                    >
-                      <span className="inline-flex max-w-full flex-col items-start leading-snug capitalize">
-                        <span className="break-words font-semibold text-foreground">{row.marca}</span>
-                        {row.modelo !== "—" ? (
-                          <span className="break-words text-base text-muted-foreground">
-                            {row.modelo}
-                          </span>
-                        ) : null}
-                      </span>
-                    </td>
-                    <td
-                      className={cn(
-                        cellPad,
-                        vehiculosTablaCellDividerClass,
-                        "whitespace-nowrap text-center align-middle text-sm font-mono uppercase tracking-tight",
-                      )}
-                      style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoVin)}
-                    >
-                      {row.vin ?? "—"}
-                    </td>
-                    <td
-                      className={cn(
-                        sigetTablaCeldaFotosVerClass,
-                        vehiculosTablaCellDividerClass,
-                      )}
-                      style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoFotos)}
-                    >
-                      <div className={sigetTablaCeldaBotonCentrarClass}>
-                        <FotoCell
-                          row={row}
-                          onOpen={() => abrirGaleria(row)}
-                        />
-                      </div>
-                    </td>
-                    <td
-                      className={sigetTablaCeldaAccionesClass}
-                      style={sigetTablaAnchoAccionesColStyle}
-                    >
-                      <div className={sigetTablaCeldaBotonCentrarClass}>
-                        <VehiculoFilaMenu
-                          row={row}
-                          onEditar={() => setEditarCarId(row.id)}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-          </div>
+          <VehiculosTablaDesktop
+            pageItems={pageItems}
+            emptyMessage={
+              search.trim()
+                ? "Sin coincidencias con la búsqueda."
+                : "Sin registro de vehículos."
+            }
+            onVerGaleria={abrirGaleria}
+            onVerFactura={(row) => abrirGaleria(row, "invoice")}
+            onEditar={(row) => setEditarCarId(row.id)}
+          />
 
           <div className={vehiculosTablaMobileCardsWrapClass}>
             {pageItems.length === 0 ? (
@@ -495,8 +246,12 @@ export function VehiculosTabla() {
               <VehiculosTablaMobileCards
                 items={pageItems}
                 onVerGaleria={abrirGaleria}
+                onVerFactura={(row) => abrirGaleria(row, "invoice")}
                 renderAcciones={(row) => (
-                  <VehiculoFilaMenu row={row} onEditar={() => setEditarCarId(row.id)} />
+                  <VehiculoTablaFilaMenu
+                    row={row}
+                    onEditar={() => setEditarCarId(row.id)}
+                  />
                 )}
               />
             )}

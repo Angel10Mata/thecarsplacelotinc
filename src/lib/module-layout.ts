@@ -2,13 +2,16 @@
 
 export const moduleContentMaxWidth = "max-w-screen-2xl";
 
+export const modulePageTopInsetClass = "pt-4 md:pt-6";
+
 export const modulePageShellClass = [
   "w-full",
   moduleContentMaxWidth,
   "mx-auto flex flex-col gap-6",
   "px-0 md:px-5",
-  "pt-32 pb-0 md:pt-28 md:pb-8",
-  "relative mt-4 md:mt-4 min-h-screen",
+  modulePageTopInsetClass,
+  "pb-0 md:pb-8",
+  "relative min-h-0 flex-1",
 ].join(" ");
 
 export const modulePageShellFixedClass = [
@@ -16,12 +19,13 @@ export const modulePageShellFixedClass = [
   moduleContentMaxWidth,
   "mx-auto flex flex-col gap-6",
   "px-0 md:px-5",
-  "pt-32 pb-0 md:pt-28 md:pb-8",
-  "relative mt-4 md:mt-4 flex-1 min-h-0 h-screen",
+  modulePageTopInsetClass,
+  "pb-0 md:pb-8",
+  "relative flex-1 min-h-0 h-screen",
 ].join(" ");
 
 export const dashboardOuterClass =
-  "relative z-10 w-full flex-1 flex flex-col items-stretch justify-start px-3 sm:px-4 md:px-5 lg:px-6 py-4 pb-6 md:py-12 min-h-0 md:mt-4";
+  "relative z-10 w-full flex-1 flex flex-col items-stretch justify-start px-3 sm:px-4 md:px-5 lg:px-6 pt-4 pb-6 md:pt-6 md:pb-8 min-h-0";
 
 export const dashboardInnerClass = [
   "w-full",
@@ -33,7 +37,9 @@ export const dashboardInnerClass = [
 export const adminPageShellClass = [
   "space-y-8 w-full",
   moduleContentMaxWidth,
-  "mx-auto px-3 sm:px-4 md:px-5 pt-32 md:pt-28",
+  "mx-auto px-3 sm:px-4 md:px-5",
+  modulePageTopInsetClass,
+  "pb-6 md:pb-8",
 ].join(" ");
 
 export const modulePageCenteredClass = [
@@ -41,15 +47,17 @@ export const modulePageCenteredClass = [
   moduleContentMaxWidth,
   "mx-auto flex flex-col items-center space-y-8",
   "px-3 sm:px-4 md:px-5",
-  "pt-28 lg:pt-24 pb-8",
+  modulePageTopInsetClass,
+  "pb-8",
 ].join(" ");
 
 export const modulePageScrollClass = [
-  "flex flex-col h-[calc(100vh-4rem)] w-full",
+  "flex flex-col h-[calc(100dvh-var(--banner-height,0px)-var(--app-header-height,var(--header-row-height)))] w-full",
   moduleContentMaxWidth,
   "mx-auto overflow-hidden",
   "px-3 sm:px-4 md:px-5",
-  "pt-3 md:pt-0 pb-10 mt-0 md:mt-4",
+  modulePageTopInsetClass,
+  "pb-10 min-h-0",
 ].join(" ");
 
 export const moduleControlsShellClass =
@@ -79,5 +87,6 @@ export const inventarioPageShellClass = [
   moduleContentMaxWidth,
   "mx-auto flex flex-col gap-3",
   "px-3 sm:px-4 md:px-5",
-  "pt-28 pb-10 md:pt-24 md:pb-12",
+  modulePageTopInsetClass,
+  "pb-10 md:pb-12",
 ].join(" ");

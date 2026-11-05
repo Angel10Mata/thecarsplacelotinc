@@ -28,7 +28,11 @@ export function VehiculoInvoicePanel({
 }) {
   if (invoiceSource.kind === "uploaded-pdf") {
     return (
-      <CarPdfInlineViewer url={invoiceSource.url} className={invoiceViewerClass} />
+      <CarPdfInlineViewer
+        url={invoiceSource.url}
+        className={invoiceViewerClass}
+        fullDocument
+      />
     );
   }
 

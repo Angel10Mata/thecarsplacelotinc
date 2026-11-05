@@ -357,10 +357,13 @@ input[type=number] {
 .scrollbar-hidden {
   scrollbar-width: none;
   -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scrollbar-hidden::-webkit-scrollbar {
-  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 .public-services-grid {
@@ -506,6 +509,33 @@ input[type=number] {
 
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
+}
+
+.scrollbar-zinc {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(161 161 170) transparent;
+}
+
+.scrollbar-zinc::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-zinc::-webkit-scrollbar-thumb {
+  background-color: rgb(161 161 170);
+  border-radius: 9999px;
+}
+
+.scrollbar-zinc::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dark .scrollbar-zinc {
+  scrollbar-color: rgb(82 82 91) transparent;
+}
+
+.dark .scrollbar-zinc::-webkit-scrollbar-thumb {
+  background-color: rgb(82 82 91);
 }
 
 .photo-crop-container {

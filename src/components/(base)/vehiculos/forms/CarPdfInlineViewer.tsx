@@ -50,9 +50,17 @@ function touchDistance(a: Touch, b: Touch): number {
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
 
+const pdfViewerChromeClass =
+  "bg-zinc-100 dark:bg-zinc-900";
+
 function InvoiceLoadError() {
   return (
-    <div className="flex min-h-[14rem] flex-1 items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground">
+    <div
+      className={cn(
+        "flex min-h-[14rem] flex-1 items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground",
+        pdfViewerChromeClass,
+      )}
+    >
       No se pudo mostrar la factura.
     </div>
   );
@@ -213,7 +221,8 @@ export function CarPdfInlineViewer({
   return (
     <div
       className={cn(
-        "relative flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-white",
+        "relative flex min-h-0 w-full flex-1 flex-col overflow-hidden",
+        pdfViewerChromeClass,
         className,
       )}
     >
@@ -229,7 +238,8 @@ export function CarPdfInlineViewer({
         <div
           ref={scrollRef}
           className={cn(
-            "absolute inset-0 overflow-auto bg-white",
+            "absolute inset-0 overflow-auto",
+            pdfViewerChromeClass,
             fullDocument && "touch-none",
           )}
         >
@@ -241,12 +251,18 @@ export function CarPdfInlineViewer({
                 onLoadError={() => setLoadError(true)}
                 onSourceError={() => setLoadError(true)}
                 loading={
-                  <div className="flex min-h-[14rem] items-center justify-center">
+                  <div
+                    className={cn(
+                      "flex min-h-[14rem] items-center justify-center",
+                      pdfViewerChromeClass,
+                    )}
+                  >
                     <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
                   </div>
                 }
                 className={cn(
                   "flex min-h-full flex-col items-center py-2",
+                  pdfViewerChromeClass,
                   renderZoom <= 1 ? "justify-center" : "justify-start",
                 )}
               >
@@ -261,7 +277,7 @@ export function CarPdfInlineViewer({
                     )}
                     renderTextLayer={false}
                     renderAnnotationLayer={false}
-                    className="[&_canvas]:block [&_canvas]:max-w-none"
+                    className="bg-white shadow-sm [&_canvas]:block [&_canvas]:max-w-none dark:bg-white"
                   />
                 ))}
               </Document>

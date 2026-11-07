@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import { cn } from "@/lib/utils";
 import { Document, Page } from "../lib/pdfjs-setup";
+import { resolvePdfFileForViewer } from "../lib/vehiculo-pdf-viewer-file";
 
 type CarPdfInlineViewerProps = {
   url: string;
@@ -83,6 +84,10 @@ export function CarPdfInlineViewer({
   const [zoom, setZoom] = useState(1);
   const [renderZoom, setRenderZoom] = useState(1);
   const [loadError, setLoadError] = useState(false);
+  const [pdfFile, setPdfFile] = useState<string | ArrayBuffer | Blob | null>(
+    null,
+  );
+  const [resolvingPdf, setResolvingPdf] = useState(false);
 
   useEffect(() => {
     zoomRef.current = zoom;
@@ -99,6 +104,37 @@ export function CarPdfInlineViewer({
     setZoom(1);
     setRenderZoom(1);
     setLoadError(false);
+    setPdfFile(null);
+  }, [url]);
+
+  useEffect(() => {
+    if (!url) {
+      setPdfFile(null);
+      setResolvingPdf(false);
+      return;
+    }
+
+    let active = true;
+    setResolvingPdf(true);
+    setLoadError(false);
+    setPdfFile(null);
+
+    void resolvePdfFileForViewer(url)
+      .then((file) => {
+        if (!active) return;
+        setPdfFile(file);
+      })
+      .catch((err) => {
+        console.error("invoice pdf source:", err);
+        if (active) setLoadError(true);
+      })
+      .finally(() => {
+        if (active) setResolvingPdf(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [url]);
 
   useEffect(() => {
@@ -243,10 +279,20 @@ export function CarPdfInlineViewer({
             fullDocument && "touch-none",
           )}
         >
-          {url && pageWidth > 0 && !loadError ? (
+          {resolvingPdf && !loadError ? (
+            <div
+              className={cn(
+                "flex min-h-[14rem] items-center justify-center",
+                pdfViewerChromeClass,
+              )}
+            >
+              <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
+            </div>
+          ) : null}
+          {pdfFile && pageWidth > 0 && !loadError && !resolvingPdf ? (
             <PdfErrorBoundary onError={() => setLoadError(true)}>
               <Document
-                file={url}
+                file={pdfFile}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={() => setLoadError(true)}
                 onSourceError={() => setLoadError(true)}

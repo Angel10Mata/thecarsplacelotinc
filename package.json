@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
+    "predev": "node scripts/ensure-pdf-worker.mjs",
     "build": "next build",
+    "prebuild": "node scripts/ensure-pdf-worker.mjs",
     "start": "next start",
     "lint": "eslint",
     "docs:generate": "node DOCS/generate-docs.mjs",

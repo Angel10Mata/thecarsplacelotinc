@@ -16,8 +16,6 @@
 # next.js
 /.next/
 /out/
-/public/pdf.worker.min.mjs
-
 # production
 /build
 

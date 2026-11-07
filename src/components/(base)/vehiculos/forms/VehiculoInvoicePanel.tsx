@@ -1,34 +1,11 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
 import type { VehiculoInvoiceSource } from "../lib/vehiculo-galeria-items";
 import type { VehiculoListRow } from "../lib/zod";
 import { CarGeneratedInvoiceViewer } from "./CarGeneratedInvoiceViewer";
+import { CarPdfInlineViewer } from "./CarPdfInlineViewer";
 
 const invoiceViewerClass = "h-full min-h-0 w-full min-w-0 flex-1";
-
-const invoiceLoading = (
-  <div className="flex min-h-[14rem] flex-1 items-center justify-center bg-white">
-    <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
-  </div>
-);
-
-function InvoiceViewerFallback() {
-  return (
-    <div className="flex min-h-[14rem] flex-1 items-center justify-center px-6 text-center text-sm font-semibold text-muted-foreground">
-      No se pudo mostrar la factura.
-    </div>
-  );
-}
-
-const CarPdfInlineViewer = dynamic(
-  () =>
-    import("./CarPdfInlineViewer")
-      .then((m) => m.CarPdfInlineViewer)
-      .catch(() => InvoiceViewerFallback),
-  { ssr: false, loading: () => invoiceLoading },
-);
 
 export function VehiculoInvoicePanel({
   invoiceSource,

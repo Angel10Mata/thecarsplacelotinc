@@ -6,7 +6,10 @@ import { ZoomIn, ZoomOut } from "lucide";
 import { Loader2 } from "lucide-react";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import { cn } from "@/lib/utils";
-import { Document, Page } from "../lib/pdfjs-setup";
+import {
+  loadReactPdf,
+  type ReactPdfModule,
+} from "../lib/pdfjs-setup";
 import { resolvePdfFileForViewer } from "../lib/vehiculo-pdf-viewer-file";
 
 type CarPdfInlineViewerProps = {
@@ -88,6 +91,25 @@ export function CarPdfInlineViewer({
     null,
   );
   const [resolvingPdf, setResolvingPdf] = useState(false);
+  const [pdfModule, setPdfModule] = useState<ReactPdfModule | null>(null);
+  const [pdfLibError, setPdfLibError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    setPdfLibError(false);
+    setPdfModule(null);
+    void loadReactPdf()
+      .then((mod) => {
+        if (active) setPdfModule(mod);
+      })
+      .catch((err) => {
+        console.error("react-pdf module:", err);
+        if (active) setPdfLibError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     zoomRef.current = zoom;
@@ -254,6 +276,11 @@ export function CarPdfInlineViewer({
       ? Array.from({ length: numPages }, (_, i) => i + 1)
       : [1];
 
+  const viewerBroken = loadError || pdfLibError;
+  const PdfDocument = pdfModule?.Document;
+  const PdfPage = pdfModule?.Page;
+  const libLoading = !pdfModule && !pdfLibError;
+
   return (
     <div
       className={cn(
@@ -262,8 +289,9 @@ export function CarPdfInlineViewer({
         className,
       )}
     >
-      {loadError ? <InvoiceLoadError /> : null}
-
+      {viewerBroken ? (
+        <InvoiceLoadError />
+      ) : (
       <div
         ref={measureRef}
         className={cn(
@@ -279,7 +307,7 @@ export function CarPdfInlineViewer({
             fullDocument && "touch-none",
           )}
         >
-          {resolvingPdf && !loadError ? (
+          {(libLoading || resolvingPdf) && !viewerBroken ? (
             <div
               className={cn(
                 "flex min-h-[14rem] items-center justify-center",
@@ -289,9 +317,15 @@ export function CarPdfInlineViewer({
               <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
             </div>
           ) : null}
-          {pdfFile && pageWidth > 0 && !loadError && !resolvingPdf ? (
+          {pdfFile &&
+          pageWidth > 0 &&
+          !viewerBroken &&
+          !resolvingPdf &&
+          !libLoading &&
+          PdfDocument &&
+          PdfPage ? (
             <PdfErrorBoundary onError={() => setLoadError(true)}>
-              <Document
+              <PdfDocument
                 file={pdfFile}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={() => setLoadError(true)}
@@ -313,7 +347,7 @@ export function CarPdfInlineViewer({
                 )}
               >
                 {pageNumbers.map((pageNumber) => (
-                  <Page
+                  <PdfPage
                     key={pageNumber}
                     pageNumber={pageNumber}
                     width={pageWidth}
@@ -326,13 +360,14 @@ export function CarPdfInlineViewer({
                     className="bg-white shadow-sm [&_canvas]:block [&_canvas]:max-w-none dark:bg-white"
                   />
                 ))}
-              </Document>
+              </PdfDocument>
             </PdfErrorBoundary>
           ) : null}
         </div>
       </div>
+      )}
 
-      {fullDocument && !loadError && pageWidth > 0 ? (
+      {fullDocument && !viewerBroken && pageWidth > 0 && pdfModule ? (
         <div className="pointer-events-none absolute bottom-3 right-3 z-20 flex gap-1.5">
           <div className="pointer-events-auto">
             <SigetActionButton

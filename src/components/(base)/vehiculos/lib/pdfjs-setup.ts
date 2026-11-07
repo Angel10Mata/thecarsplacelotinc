@@ -1,18 +1,23 @@
 "use client";
 
 import "./pdf-polyfill";
-import { Document, Page, pdfjs } from "react-pdf";
 
-if (typeof window !== "undefined") {
-  try {
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-      "pdfjs-dist/build/pdf.worker.min.mjs",
-      import.meta.url,
-    ).toString();
-  } catch {
-    pdfjs.GlobalWorkerOptions.workerSrc =
-      `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-  }
+export type ReactPdfModule = typeof import("react-pdf");
+
+let reactPdfPromise: Promise<ReactPdfModule> | null = null;
+
+function configurePdfWorker(pdfjs: ReactPdfModule["pdfjs"]): void {
+  if (typeof window === "undefined") return;
+  const version = pdfjs.version;
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 }
 
-export { Document, Page };
+export function loadReactPdf(): Promise<ReactPdfModule> {
+  if (!reactPdfPromise) {
+    reactPdfPromise = import("react-pdf").then((mod) => {
+      configurePdfWorker(mod.pdfjs);
+      return mod;
+    });
+  }
+  return reactPdfPromise;
+}

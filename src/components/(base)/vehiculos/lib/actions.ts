@@ -22,6 +22,75 @@ function resolveRegisteredBy(user: {
   return user.email?.split("@")[0] ?? "Usuario";
 }
 
+type CarsSupabase = Awaited<ReturnType<typeof createClient>>;
+
+async function facturaDuplicadaEnBase(
+  supabase: CarsSupabase,
+  invoiceNumber: string,
+  excludeCarId?: string | null,
+): Promise<
+  | { ok: true; exists: boolean; detail: string }
+  | { ok: false; code: "DB_ERROR" }
+> {
+  const numero = invoiceNumber.trim();
+  if (!numero) {
+    return { ok: true, exists: false, detail: numero };
+  }
+
+  let query = supabase
+    .from("cars")
+    .select("id")
+    .ilike("invoice_number", numero)
+    .limit(1);
+
+  if (excludeCarId?.trim()) {
+    query = query.neq("id", excludeCarId.trim());
+  }
+
+  const { data, error } = await query.maybeSingle();
+
+  if (error) {
+    console.error("facturaDuplicadaEnBase:", error.message);
+    return { ok: false, code: "DB_ERROR" };
+  }
+
+  return {
+    ok: true,
+    exists: Boolean(data),
+    detail: numero,
+  };
+}
+
+export async function verificarFacturaDuplicadaAction(
+  invoiceNumber: string,
+  excludeCarId?: string | null,
+) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { ok: false as const, code: "UNAUTHORIZED" as const };
+
+    const dup = await facturaDuplicadaEnBase(
+      supabase,
+      invoiceNumber,
+      excludeCarId,
+    );
+    if (!dup.ok) {
+      return { ok: false as const, code: dup.code };
+    }
+
+    return {
+      ok: true as const,
+      exists: dup.exists,
+      detail: dup.detail,
+    };
+  } catch {
+    return { ok: false as const, code: "UNKNOWN" as const };
+  }
+}
+
 export async function listCarsAction() {
   try {
     const supabase = await createClient();
@@ -98,8 +167,23 @@ export async function crearCarAction(raw: unknown) {
       .map((url) => url.trim())
       .filter(Boolean);
 
+    const dup = await facturaDuplicadaEnBase(
+      supabase,
+      parsed.data.invoice_number,
+    );
+    if (!dup.ok) {
+      return { ok: false as const, code: "DB_ERROR" };
+    }
+    if (dup.exists) {
+      return {
+        ok: false as const,
+        code: "DUPLICATE_INVOICE" as const,
+        detail: dup.detail,
+      };
+    }
+
     const payload = {
-      invoice_number: parsed.data.invoice_number,
+      invoice_number: parsed.data.invoice_number.trim(),
       invoice_date: `${parsed.data.invoice_date}T12:00:00.000Z`,
       has_signed_receipt: parsed.data.has_signed_receipt,
       customer_id: parsed.data.customer_id ?? null,
@@ -201,8 +285,24 @@ export async function actualizarCarAction(raw: unknown) {
       .map((url) => url.trim())
       .filter(Boolean);
 
+    const dup = await facturaDuplicadaEnBase(
+      supabase,
+      parsed.data.invoice_number,
+      parsed.data.id,
+    );
+    if (!dup.ok) {
+      return { ok: false as const, code: "DB_ERROR" };
+    }
+    if (dup.exists) {
+      return {
+        ok: false as const,
+        code: "DUPLICATE_INVOICE" as const,
+        detail: dup.detail,
+      };
+    }
+
     const payload = {
-      invoice_number: parsed.data.invoice_number,
+      invoice_number: parsed.data.invoice_number.trim(),
       invoice_date: `${parsed.data.invoice_date}T12:00:00.000Z`,
       has_signed_receipt: parsed.data.has_signed_receipt,
       customer_id: parsed.data.customer_id ?? null,

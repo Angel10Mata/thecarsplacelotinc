@@ -28,6 +28,7 @@ import {
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import { cn } from "@/lib/utils";
 import { useCrearCar } from "../lib/hooks";
+import { verificarFacturaDuplicadaAction } from "../lib/actions";
 import {
   carStorageFolderFromMarcaModeloInput,
   DEFAULT_CAR_INCOTERMS,
@@ -121,6 +122,7 @@ export default function CrearVehiculoModal({
   const [step1Errores, setStep1Errores] = useState<VehiculosWizardStep1Errores>(
     {},
   );
+  const [validandoFactura, setValidandoFactura] = useState(false);
 
   const clearFormState = () => {
     setStep(1);
@@ -154,7 +156,7 @@ export default function CrearVehiculoModal({
     clearFormState();
   };
 
-  const pending = crear.isPending;
+  const pending = crear.isPending || validandoFactura;
 
   const setPrecioTotal = (value: string) => {
     setCarPrice(value);
@@ -178,6 +180,33 @@ export default function CrearVehiculoModal({
   const goNext = async () => {
     if (!validarStep1()) {
       return;
+    }
+    const numero = invoiceNumber.trim();
+    setValidandoFactura(true);
+    try {
+      const dup = await verificarFacturaDuplicadaAction(numero);
+      if (!dup.ok) {
+        toast.error(
+          modalActionMessage(
+            dup.code,
+            "No se pudo verificar el número de factura.",
+          ),
+        );
+        return;
+      }
+      if (dup.exists) {
+        toast.error(
+          vehiculoActionErrorMessage(
+            "DUPLICATE_INVOICE",
+            "Ese número de factura ya fue ingresado.",
+            dup.detail,
+          ),
+        );
+        setStep1Errores((prev) => ({ ...prev, invoiceNumber: true }));
+        return;
+      }
+    } finally {
+      setValidandoFactura(false);
     }
     const folderFromMarca = carStorageFolderFromMarcaModeloInput(marcaModelo)!;
     if (carImagePaths.length > 0) {
@@ -434,7 +463,7 @@ export default function CrearVehiculoModal({
                 morphTo={ArrowRight as IconNode}
                 morphOnHover={false}
                 onClick={() => void goNext()}
-                disabled={pending}
+                disabled={pending || validandoFactura}
                 ariaLabel="Continuar al paso de fotografías"
                 className="w-auto shrink-0"
               />

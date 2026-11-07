@@ -1,7 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { APP_LOGO_OVERLAY_TAGLINE } from "@/lib/app-config";
+import {
+  APP_HEADER_BRAND_MAIN,
+  APP_HEADER_BRAND_SUB,
+  APP_LOGO_OVERLAY_TAGLINE,
+} from "@/lib/app-config";
 import { AppLogo } from "./AppLogo";
 
 type AnimacionLogoProps = {
@@ -19,17 +23,27 @@ export default function AnimacionLogo({ isOpen, onClose }: AnimacionLogoProps) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-[1000000] flex items-center justify-center bg-white/70 dark:bg-background/80 backdrop-blur-[20px] cursor-pointer p-4 lg:p-12 overflow-hidden"
+          className="fixed inset-0 z-[1000000] flex cursor-pointer items-center justify-center overflow-hidden bg-zinc-950 p-4 lg:p-12"
         >
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_55%_at_50%_42%,rgba(220,38,38,0.28),transparent_62%)]"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.4),transparent_70%)]"
+            aria-hidden
+          />
+
           <motion.button
-            initial={{ opacity: 0, rotate: -90 }}
-            animate={{ opacity: 1, rotate: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             type="button"
-            className="absolute top-8 right-8 p-3 rounded-full bg-black/10 dark:bg-white/10 text-black dark:text-white hover:bg-black/20 dark:hover:bg-white/20 transition-colors z-20"
+            className="absolute right-6 top-6 z-20 cursor-pointer rounded-full bg-white/10 p-3 text-white transition-colors hover:bg-white/20 md:right-8 md:top-8"
             onClick={(e) => {
               e.stopPropagation();
               onClose();
             }}
+            aria-label="Cerrar"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -37,21 +51,39 @@ export default function AnimacionLogo({ isOpen, onClose }: AnimacionLogoProps) {
               viewBox="0 0 24 24"
               strokeWidth={2.5}
               stroke="currentColor"
-              className="w-6 h-6"
+              className="h-6 w-6"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
             </svg>
           </motion.button>
 
           <motion.div
-            initial={{ scale: 1.15, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.85, opacity: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center justify-center gap-4 pointer-events-none select-none"
+            initial={{ scale: 1.08, opacity: 0, y: 12 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.94, opacity: 0, y: 8 }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            className="relative z-10 flex select-none flex-col items-center justify-center gap-7 pointer-events-none md:gap-10"
           >
-            <AppLogo size={320} priority className="w-[min(80vw,320px)] h-auto" />
-            <p className="max-w-[min(90vw,28rem)] text-center text-sm font-bold tracking-wide text-muted-foreground md:text-base">
+            <div className="overflow-hidden rounded-2xl border border-zinc-700/90 bg-zinc-900 shadow-2xl shadow-red-950/50 md:rounded-3xl">
+              <AppLogo
+                size={168}
+                priority
+                className="h-36 w-36 object-cover md:h-44 md:w-44"
+              />
+            </div>
+
+            <div className="flex flex-col items-center gap-1 text-center">
+              <p className="text-4xl font-black uppercase leading-none tracking-tight text-brand-bright md:text-5xl lg:text-6xl">
+                {APP_HEADER_BRAND_MAIN.toUpperCase()}
+              </p>
+              <p className="text-3xl font-black uppercase leading-none tracking-tight text-zinc-500 md:text-4xl lg:text-5xl">
+                {APP_HEADER_BRAND_SUB.toUpperCase()}
+              </p>
+            </div>
+
+            <div className="h-1 w-20 rounded-full bg-brand-bright md:w-24" aria-hidden />
+
+            <p className="max-w-[min(92vw,26rem)] text-center text-base font-medium leading-relaxed text-zinc-300 md:max-w-xl md:text-lg">
               {APP_LOGO_OVERLAY_TAGLINE}
             </p>
           </motion.div>

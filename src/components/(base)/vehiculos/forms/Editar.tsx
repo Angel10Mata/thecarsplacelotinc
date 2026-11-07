@@ -25,6 +25,7 @@ import {
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import { cn } from "@/lib/utils";
 import { useActualizarCar, useCarForEdit } from "../lib/hooks";
+import { verificarFacturaDuplicadaAction } from "../lib/actions";
 import {
   buildCarStorageFolderName,
   carStorageFolderFromMarcaModeloInput,
@@ -126,6 +127,7 @@ export default function EditarVehiculoModal({
   const [step1Errores, setStep1Errores] = useState<VehiculosWizardStep1Errores>(
     {},
   );
+  const [validandoFactura, setValidandoFactura] = useState(false);
 
   useEffect(() => {
     if (!open || !data || !carId || hydratedId === carId) return;
@@ -187,7 +189,7 @@ export default function EditarVehiculoModal({
     onOpenChange(false);
   };
 
-  const pending = actualizar.isPending;
+  const pending = actualizar.isPending || validandoFactura;
   const ready = hydratedId === carId && !!carId;
 
   const setPrecioTotal = (value: string) => {
@@ -212,6 +214,33 @@ export default function EditarVehiculoModal({
   const goNext = async () => {
     if (!validarStep1()) {
       return;
+    }
+    const numero = invoiceNumber.trim();
+    setValidandoFactura(true);
+    try {
+      const dup = await verificarFacturaDuplicadaAction(numero, carId);
+      if (!dup.ok) {
+        toast.error(
+          modalActionMessage(
+            dup.code,
+            "No se pudo verificar el número de factura.",
+          ),
+        );
+        return;
+      }
+      if (dup.exists) {
+        toast.error(
+          vehiculoActionErrorMessage(
+            "DUPLICATE_INVOICE",
+            "Ese número de factura ya fue ingresado.",
+            dup.detail,
+          ),
+        );
+        setStep1Errores((prev) => ({ ...prev, invoiceNumber: true }));
+        return;
+      }
+    } finally {
+      setValidandoFactura(false);
     }
     const folderFromMarca = carStorageFolderFromMarcaModeloInput(marcaModelo)!;
     if (carImagePaths.length > 0) {

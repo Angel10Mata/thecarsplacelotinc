@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import { modalAccentClass } from "@/components/ui/general-modal";
@@ -31,9 +31,46 @@ function DetalleLabel({ children }: { children: string }) {
   );
 }
 
-export function VerDetalleCliente() {
-  const router = useRouter();
+function ClienteDetalleSearchParams({
+  onLegacy,
+}: {
+  onLegacy: (nit: string, nombre: string) => void;
+}) {
   const searchParams = useSearchParams();
+  const nit = searchParams.get("nit")?.trim() ?? "";
+  const nombre = searchParams.get("nombre")?.trim() ?? "";
+
+  useEffect(() => {
+    onLegacy(nit, nombre);
+  }, [nit, nombre, onLegacy]);
+
+  return null;
+}
+
+export function VerDetalleCliente() {
+  const [legacyRef, setLegacyRef] = useState({ nit: "", nombre: "" });
+  const onLegacy = useCallback((nit: string, nombre: string) => {
+    setLegacyRef({ nit, nombre });
+  }, []);
+
+  return (
+    <>
+      <Suspense fallback={null}>
+        <ClienteDetalleSearchParams onLegacy={onLegacy} />
+      </Suspense>
+      <VerDetalleClienteBody nit={legacyRef.nit} nombre={legacyRef.nombre} />
+    </>
+  );
+}
+
+function VerDetalleClienteBody({
+  nit,
+  nombre,
+}: {
+  nit: string;
+  nombre: string;
+}) {
+  const router = useRouter();
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [entradaLista, setEntradaLista] = useState(true);
 
@@ -41,8 +78,6 @@ export function VerDetalleCliente() {
     let cancelled = false;
 
     async function resolverEntrada() {
-      const nit = searchParams.get("nit")?.trim() ?? "";
-      const nombre = searchParams.get("nombre")?.trim() ?? "";
       const tieneQueryLegacy = nit.length > 0 || nombre.length > 0;
 
       if (tieneQueryLegacy) {
@@ -73,7 +108,7 @@ export function VerDetalleCliente() {
     return () => {
       cancelled = true;
     };
-  }, [router, searchParams]);
+  }, [router, nit, nombre]);
 
   const {
     data: detalle,

@@ -124,7 +124,7 @@ export function VehiculoGaleriaViewerModal({
 }: VehiculoGaleriaViewerModalProps) {
   const [selected, setSelected] = useState(0);
   const [viewMode, setViewMode] = useState<VehiculoGaleriaView>(initialView);
-  const invoiceOnly = initialView === "invoice";
+  const [invoiceMounted, setInvoiceMounted] = useState(initialView === "invoice");
 
   const open = Boolean(row);
   const carId = row?.id ?? null;
@@ -150,16 +150,23 @@ export function VehiculoGaleriaViewerModal({
   useEffect(() => {
     setSelected(0);
     setViewMode(initialView);
+    setInvoiceMounted(initialView === "invoice");
   }, [row?.id, initialView]);
 
   useEffect(() => {
-    if (!displayRow) return;
+    if (viewMode === "invoice") {
+      setInvoiceMounted(true);
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (!displayRow || viewMode !== "invoice") return;
     prefetchInvoicePdfLibs();
     if (invoiceSource?.kind !== "generated-invoice") return;
     void import("../lib/vehiculo-invoice-pdf-client").then((mod) => {
       mod.prefetchGeneratedInvoicePdf(displayRow);
     });
-  }, [displayRow, invoiceSource?.kind]);
+  }, [displayRow, invoiceSource?.kind, viewMode]);
 
   useEffect(() => {
     if (selected >= photoItems.length) {
@@ -355,10 +362,12 @@ export function VehiculoGaleriaViewerModal({
             aria-hidden={showingPhotos}
           >
             <div className={cn(galeriaMediaPanelInvoiceClass, "h-full min-h-0 flex flex-col")}>
-              <VehiculoInvoicePanel
-                invoiceSource={invoiceSourceResolved}
-                row={displayRow}
-              />
+              {invoiceMounted ? (
+                <VehiculoInvoicePanel
+                  invoiceSource={invoiceSourceResolved}
+                  row={displayRow}
+                />
+              ) : null}
             </div>
           </motion.div>
         </div>

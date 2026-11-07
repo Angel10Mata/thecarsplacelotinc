@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ModuleRouteSuspenseFallback } from "@/components/ui/module-page-loading";
+import { ModuleDataLoadingPanel } from "@/components/ui/module-page-loading";
 import {
   clienteDetallePath,
   guardarClienteDetalleEnSesion,
@@ -23,7 +23,7 @@ export function ClienteDetalleLegacyEntrada({
     router.replace(clienteDetallePath());
   }, [customerId, router]);
 
-  return <ModuleRouteSuspenseFallback />;
+  return <ModuleDataLoadingPanel minHeightClass="min-h-[16rem]" />;
 }
 
 export function ClienteDetalleLegacyEntradaInvalida() {
@@ -33,5 +33,5 @@ export function ClienteDetalleLegacyEntradaInvalida() {
     router.replace(`${APP_BASE_PATH}/clientes`);
   }, [router]);
 
-  return <ModuleRouteSuspenseFallback />;
+  return <ModuleDataLoadingPanel minHeightClass="min-h-[16rem]" />;
 }

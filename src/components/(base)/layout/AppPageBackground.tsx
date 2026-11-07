@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { AppHexagonBackdrop } from "@/components/(base)/layout/AppHexagonBackdrop";
-import { ModuleRouteReady } from "@/components/ui/module-route-ready";
 import { cn } from "@/lib/utils";
 
 type AppPageBackgroundProps = {
@@ -38,7 +37,7 @@ export function AppPageBackground({
           contentClassName,
         )}
       >
-        <ModuleRouteReady>{children}</ModuleRouteReady>
+        {children}
       </div>
     </div>
   );

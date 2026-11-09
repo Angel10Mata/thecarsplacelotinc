@@ -17,6 +17,7 @@ import { useActualizarCustomer } from "../lib/hooks";
 import type { ClienteListRow } from "../lib/zod";
 import {
   clienteFormInvalidVacio,
+  mensajeToastCamposCliente,
   validarClienteFormulario,
   type ClienteFormInvalid,
 } from "../lib/cliente-form-validacion";
@@ -71,6 +72,7 @@ export default function EditarClienteModal({
           });
           if (errores) {
             setInvalid(errores);
+            toast.warn(mensajeToastCamposCliente(errores));
             return;
           }
           setInvalid(clienteFormInvalidVacio);

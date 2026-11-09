@@ -10,7 +10,10 @@ import {
   loadReactPdf,
   type ReactPdfModule,
 } from "../lib/pdfjs-setup";
-import { resolvePdfFileForViewer } from "../lib/vehiculo-pdf-viewer-file";
+import {
+  pdfViewerStorageKey,
+  resolvePdfFileForViewer,
+} from "../lib/vehiculo-pdf-viewer-file";
 
 type CarPdfInlineViewerProps = {
   url: string;
@@ -81,6 +84,7 @@ export function CarPdfInlineViewer({
   const zoomRef = useRef(1);
   const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
   const lastTapRef = useRef(0);
+  const pdfSourceKeyRef = useRef("");
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const [numPages, setNumPages] = useState(0);
   const [nativePage, setNativePage] = useState<NativePageSize>(DEFAULT_PAGE_SIZE);
@@ -96,8 +100,6 @@ export function CarPdfInlineViewer({
 
   useEffect(() => {
     let active = true;
-    setPdfLibError(false);
-    setPdfModule(null);
     void loadReactPdf()
       .then((mod) => {
         if (active) setPdfModule(mod);
@@ -121,25 +123,28 @@ export function CarPdfInlineViewer({
   }, [zoom]);
 
   useEffect(() => {
-    setNumPages(0);
-    setNativePage(DEFAULT_PAGE_SIZE);
-    setZoom(1);
-    setRenderZoom(1);
-    setLoadError(false);
-    setPdfFile(null);
-  }, [url]);
-
-  useEffect(() => {
     if (!url) {
+      pdfSourceKeyRef.current = "";
       setPdfFile(null);
       setResolvingPdf(false);
+      setLoadError(false);
       return;
+    }
+
+    const sourceKey = pdfViewerStorageKey(url);
+    const sourceChanged = pdfSourceKeyRef.current !== sourceKey;
+    if (sourceChanged) {
+      pdfSourceKeyRef.current = sourceKey;
+      setNumPages(0);
+      setNativePage(DEFAULT_PAGE_SIZE);
+      setZoom(1);
+      setRenderZoom(1);
+      setLoadError(false);
+      setPdfFile(null);
     }
 
     let active = true;
     setResolvingPdf(true);
-    setLoadError(false);
-    setPdfFile(null);
 
     void resolvePdfFileForViewer(url)
       .then((file) => {
@@ -270,6 +275,11 @@ export function CarPdfInlineViewer({
     viewport.width > 0 && Number.isFinite(fitScale) && fitScale > 0
       ? Math.max(1, Math.floor(nativePage.width * fitScale * renderZoom))
       : 0;
+  const fallbackPageWidth =
+    viewport.width > 0
+      ? Math.max(1, Math.floor(availableWidth * renderZoom))
+      : 0;
+  const renderPageWidth = pageWidth > 0 ? pageWidth : fallbackPageWidth;
 
   const pageNumbers =
     fullDocument && numPages > 1
@@ -280,6 +290,19 @@ export function CarPdfInlineViewer({
   const PdfDocument = pdfModule?.Document;
   const PdfPage = pdfModule?.Page;
   const libLoading = !pdfModule && !pdfLibError;
+  const waitingForLayout = Boolean(
+    pdfFile && renderPageWidth <= 0 && !viewerBroken,
+  );
+  const showBlockingLoader =
+  (libLoading && !pdfFile) ||
+    (resolvingPdf && !pdfFile) ||
+    waitingForLayout;
+  const canRenderPdf =
+    Boolean(pdfFile) &&
+    renderPageWidth > 0 &&
+    !viewerBroken &&
+    PdfDocument &&
+    PdfPage;
 
   return (
     <div
@@ -307,7 +330,7 @@ export function CarPdfInlineViewer({
             fullDocument && "touch-none",
           )}
         >
-          {(libLoading || resolvingPdf) && !viewerBroken ? (
+          {showBlockingLoader ? (
             <div
               className={cn(
                 "flex min-h-[14rem] items-center justify-center",
@@ -317,29 +340,14 @@ export function CarPdfInlineViewer({
               <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
             </div>
           ) : null}
-          {pdfFile &&
-          pageWidth > 0 &&
-          !viewerBroken &&
-          !resolvingPdf &&
-          !libLoading &&
-          PdfDocument &&
-          PdfPage ? (
+          {canRenderPdf ? (
             <PdfErrorBoundary onError={() => setLoadError(true)}>
               <PdfDocument
                 file={pdfFile}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={() => setLoadError(true)}
                 onSourceError={() => setLoadError(true)}
-                loading={
-                  <div
-                    className={cn(
-                      "flex min-h-[14rem] items-center justify-center",
-                      pdfViewerChromeClass,
-                    )}
-                  >
-                    <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
-                  </div>
-                }
+                loading={null}
                 className={cn(
                   "flex min-h-full flex-col items-center py-2",
                   pdfViewerChromeClass,
@@ -350,7 +358,7 @@ export function CarPdfInlineViewer({
                   <PdfPage
                     key={pageNumber}
                     pageNumber={pageNumber}
-                    width={pageWidth}
+                    width={renderPageWidth}
                     devicePixelRatio={Math.min(
                       typeof window !== "undefined" ? window.devicePixelRatio : 1,
                       2,
@@ -367,7 +375,7 @@ export function CarPdfInlineViewer({
       </div>
       )}
 
-      {fullDocument && !viewerBroken && pageWidth > 0 && pdfModule ? (
+      {fullDocument && !viewerBroken && renderPageWidth > 0 && pdfModule ? (
         <div className="pointer-events-none absolute bottom-3 right-3 z-20 flex gap-1.5">
           <div className="pointer-events-auto">
             <SigetActionButton

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { Loader2, Plus, X } from "lucide-react";
-import { toast } from "@/components/ui/general-modal";
+import { CarPdfInlineViewer } from "./CarPdfInlineViewer";
+import { ModalConfirmDelete, toast } from "@/components/ui/general-modal";
 import { cn } from "@/lib/utils";
 import ImageEditorModal from "@/components/imgs/ImageEditorModal";
 import { VEHICLE_PHOTO_ASPECT } from "../lib/vehiculo-galeria-items";
@@ -33,17 +33,6 @@ const ADD_TILE_BUTTON_CLASS = cn(
 
 const PHOTOS_GRID_CLASS =
   "mx-auto grid w-fit grid-cols-2 gap-3 sm:grid-cols-4";
-
-const facturaPreviewLoading = (
-  <div className="flex min-h-[32rem] flex-1 items-center justify-center bg-white md:min-h-[36rem]">
-    <Loader2 className="size-8 animate-spin text-brand dark:text-brand-bright" />
-  </div>
-);
-
-const CarPdfInlineViewer = dynamic(
-  () => import("./CarPdfInlineViewer").then((m) => m.CarPdfInlineViewer),
-  { ssr: false, loading: () => facturaPreviewLoading },
-);
 
 const IMAGE_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 const PDF_MIME = "application/pdf";
@@ -136,6 +125,11 @@ function galleryPublicSrc(path: string, epoch: number): string {
 
 export type VehiculoFotosGaleriaMode = "photos" | "factura";
 
+type RemovePrompt = {
+  index: number;
+  kind: "photo" | "factura";
+};
+
 type VehiculoFotosGaleriaProps = {
   storageFolderId: string | null;
   paths: string[];
@@ -162,6 +156,8 @@ export function VehiculoFotosGaleria({
     { key: string; url: string; isPdf: boolean }[]
   >([]);
   const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [removePrompt, setRemovePrompt] = useState<RemovePrompt | null>(null);
+  const [removePending, setRemovePending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
   const pathsRef = useRef(paths);
@@ -458,15 +454,40 @@ export function VehiculoFotosGaleria({
     const result = await removeCarImageStorageAction(path);
     if (!result.ok) {
       toast.error(carStorageErrorMessage(result.code));
-      return;
+      return false;
     }
     onChange(paths.filter((_, i) => i !== index));
     setMediaEpoch(Date.now());
+    return true;
+  };
+
+  const requestRemoveAt = (index: number) => {
+    if (uploading) return;
+    setRemovePrompt({
+      index,
+      kind: mode === "factura" ? "factura" : "photo",
+    });
+  };
+
+  const confirmRemove = async () => {
+    if (!removePrompt) return;
+    setRemovePending(true);
+    try {
+      const ok = await removeAt(removePrompt.index);
+      if (ok) setRemovePrompt(null);
+    } finally {
+      setRemovePending(false);
+    }
   };
 
   const facturaEntry = mode === "factura" ? visibleEntries[0] : undefined;
-  const facturaUrl = facturaEntry
-    ? galleryPublicSrc(facturaEntry.path, mediaEpoch)
+  const facturaViewerUrl = useMemo(
+    () =>
+      facturaEntry ? carStoragePathToPublicUrl(facturaEntry.path) : null,
+    [facturaEntry],
+  );
+  const facturaViewerKey = facturaEntry
+    ? `${facturaEntry.path}:${mediaEpoch}`
     : null;
 
   return (
@@ -485,9 +506,10 @@ export function VehiculoFotosGaleria({
       />
       <div
         className={cn(
+          "relative",
           mode === "factura"
             ? facturaEntry
-              ? "relative flex min-h-0 w-full flex-1 flex-col overflow-hidden"
+              ? "flex min-h-0 w-full flex-1 flex-col overflow-hidden"
               : PHOTOS_GRID_CLASS
             : PHOTOS_GRID_CLASS,
         )}
@@ -497,12 +519,16 @@ export function VehiculoFotosGaleria({
         onDrop={handleDrop}
       >
         {mode === "factura" ? (
-          facturaEntry && facturaUrl ? (
+          facturaEntry && facturaViewerUrl && facturaViewerKey ? (
             <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-700">
-              <CarPdfInlineViewer url={facturaUrl} fullDocument />
+              <CarPdfInlineViewer
+                key={facturaViewerKey}
+                url={facturaViewerUrl}
+                fullDocument
+              />
               <button
                 type="button"
-                onClick={() => void removeAt(facturaEntry.index)}
+                onClick={() => requestRemoveAt(facturaEntry.index)}
                 disabled={uploading}
                 className="absolute right-2.5 top-2.5 z-20 flex size-7 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-600 shadow-sm transition-colors hover:bg-red-200 disabled:opacity-50 dark:bg-red-950/80 dark:text-red-300 dark:hover:bg-red-900"
                 aria-label="Quitar factura"
@@ -561,7 +587,7 @@ export function VehiculoFotosGaleria({
               ) : null}
               <button
                 type="button"
-                onClick={() => void removeAt(index)}
+                onClick={() => requestRemoveAt(index)}
                 disabled={uploading}
                 className="absolute right-1.5 top-1.5 flex size-7 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-600 shadow-sm transition-colors hover:bg-red-200 disabled:opacity-50 dark:bg-red-950/80 dark:text-red-300 dark:hover:bg-red-900"
                 aria-label="Quitar foto"
@@ -620,6 +646,39 @@ export function VehiculoFotosGaleria({
         ) : null}
         </>
         )}
+        {removePrompt ? (
+          <div
+            className={cn(
+              "absolute inset-0 z-30 flex items-center justify-center overflow-y-auto p-4",
+              mode === "factura" && facturaEntry
+                ? "bg-zinc-100/95 dark:bg-zinc-900/95"
+                : "rounded-2xl bg-white/95 dark:bg-zinc-900/95",
+            )}
+          >
+            <div className="w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+              <ModalConfirmDelete
+                key={`${removePrompt.kind}-${removePrompt.index}`}
+                title={
+                  removePrompt.kind === "factura"
+                    ? "¿Eliminar factura?"
+                    : "¿Eliminar fotografía?"
+                }
+                description={
+                  removePrompt.kind === "factura"
+                    ? "Se eliminará el PDF de la factura del vehículo. Tendrás que volver a subirlo si lo necesitas."
+                    : "Se quitará esta imagen de la galería del vehículo."
+                }
+                warningText={null}
+                confirmDelaySec={7}
+                pending={removePending}
+                onCancel={() => {
+                  if (!removePending) setRemovePrompt(null);
+                }}
+                onConfirm={() => void confirmRemove()}
+              />
+            </div>
+          </div>
+        ) : null}
       </div>
       {cropQueue[0] ? (
         <ImageEditorModal

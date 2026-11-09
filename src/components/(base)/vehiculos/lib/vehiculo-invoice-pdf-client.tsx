@@ -120,9 +120,18 @@ export async function downloadInvoicePdfFromUrl(
   url: string,
   invoiceNumber: string,
 ) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("DOWNLOAD");
-  const blob = await res.blob();
+  const file = await import("./vehiculo-pdf-viewer-file").then((m) =>
+    m.resolvePdfFileForViewer(url),
+  );
+  const blob =
+    file instanceof Blob
+      ? file
+      : file instanceof ArrayBuffer
+        ? new Blob([file], { type: "application/pdf" })
+        : await fetch(file).then((res) => {
+            if (!res.ok) throw new Error("DOWNLOAD");
+            return res.blob();
+          });
   triggerPdfDownload(blob, invoiceNumber);
 }
 

@@ -15,3 +15,8 @@ export const vehiculosWizardFormClass =
 export const vehiculosWizardStepBodyClass = "flex flex-col gap-3.5";
 
 export const vehiculosWizardFacturaStepClass = "min-h-0 flex-1";
+
+export const vehiculosWizardFooterActionsClass =
+  "flex w-full flex-wrap items-center justify-center gap-3";
+
+export const vehiculosWizardFooterButtonClass = "w-auto min-w-[6.75rem] shrink-0";

@@ -69,6 +69,7 @@ export function SigetActionButton({
   morphOnHover = true,
   type = "button",
   iconOnly = false,
+  iconLeft = false,
   style,
 }: {
   label: string;
@@ -86,6 +87,7 @@ export function SigetActionButton({
   morphOnHover?: boolean;
   type?: "button" | "submit";
   iconOnly?: boolean;
+  iconLeft?: boolean;
   style?: CSSProperties;
 }) {
   const [hovered, setHovered] = useState(false);
@@ -116,18 +118,29 @@ export function SigetActionButton({
           !iconOnly && "w-full gap-1",
         )}
       >
+        {iconLeft ? (
+          <SigetActionIcon
+            from={morphFrom}
+            to={morphTo}
+            color={accentColor}
+            hovered={hovered}
+            morphOnHover={morphOnHover}
+          />
+        ) : null}
         {!iconOnly ? (
           <span className="truncate leading-none" style={{ color: accentColor }}>
             {label}
           </span>
         ) : null}
-        <SigetActionIcon
-          from={morphFrom}
-          to={morphTo}
-          color={accentColor}
-          hovered={hovered}
-          morphOnHover={morphOnHover}
-        />
+        {!iconLeft ? (
+          <SigetActionIcon
+            from={morphFrom}
+            to={morphTo}
+            color={accentColor}
+            hovered={hovered}
+            morphOnHover={morphOnHover}
+          />
+        ) : null}
       </span>
     </RippleButton>
   );

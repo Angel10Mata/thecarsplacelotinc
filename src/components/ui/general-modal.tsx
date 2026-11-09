@@ -12,11 +12,10 @@ import {
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Ban as BanNode, Check as CheckNode, Save, Trash, Trash2, X } from "lucide";
+import { MorphHoverIcon } from "@/components/ui/morph-hover-icon";
 import {
   AlertTriangle,
-  Ban as BanIcon,
   Package,
-  Trash2 as Trash2Icon,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -850,6 +849,86 @@ export interface ItemDetailsPreview {
   categoria?: string | null;
 }
 
+function ModalConfirmDeleteHeroIcon({ isDeactivate }: { isDeactivate: boolean }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="relative mb-3 flex items-center justify-center"
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
+    >
+      <div
+        className={cn(
+          "absolute inset-0 animate-pulse rounded-full opacity-75",
+          isDeactivate
+            ? "bg-amber-500/20 dark:bg-amber-500/25"
+            : "bg-red-500/20 dark:bg-red-500/30",
+        )}
+      />
+      <div
+        className={cn(
+          "relative flex h-14 w-14 items-center justify-center rounded-2xl border shadow-inner",
+          isDeactivate
+            ? "border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 dark:border-amber-800/60 dark:from-amber-950/60 dark:to-orange-900/40"
+            : "border-red-200 bg-gradient-to-br from-red-50 to-rose-100 dark:border-red-800/60 dark:from-red-950/60 dark:to-rose-900/40",
+        )}
+      >
+        <span
+          className={cn(
+            "inline-flex size-7 items-center justify-center [&_svg]:block",
+            isDeactivate
+              ? "text-amber-700 dark:text-amber-400"
+              : "text-red-600 dark:text-red-400",
+          )}
+        >
+          {isDeactivate ? (
+            <MorphHoverIcon
+              from={X}
+              to={BanNode}
+              size={28}
+              color="currentColor"
+              strokeWidth={1.75}
+              spring="snappy"
+              hovered={hovered}
+            />
+          ) : (
+            <MorphHoverIcon
+              from={Trash2}
+              to={Trash}
+              size={28}
+              color="currentColor"
+              strokeWidth={1.75}
+              spring="snappy"
+              hovered={hovered}
+            />
+          )}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function useConfirmDeleteDelay(confirmDelaySec?: number): number {
+  const [delayLeft, setDelayLeft] = useState(() =>
+    confirmDelaySec && confirmDelaySec > 0 ? confirmDelaySec : 0,
+  );
+
+  useEffect(() => {
+    if (!confirmDelaySec || confirmDelaySec <= 0) {
+      setDelayLeft(0);
+      return;
+    }
+    setDelayLeft(confirmDelaySec);
+    const tick = window.setInterval(() => {
+      setDelayLeft((current) => (current <= 1 ? 0 : current - 1));
+    }, 1000);
+    return () => window.clearInterval(tick);
+  }, [confirmDelaySec]);
+
+  return delayLeft;
+}
+
 // Confirmar eliminación
 export function ModalConfirmDelete({
   onConfirm,
@@ -863,6 +942,7 @@ export function ModalConfirmDelete({
   confirmText = "Eliminar",
   warningText,
   intent = "delete",
+  confirmDelaySec,
 }: {
   onConfirm: () => void;
   onCancel: () => void;
@@ -877,15 +957,29 @@ export function ModalConfirmDelete({
   /** Texto del aviso inferior. `null` lo oculta; omitir = mensaje según intent. */
   warningText?: string | null;
   intent?: "delete" | "deactivate";
+  /** Segundos de espera antes de habilitar confirmar. */
+  confirmDelaySec?: number;
 }) {
   const isPending = loading || pending;
   const isDeactivate = intent === "deactivate";
+  const delayLeft = useConfirmDeleteDelay(confirmDelaySec);
+  const confirmLocked = delayLeft > 0;
+
+  const delayHint =
+    confirmLocked && confirmDelaySec
+      ? `Podrás confirmar en ${delayLeft} s.`
+      : null;
 
   if (message && !itemDetails && title === "¿Eliminar registro?") {
     return (
       <div className="space-y-3 rounded-xl border-2 border-amber-300 bg-amber-100 p-4 dark:border-amber-800 dark:bg-amber-950">
         <p className="text-sm font-semibold text-foreground">{message}</p>
-        <div className="flex justify-end gap-2">
+        {delayHint ? (
+          <p className="text-xs font-bold text-amber-800 dark:text-amber-300">
+            {delayHint}
+          </p>
+        ) : null}
+        <div className="flex justify-center gap-2">
           <ModalCancelButton onClick={onCancel} disabled={isPending} />
           <SigetActionButton
             label="Eliminar"
@@ -893,8 +987,12 @@ export function ModalConfirmDelete({
             morphFrom={Trash2}
             morphTo={Trash}
             onClick={onConfirm}
-            disabled={isPending}
-            ariaLabel="Confirmar eliminación"
+            disabled={isPending || confirmLocked}
+            ariaLabel={
+              confirmLocked
+                ? `Confirmar eliminación en ${delayLeft} segundos`
+                : "Confirmar eliminación"
+            }
             className="w-auto shrink-0"
           />
         </div>
@@ -908,30 +1006,7 @@ export function ModalConfirmDelete({
 
   return (
     <div className="flex flex-col items-center p-1 text-center sm:p-3">
-      <div className="relative mb-3 flex items-center justify-center">
-        <div
-          className={cn(
-            "absolute inset-0 animate-pulse rounded-full opacity-75",
-            isDeactivate
-              ? "bg-amber-500/20 dark:bg-amber-500/25"
-              : "bg-red-500/20 dark:bg-red-500/30",
-          )}
-        />
-        <div
-          className={cn(
-            "relative flex h-14 w-14 items-center justify-center rounded-2xl border shadow-inner",
-            isDeactivate
-              ? "border-amber-200 bg-gradient-to-br from-amber-50 to-orange-100 dark:border-amber-800/60 dark:from-amber-950/60 dark:to-orange-900/40"
-              : "border-red-200 bg-gradient-to-br from-red-50 to-rose-100 dark:border-red-800/60 dark:from-red-950/60 dark:to-rose-900/40",
-          )}
-        >
-          {isDeactivate ? (
-            <BanIcon className="h-7 w-7 text-amber-700 dark:text-amber-400" />
-          ) : (
-            <Trash2Icon className="h-7 w-7 text-red-600 dark:text-red-400" />
-          )}
-        </div>
-      </div>
+      <ModalConfirmDeleteHeroIcon isDeactivate={isDeactivate} />
 
       <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
         {title}
@@ -995,7 +1070,13 @@ export function ModalConfirmDelete({
         </div>
       ) : null}
 
-      <div className="mt-5 flex w-full items-center justify-end gap-3 border-t border-zinc-200/60 pt-3 dark:border-zinc-800">
+      {delayHint ? (
+        <p className="mt-3 text-xs font-bold text-amber-700 dark:text-amber-300">
+          {delayHint}
+        </p>
+      ) : null}
+
+      <div className="mt-5 flex w-full items-center justify-center gap-3 border-t border-zinc-200/60 pt-3 dark:border-zinc-800">
         <ModalCancelButton onClick={onCancel} disabled={isPending} />
         <SigetActionButton
           label={confirmText}
@@ -1003,8 +1084,12 @@ export function ModalConfirmDelete({
           morphFrom={isDeactivate ? X : Trash2}
           morphTo={isDeactivate ? BanNode : Trash}
           onClick={onConfirm}
-          disabled={isPending}
-          ariaLabel={confirmText}
+          disabled={isPending || confirmLocked}
+          ariaLabel={
+            confirmLocked
+              ? `${confirmText} en ${delayLeft} segundos`
+              : confirmText
+          }
           className="w-auto shrink-0"
         />
       </div>

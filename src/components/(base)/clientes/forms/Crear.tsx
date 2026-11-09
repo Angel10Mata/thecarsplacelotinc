@@ -17,6 +17,7 @@ import { useCrearCustomer } from "../lib/hooks";
 import type { CustomerRow } from "../lib/zod";
 import {
   clienteFormInvalidVacio,
+  mensajeToastCamposCliente,
   validarClienteFormulario,
   type ClienteFormInvalid,
 } from "../lib/cliente-form-validacion";
@@ -65,6 +66,7 @@ export default function CrearClienteModal({
           });
           if (errores) {
             setInvalid(errores);
+            toast.warn(mensajeToastCamposCliente(errores));
             return;
           }
           setInvalid(clienteFormInvalidVacio);

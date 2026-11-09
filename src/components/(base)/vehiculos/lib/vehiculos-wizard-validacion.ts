@@ -1,3 +1,4 @@
+import { isCarPdfStoragePath } from "./car-images";
 import { carStorageFolderFromMarcaModeloInput } from "./helpers";
 
 export type VehiculosWizardStep1Campo =
@@ -58,3 +59,41 @@ export function quitarErrorCampoWizardStep1(
   delete next[campo];
   return next;
 }
+
+const ETIQUETA_CAMPO_WIZARD_STEP1: Record<VehiculosWizardStep1Campo, string> = {
+  invoiceNumber: "número de factura",
+  invoiceDate: "fecha de factura",
+  carVin: "VIN",
+  marcaModelo: "marca / modelo",
+  total: "precio o total",
+  terms: "términos de venta",
+};
+
+export function mensajeToastCamposWizardStep1(
+  errores: VehiculosWizardStep1Errores,
+): string {
+  const etiquetas = (
+    Object.keys(errores) as VehiculosWizardStep1Campo[]
+  ).map((campo) => ETIQUETA_CAMPO_WIZARD_STEP1[campo]);
+  if (etiquetas.length === 0) {
+    return "Completa los campos obligatorios del paso 1.";
+  }
+  if (etiquetas.length === 1) {
+    return `Falta completar: ${etiquetas[0]}.`;
+  }
+  return `Faltan completar: ${etiquetas.join(", ")}.`;
+}
+
+export function contarFotosVehiculoWizard(paths: string[]): number {
+  return paths.filter((path) => !isCarPdfStoragePath(path)).length;
+}
+
+export function vehiculosWizardTieneFacturaPdf(paths: string[]): boolean {
+  return paths.some((path) => isCarPdfStoragePath(path));
+}
+
+export const MENSAJE_TOAST_FALTA_FOTOS =
+  "Sube al menos una fotografía del vehículo.";
+
+export const MENSAJE_TOAST_FALTA_FACTURA =
+  "Sube la factura en PDF del vehículo.";

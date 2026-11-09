@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ChevronLeft, type IconNode } from "lucide";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  type IconNode,
+} from "lucide";
 import { normalizarFechaCalendario } from "@/lib/fechas-gt";
 import {
   ModalShell,
@@ -37,6 +42,7 @@ import {
   parseMarcaModeloInput,
 } from "../lib/helpers";
 import { isCarPdfStoragePath } from "../lib/car-images";
+import { loadReactPdf } from "../lib/pdfjs-setup";
 import { BuscarClienteField } from "./BuscarClienteField";
 import {
   removeCarImageFromStorage,
@@ -46,15 +52,22 @@ import type { CustomerRow } from "@/components/(base)/clientes/lib/zod";
 import {
   VEHICULOS_WIZARD_STEPS,
   vehiculosWizardFacturaStepClass,
+  vehiculosWizardFooterActionsClass,
+  vehiculosWizardFooterButtonClass,
   vehiculosWizardFormClass,
   vehiculosWizardModalContentClass,
   vehiculosWizardStepBodyClass,
   vehiculosWizardStepCaption,
 } from "../lib/vehiculos-wizard-ui";
 import {
+  contarFotosVehiculoWizard,
   erroresVehiculosWizardStep1,
+  MENSAJE_TOAST_FALTA_FACTURA,
+  MENSAJE_TOAST_FALTA_FOTOS,
+  mensajeToastCamposWizardStep1,
   quitarErrorCampoWizardStep1,
   vehiculosWizardStep1TieneErrores,
+  vehiculosWizardTieneFacturaPdf,
   type VehiculosWizardStep1Errores,
 } from "../lib/vehiculos-wizard-validacion";
 
@@ -130,6 +143,11 @@ export default function EditarVehiculoModal({
   const [validandoFactura, setValidandoFactura] = useState(false);
 
   useEffect(() => {
+    if (!open || step < 2) return;
+    void loadReactPdf();
+  }, [open, step]);
+
+  useEffect(() => {
     if (!open || !data || !carId || hydratedId === carId) return;
     const { car, customer } = data;
     setHasSignedReceipt(car.has_signed_receipt);
@@ -198,23 +216,25 @@ export default function EditarVehiculoModal({
     setStep1Errores((prev) => quitarErrorCampoWizardStep1(prev, "total"));
   };
 
-  const validarStep1 = () => {
-    const errores = erroresVehiculosWizardStep1({
-      invoiceNumber,
-      invoiceDate,
-      carVin,
-      marcaModelo,
-      total,
-      terms,
-    });
+  const inputWizardStep1 = () => ({
+    invoiceNumber,
+    invoiceDate,
+    carVin,
+    marcaModelo,
+    total,
+    terms,
+  });
+
+  const notificarStep1SiFalta = () => {
+    const errores = erroresVehiculosWizardStep1(inputWizardStep1());
     setStep1Errores(errores);
-    return !vehiculosWizardStep1TieneErrores(errores);
+    if (!vehiculosWizardStep1TieneErrores(errores)) return true;
+    toast.warn(mensajeToastCamposWizardStep1(errores));
+    return false;
   };
 
   const goNext = async () => {
-    if (!validarStep1()) {
-      return;
-    }
+    if (!notificarStep1SiFalta()) return;
     const numero = invoiceNumber.trim();
     setValidandoFactura(true);
     try {
@@ -256,6 +276,11 @@ export default function EditarVehiculoModal({
     if (!carStorageFolderId) {
       setStep1Errores((prev) => ({ ...prev, marcaModelo: true }));
       setStep(1);
+      toast.warn("Revisa marca / modelo en el paso 1.");
+      return;
+    }
+    if (contarFotosVehiculoWizard(carImagePaths) === 0) {
+      toast.warn(MENSAJE_TOAST_FALTA_FOTOS);
       return;
     }
     setStep(3);
@@ -282,6 +307,19 @@ export default function EditarVehiculoModal({
           onSubmit={async (e) => {
             e.preventDefault();
             if (step !== VEHICULOS_WIZARD_STEPS || !carId) return;
+            if (!notificarStep1SiFalta()) {
+              setStep(1);
+              return;
+            }
+            if (contarFotosVehiculoWizard(carImagePaths) === 0) {
+              toast.warn(MENSAJE_TOAST_FALTA_FOTOS);
+              setStep(2);
+              return;
+            }
+            if (!vehiculosWizardTieneFacturaPdf(carImagePaths)) {
+              toast.warn(MENSAJE_TOAST_FALTA_FACTURA);
+              return;
+            }
             try {
               const { car_title, car_model } = parseMarcaModeloInput(marcaModelo);
               await actualizar.mutateAsync({
@@ -490,54 +528,64 @@ export default function EditarVehiculoModal({
           )}
 
           <ModalFooter className="shrink-0">
-            {step === 1 ? (
-              <>
-                <ModalCancelButton onClick={handleClose} disabled={pending} />
-                <SigetActionButton
-                  label="Siguiente"
-                  accentColor={sigetAccent.guardar}
-                  morphFrom={ArrowRight as IconNode}
-                  morphTo={ArrowRight as IconNode}
-                  morphOnHover={false}
-                  onClick={() => void goNext()}
-                  disabled={pending}
-                  ariaLabel="Continuar al paso de fotografías"
-                  className="w-auto shrink-0"
-                />
-              </>
-            ) : (
-              <>
-                <SigetActionButton
-                  label="Anterior"
-                  accentColor={sigetAccent.cancelar}
-                  morphFrom={ChevronLeft as IconNode}
-                  morphTo={ChevronLeft as IconNode}
-                  morphOnHover={false}
-                  onClick={() => setStep(step === 3 ? 2 : 1)}
-                  disabled={pending}
-                  className="w-auto shrink-0"
-                />
-                <ModalCancelButton onClick={handleClose} disabled={pending} />
-                {step === 2 ? (
+            <div className={vehiculosWizardFooterActionsClass}>
+              {step === 1 ? (
+                <>
+                  <ModalCancelButton
+                    onClick={handleClose}
+                    disabled={pending}
+                    className={vehiculosWizardFooterButtonClass}
+                  />
                   <SigetActionButton
                     label="Siguiente"
                     accentColor={sigetAccent.guardar}
                     morphFrom={ArrowRight as IconNode}
                     morphTo={ArrowRight as IconNode}
                     morphOnHover={false}
-                    onClick={goToFactura}
-                    disabled={pending || imagesBusy || !carStorageFolderId}
-                    ariaLabel="Continuar al paso de factura"
-                    className="w-auto shrink-0"
+                    onClick={() => void goNext()}
+                    disabled={pending}
+                    ariaLabel="Continuar al paso de fotografías"
+                    className={vehiculosWizardFooterButtonClass}
                   />
-                ) : (
-                  <ModalSubmit
-                    disabled={pending || imagesBusy || !carStorageFolderId}
-                    label="Guardar"
+                </>
+              ) : (
+                <>
+                  <ModalCancelButton
+                    onClick={handleClose}
+                    disabled={pending}
+                    className={vehiculosWizardFooterButtonClass}
                   />
-                )}
-              </>
-            )}
+                  <SigetActionButton
+                    label="Anterior"
+                    accentColor={sigetAccent.cancelar}
+                    morphFrom={ArrowLeft as IconNode}
+                    morphTo={ChevronLeft as IconNode}
+                    onClick={() => setStep(step === 3 ? 2 : 1)}
+                    disabled={pending}
+                    className={vehiculosWizardFooterButtonClass}
+                  />
+                  {step === 2 ? (
+                    <SigetActionButton
+                      label="Siguiente"
+                      accentColor={sigetAccent.guardar}
+                      morphFrom={ArrowRight as IconNode}
+                      morphTo={ArrowRight as IconNode}
+                      morphOnHover={false}
+                      onClick={goToFactura}
+                      disabled={pending || imagesBusy || !carStorageFolderId}
+                      ariaLabel="Continuar al paso de factura"
+                      className={vehiculosWizardFooterButtonClass}
+                    />
+                  ) : (
+                    <ModalSubmit
+                      disabled={pending || imagesBusy || !carStorageFolderId}
+                      label="Guardar"
+                      className={vehiculosWizardFooterButtonClass}
+                    />
+                  )}
+                </>
+              )}
+            </div>
           </ModalFooter>
         </ModalForm>
       )}

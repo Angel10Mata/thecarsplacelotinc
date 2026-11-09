@@ -25,3 +25,17 @@ export const clienteFormInvalidVacio: ClienteFormInvalid = {
   nit: false,
   direccion: false,
 };
+
+export function mensajeToastCamposCliente(invalid: ClienteFormInvalid): string {
+  const etiquetas: string[] = [];
+  if (invalid.nombre) etiquetas.push("nombre");
+  if (invalid.nit) etiquetas.push("NIT");
+  if (invalid.direccion) etiquetas.push("dirección");
+  if (etiquetas.length === 0) {
+    return "Completa los campos obligatorios del cliente.";
+  }
+  if (etiquetas.length === 1) {
+    return `Falta completar: ${etiquetas[0]}.`;
+  }
+  return `Faltan completar: ${etiquetas.join(", ")}.`;
+}

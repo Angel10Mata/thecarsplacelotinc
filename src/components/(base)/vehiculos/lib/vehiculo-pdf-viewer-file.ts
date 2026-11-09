@@ -3,6 +3,8 @@
 import { createClient } from "@/utils/supabase/client";
 import { carMediaStorageBucketForPath } from "./car-images";
 
+const pdfBlobCache = new Map<string, Blob>();
+
 function supabasePublicObjectFromUrl(
   url: string,
 ): { bucket: string; path: string } | null {
@@ -31,11 +33,16 @@ async function downloadFromSupabaseStorage(
       : null);
   if (!parsed) return null;
 
+  const cacheKey = `${parsed.bucket}/${parsed.path}`;
+  const cached = pdfBlobCache.get(cacheKey);
+  if (cached) return cached;
+
   const supabase = createClient();
   const { data, error } = await supabase.storage
     .from(parsed.bucket)
     .download(parsed.path);
   if (error || !data || data.size < 4) return null;
+  pdfBlobCache.set(cacheKey, data);
   return data;
 }
 
@@ -54,8 +61,13 @@ export function pdfViewerStorageKey(source: string): string {
   return withoutQuery;
 }
 
+export type ResolvePdfFileOptions = {
+  forceDownload?: boolean;
+};
+
 export async function resolvePdfFileForViewer(
   source: string,
+  options?: ResolvePdfFileOptions,
 ): Promise<string | ArrayBuffer | Blob> {
   const trimmed = source.trim();
   if (!trimmed) {
@@ -65,8 +77,19 @@ export async function resolvePdfFileForViewer(
     return trimmed;
   }
 
+  if (!options?.forceDownload && /^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const storageKey = pdfViewerStorageKey(trimmed);
+  const cachedBlob = pdfBlobCache.get(storageKey);
+  if (cachedBlob) return cachedBlob;
+
   const fromStorage = await downloadFromSupabaseStorage(trimmed);
-  if (fromStorage) return fromStorage;
+  if (fromStorage) {
+    if (storageKey) pdfBlobCache.set(storageKey, fromStorage);
+    return fromStorage;
+  }
 
   if (!/^https?:\/\//i.test(trimmed)) {
     return trimmed;
@@ -76,14 +99,17 @@ export async function resolvePdfFileForViewer(
     const res = await fetch(trimmed, {
       mode: "cors",
       credentials: "omit",
-      cache: "no-store",
     });
     if (res.ok) {
       const buffer = await res.arrayBuffer();
-      if (buffer.byteLength >= 4) return buffer;
+      if (buffer.byteLength >= 4) {
+        const blob = new Blob([buffer], { type: "application/pdf" });
+        if (storageKey) pdfBlobCache.set(storageKey, blob);
+        return blob;
+      }
     }
   } catch {
-    /* el visor puede cargar la URL directa */
+    /* fallback a URL directa */
   }
 
   return trimmed;

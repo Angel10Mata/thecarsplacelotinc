@@ -85,8 +85,11 @@ export function CarPdfInlineViewer({
   const pinchRef = useRef<{ distance: number; zoom: number } | null>(null);
   const lastTapRef = useRef(0);
   const pdfSourceKeyRef = useRef("");
+  const pdfFetchModeRef = useRef<"direct" | "download">("direct");
+  const idleExpandRef = useRef<number | null>(null);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const [numPages, setNumPages] = useState(0);
+  const [renderedPageCount, setRenderedPageCount] = useState(1);
   const [nativePage, setNativePage] = useState<NativePageSize>(DEFAULT_PAGE_SIZE);
   const [zoom, setZoom] = useState(1);
   const [renderZoom, setRenderZoom] = useState(1);
@@ -135,7 +138,9 @@ export function CarPdfInlineViewer({
     const sourceChanged = pdfSourceKeyRef.current !== sourceKey;
     if (sourceChanged) {
       pdfSourceKeyRef.current = sourceKey;
+      pdfFetchModeRef.current = "direct";
       setNumPages(0);
+      setRenderedPageCount(1);
       setNativePage(DEFAULT_PAGE_SIZE);
       setZoom(1);
       setRenderZoom(1);
@@ -143,7 +148,27 @@ export function CarPdfInlineViewer({
       setPdfFile(null);
     }
 
+    if (idleExpandRef.current !== null) {
+      window.clearTimeout(idleExpandRef.current);
+      idleExpandRef.current = null;
+    }
+
+    const trimmed = url.trim();
+    const canStream =
+      trimmed.startsWith("blob:") ||
+      trimmed.startsWith("data:") ||
+      /^https?:\/\//i.test(trimmed);
+
     let active = true;
+
+    if (canStream) {
+      setPdfFile(trimmed);
+      setResolvingPdf(false);
+      return () => {
+        active = false;
+      };
+    }
+
     setResolvingPdf(true);
 
     void resolvePdfFileForViewer(url)
@@ -250,6 +275,17 @@ export function CarPdfInlineViewer({
       }>;
     }) => {
       setNumPages(doc.numPages);
+      setRenderedPageCount(1);
+      if (idleExpandRef.current !== null) {
+        window.clearTimeout(idleExpandRef.current);
+        idleExpandRef.current = null;
+      }
+      if (fullDocument && doc.numPages > 1) {
+        idleExpandRef.current = window.setTimeout(
+          () => setRenderedPageCount(doc.numPages),
+          80,
+        );
+      }
       void doc.getPage(1).then((page) => {
         const viewportSize = page.getViewport({ scale: 1 });
         if (viewportSize.width > 0 && viewportSize.height > 0) {
@@ -260,8 +296,29 @@ export function CarPdfInlineViewer({
         }
       });
     },
-    [],
+    [fullDocument],
   );
+
+  const handlePdfSourceError = useCallback(() => {
+    const trimmed = url.trim();
+    if (
+      pdfFetchModeRef.current === "direct" &&
+      /^https?:\/\//i.test(trimmed)
+    ) {
+      pdfFetchModeRef.current = "download";
+      setResolvingPdf(true);
+      setLoadError(false);
+      void resolvePdfFileForViewer(url, { forceDownload: true })
+        .then((file) => setPdfFile(file))
+        .catch((err) => {
+          console.error("invoice pdf download fallback:", err);
+          setLoadError(true);
+        })
+        .finally(() => setResolvingPdf(false));
+      return;
+    }
+    setLoadError(true);
+  }, [url]);
 
   const availableWidth = Math.max(0, viewport.width - PAGE_PAD);
   const availableHeight = Math.max(240, (viewport.height || 480) - PAGE_PAD);
@@ -281,10 +338,14 @@ export function CarPdfInlineViewer({
       : 0;
   const renderPageWidth = pageWidth > 0 ? pageWidth : fallbackPageWidth;
 
-  const pageNumbers =
+  const pagesToRender =
     fullDocument && numPages > 1
-      ? Array.from({ length: numPages }, (_, i) => i + 1)
-      : [1];
+      ? Math.min(numPages, renderedPageCount)
+      : 1;
+  const pageNumbers = Array.from(
+    { length: pagesToRender },
+    (_, i) => i + 1,
+  );
 
   const viewerBroken = loadError || pdfLibError;
   const PdfDocument = pdfModule?.Document;
@@ -294,7 +355,7 @@ export function CarPdfInlineViewer({
     pdfFile && renderPageWidth <= 0 && !viewerBroken,
   );
   const showBlockingLoader =
-  (libLoading && !pdfFile) ||
+    (libLoading && !pdfFile) ||
     (resolvingPdf && !pdfFile) ||
     waitingForLayout;
   const canRenderPdf =
@@ -346,7 +407,7 @@ export function CarPdfInlineViewer({
                 file={pdfFile}
                 onLoadSuccess={onDocumentLoadSuccess}
                 onLoadError={() => setLoadError(true)}
-                onSourceError={() => setLoadError(true)}
+                onSourceError={handlePdfSourceError}
                 loading={null}
                 className={cn(
                   "flex min-h-full flex-col items-center py-2",

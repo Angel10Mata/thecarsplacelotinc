@@ -134,9 +134,9 @@ export default function CrearVehiculoModal({
   const [validandoFactura, setValidandoFactura] = useState(false);
 
   useEffect(() => {
-    if (!open || step < 2) return;
+    if (!open) return;
     void loadReactPdf();
-  }, [open, step]);
+  }, [open]);
 
   const clearFormState = () => {
     setStep(1);

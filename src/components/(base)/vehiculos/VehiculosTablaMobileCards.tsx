@@ -17,20 +17,25 @@ import {
   sigetMobileRecordTitleClass,
 } from "@/components/ui/siget-mobile-record";
 import type { VehiculoListRow } from "./lib/zod";
+import { prefetchInvoicePdfLibs } from "./lib/vehiculo-react-pdf";
 
 export function VehiculoFacturaChip({
   placa,
   onClick,
+  onPrefetch,
   compact = false,
 }: {
   placa: string;
   onClick: () => void;
+  onPrefetch?: () => void;
   compact?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      onPointerEnter={onPrefetch}
+      onFocus={onPrefetch}
       aria-label={`Ver factura ${placa}`}
       className={cn(
         "inline-flex max-w-full items-center rounded-lg bg-zinc-100 px-2.5 py-1 font-black uppercase tracking-wider text-foreground transition-colors",
@@ -70,6 +75,7 @@ export function VehiculosTablaMobileCards({
                 <p className={sigetMobileRecordTitleClass}>
                   <VehiculoFacturaChip
                     placa={row.placa}
+                    onPrefetch={prefetchInvoicePdfLibs}
                     onClick={() => onVerFactura(row)}
                   />
                 </p>

@@ -154,6 +154,11 @@ export function VehiculoGaleriaViewerModal({
   }, [row?.id, initialView]);
 
   useEffect(() => {
+    if (!row) return;
+    prefetchInvoicePdfLibs();
+  }, [row?.id]);
+
+  useEffect(() => {
     if (viewMode === "invoice") {
       setInvoiceMounted(true);
     }

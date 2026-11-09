@@ -59,6 +59,8 @@ import {
   type VehiculosFiltroMesAnio,
 } from "./lib/filtro-mes-anio";
 import type { VehiculoListRow } from "./lib/zod";
+import { rowHasUploadedPdf } from "./lib/vehiculo-galeria-items";
+import { prefetchInvoicePdfLibs } from "./lib/vehiculo-react-pdf";
 
 type PageSize = SigetTablaPageSizeValue;
 
@@ -80,7 +82,19 @@ export function VehiculosTabla() {
   ) => {
     setGaleriaView(view);
     setGaleriaRow(row);
+    if (view === "invoice") {
+      prefetchInvoicePdfLibs();
+      if (!rowHasUploadedPdf(row)) {
+        void import("./lib/vehiculo-invoice-pdf-client").then((mod) => {
+          mod.prefetchGeneratedInvoicePdf(row);
+        });
+      }
+    }
   };
+
+  useEffect(() => {
+    prefetchInvoicePdfLibs();
+  }, []);
 
   useEffect(() => {
     if (vehiculosGaleriaEntradaYaResuelta()) return;

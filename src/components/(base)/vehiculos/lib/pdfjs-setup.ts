@@ -8,8 +8,7 @@ let reactPdfPromise: Promise<ReactPdfModule> | null = null;
 
 function configurePdfWorker(pdfjs: ReactPdfModule["pdfjs"]): void {
   if (typeof window === "undefined") return;
-  const version = pdfjs.version;
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 }
 
 export function loadReactPdf(): Promise<ReactPdfModule> {

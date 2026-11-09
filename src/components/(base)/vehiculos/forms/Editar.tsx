@@ -143,9 +143,9 @@ export default function EditarVehiculoModal({
   const [validandoFactura, setValidandoFactura] = useState(false);
 
   useEffect(() => {
-    if (!open || step < 2) return;
+    if (!open) return;
     void loadReactPdf();
-  }, [open, step]);
+  }, [open]);
 
   useEffect(() => {
     if (!open || !data || !carId || hydratedId === carId) return;

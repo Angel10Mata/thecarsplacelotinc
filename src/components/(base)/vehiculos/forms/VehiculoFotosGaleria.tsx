@@ -1,12 +1,36 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Plus, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Crop, GripVertical, Loader2, Plus, X } from "lucide-react";
 import { CarPdfInlineViewer } from "./CarPdfInlineViewer";
 import { ModalConfirmDelete, toast } from "@/components/ui/general-modal";
 import { cn } from "@/lib/utils";
 import ImageEditorModal from "@/components/imgs/ImageEditorModal";
-import { VEHICLE_PHOTO_ASPECT } from "../lib/vehiculo-galeria-items";
+import { cropFileToCenteredAspect } from "@/components/imgs/cropImage";
+import {
+  reorderCarPhotoPaths,
+  VEHICLE_PHOTO_ASPECT,
+} from "../lib/vehiculo-galeria-items";
 import {
   CAR_IMAGE_MAX_BYTES,
   CAR_PDF_MAX_BYTES,
@@ -33,6 +57,18 @@ const ADD_TILE_BUTTON_CLASS = cn(
 
 const PHOTOS_GRID_CLASS =
   "mx-auto grid w-fit grid-cols-2 gap-3 sm:grid-cols-4";
+
+const PHOTOS_LIST_CLASS = "flex w-full flex-col gap-2.5";
+
+const PHOTO_ROW_CLASS =
+  "flex items-center gap-2.5 rounded-2xl border border-zinc-200/80 bg-zinc-50 p-2 outline-none dark:border-zinc-700 dark:bg-zinc-800";
+
+const PHOTO_THUMB_CLASS =
+  "relative aspect-[4/3] h-20 w-auto shrink-0 overflow-hidden rounded-xl sm:h-24";
+
+const ADD_LIST_BUTTON_CLASS = cn(
+  "flex h-20 w-full shrink-0 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-brand/25 bg-brand/5 text-brand transition-colors hover:border-brand/40 hover:bg-brand/10 disabled:opacity-60 sm:h-24 dark:border-brand-bright/30 dark:bg-brand-bright/5 dark:text-brand-bright dark:hover:bg-brand-bright/10",
+);
 
 const IMAGE_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 const PDF_MIME = "application/pdf";
@@ -123,6 +159,21 @@ function galleryPublicSrc(path: string, epoch: number): string {
   return `${url}${sep}v=${epoch}`;
 }
 
+function photoFileNameFromPath(path: string): string {
+  const name = path.split("/").pop()?.trim();
+  return name && name.length > 0 ? name : "foto.jpg";
+}
+
+async function fileFromImageUrl(url: string, fileName: string): Promise<File> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("FETCH_IMAGE");
+  const blob = await res.blob();
+  return new File([blob], fileName, {
+    type: blob.type || "image/jpeg",
+    lastModified: Date.now(),
+  });
+}
+
 export type VehiculoFotosGaleriaMode = "photos" | "factura";
 
 type RemovePrompt = {
@@ -150,17 +201,24 @@ export function VehiculoFotosGaleria({
   invoiceNumber = "",
 }: VehiculoFotosGaleriaProps) {
   const [uploading, setUploading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isFileDragging, setIsFileDragging] = useState(false);
+  const [activeDragPath, setActiveDragPath] = useState<string | null>(null);
   const [mediaEpoch, setMediaEpoch] = useState(() => Date.now());
   const [localTiles, setLocalTiles] = useState<
     { key: string; url: string; isPdf: boolean }[]
   >([]);
-  const [cropQueue, setCropQueue] = useState<File[]>([]);
+  const [recrop, setRecrop] = useState<{ file: File; path: string } | null>(
+    null,
+  );
+  const [recropLoadingPath, setRecropLoadingPath] = useState<string | null>(
+    null,
+  );
   const [removePrompt, setRemovePrompt] = useState<RemovePrompt | null>(null);
   const [removePending, setRemovePending] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
   const pathsRef = useRef(paths);
+  const originalsRef = useRef(new Map<string, File>());
   const visibleEntries = useMemo(
     () =>
       paths
@@ -183,6 +241,40 @@ export function VehiculoFotosGaleria({
     () => paths.findIndex((p) => !isCarPdfStoragePath(p)),
     [paths],
   );
+  const galleryLocked =
+    uploading ||
+    recrop !== null ||
+    recropLoadingPath !== null ||
+    removePending;
+  const photoIds = useMemo(
+    () => visibleEntries.map((entry) => entry.path),
+    [visibleEntries],
+  );
+  const canSortPhotos = photoIds.length > 1 && !galleryLocked;
+  const sortSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const handleSortStart = (event: DragStartEvent) => {
+    setActiveDragPath(String(event.active.id));
+  };
+
+  const handleSortEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveDragPath(null);
+    if (!over) return;
+    const next = reorderCarPhotoPaths(
+      pathsRef.current,
+      String(active.id),
+      String(over.id),
+    );
+    if (next === pathsRef.current) return;
+    pathsRef.current = next;
+    onChange(next);
+  };
 
   const acceptFiles = async (files: File[]) => {
     if (!storageFolderId) {
@@ -263,26 +355,66 @@ export function VehiculoFotosGaleria({
     }
 
     if (images.length > 0) {
-      setCropQueue((queue) => [...queue, ...images]);
+      const previews = images.map((file, index) => ({
+        key: `${file.name}-${file.lastModified}-${index}`,
+        url: URL.createObjectURL(file),
+        isPdf: false,
+      }));
+      setLocalTiles(previews);
+      setUploading(true);
+      let workingPaths = pathsRef.current;
+      let added = 0;
+      try {
+        for (const file of images) {
+          let cropped = file;
+          try {
+            cropped = await cropFileToCenteredAspect(file, VEHICLE_PHOTO_ASPECT);
+          } catch (err) {
+            console.error(err);
+          }
+          const next = await uploadImageToPaths(
+            cropped,
+            workingPaths,
+            storageFolderId,
+          );
+          if (next) {
+            const newPath = next[next.length - 1];
+            if (newPath) {
+              originalsRef.current.set(newPath, file);
+            }
+            workingPaths = next;
+            added += 1;
+          }
+        }
+        if (added > 0) {
+          pathsRef.current = workingPaths;
+          onChange(workingPaths);
+          setMediaEpoch(Date.now());
+        }
+      } finally {
+        previews.forEach((tile) => URL.revokeObjectURL(tile.url));
+        setLocalTiles([]);
+        setUploading(false);
+      }
     }
   };
 
   const handleDragEnter = (e: React.DragEvent) => {
-    if (!canAdd || uploading || !storageFolderId) return;
+    if (!canAdd || galleryLocked || !storageFolderId) return;
     if (!e.dataTransfer.types.includes("Files")) return;
     e.preventDefault();
     dragDepthRef.current += 1;
-    setIsDragging(true);
+    setIsFileDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
     if (!e.dataTransfer.types.includes("Files")) return;
     dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-    if (dragDepthRef.current === 0) setIsDragging(false);
+    if (dragDepthRef.current === 0) setIsFileDragging(false);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (!canAdd || uploading || !storageFolderId) return;
+    if (!canAdd || galleryLocked || !storageFolderId) return;
     if (!e.dataTransfer.types.includes("Files")) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "copy";
@@ -291,51 +423,69 @@ export function VehiculoFotosGaleria({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     dragDepthRef.current = 0;
-    setIsDragging(false);
-    if (!canAdd || uploading || !storageFolderId) return;
+    setIsFileDragging(false);
+    if (!canAdd || galleryLocked || !storageFolderId) return;
     const files = e.dataTransfer.files;
     if (!files?.length) return;
     void acceptFiles(Array.from(files));
   };
 
   useEffect(() => {
-    onBusyChange?.(uploading || cropQueue.length > 0);
-  }, [uploading, cropQueue.length, onBusyChange]);
+    onBusyChange?.(
+      uploading || recrop !== null || recropLoadingPath !== null,
+    );
+  }, [uploading, recrop, recropLoadingPath, onBusyChange]);
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files ? Array.from(e.target.files) : [];
     e.target.value = "";
-    if (files.length === 0) return;
+    if (files.length === 0 || galleryLocked) return;
     void acceptFiles(files);
   };
 
   const handleAddClick = () => {
-    if (uploading || !storageFolderId || cropQueue.length > 0) return;
+    if (galleryLocked || !storageFolderId) return;
     fileInputRef.current?.click();
   };
 
-  const handleCropApply = async (cropped: File) => {
-    if (!storageFolderId) return;
-    setUploading(true);
+  const openRecrop = async (path: string) => {
+    if (uploading || recrop || recropLoadingPath || removePrompt) return;
+    const original = originalsRef.current.get(path);
+    if (original) {
+      setRecrop({ file: original, path });
+      return;
+    }
+    setRecropLoadingPath(path);
     try {
-      const next = await uploadImageToPaths(
-        cropped,
-        pathsRef.current,
-        storageFolderId,
+      const file = await fileFromImageUrl(
+        galleryPublicSrc(path, mediaEpoch),
+        photoFileNameFromPath(path),
       );
-      if (next) {
-        pathsRef.current = next;
-        onChange(next);
-        setMediaEpoch(Date.now());
-      }
+      setRecrop({ file, path });
+    } catch (err) {
+      console.error(err);
+      toast.error("No se pudo abrir la foto para recortar.");
     } finally {
-      setUploading(false);
-      setCropQueue((queue) => queue.slice(1));
+      setRecropLoadingPath(null);
     }
   };
 
-  const handleCropCancel = () => {
-    setCropQueue((queue) => queue.slice(1));
+  const handleRecropApply = async (cropped: File) => {
+    if (!recrop) return;
+    setUploading(true);
+    try {
+      const ok = await replaceImageAtPath(cropped, recrop.path);
+      if (!ok) return;
+      setMediaEpoch(Date.now());
+      setRecrop(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRecropCancel = () => {
+    if (uploading) return;
+    setRecrop(null);
   };
 
   const uploadImageToPaths = async (
@@ -385,6 +535,50 @@ export function VehiculoFotosGaleria({
           : "Error al subir la imagen.";
       toast.error(msg);
       return null;
+    }
+  };
+
+  const replaceImageAtPath = async (
+    sourceFile: File,
+    path: string,
+  ): Promise<boolean> => {
+    try {
+      const jpegBlob = await compressCarPhotoForStorage(sourceFile);
+      if (jpegBlob.size > CAR_IMAGE_MAX_BYTES) {
+        const kb = Math.round(jpegBlob.size / 1024);
+        toast.error(
+          `La foto comprimida sigue siendo grande (${kb} KB). Máximo ${Math.round(CAR_IMAGE_MAX_BYTES / 1024)} KB en cars-images.`,
+        );
+        return false;
+      }
+
+      const formData = new FormData();
+      formData.append("file", jpegBlob);
+      formData.append("path", path);
+      formData.append("upsert", "true");
+
+      const result = await uploadCarImageStorageAction(formData);
+      if (!result.ok) {
+        let msg = carStorageErrorMessage(
+          result.code,
+          "detail" in result ? result.detail : undefined,
+        );
+        if (result.code === "STORAGE_SIZE") {
+          const kb = Math.round(jpegBlob.size / 1024);
+          msg = `${msg} (archivo comprimido: ${kb} KB)`;
+        }
+        toast.error(msg);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error(err);
+      const msg =
+        err instanceof Error && err.message === "COMPRESS_FAILED"
+          ? "No se pudo comprimir la imagen por debajo de 200 KB."
+          : "Error al subir la imagen.";
+      toast.error(msg);
+      return false;
     }
   };
 
@@ -456,13 +650,14 @@ export function VehiculoFotosGaleria({
       toast.error(carStorageErrorMessage(result.code));
       return false;
     }
+    originalsRef.current.delete(path);
     onChange(paths.filter((_, i) => i !== index));
     setMediaEpoch(Date.now());
     return true;
   };
 
   const requestRemoveAt = (index: number) => {
-    if (uploading) return;
+    if (uploading || removePending) return;
     setRemovePrompt({
       index,
       kind: mode === "factura" ? "factura" : "photo",
@@ -511,7 +706,7 @@ export function VehiculoFotosGaleria({
             ? facturaEntry
               ? "flex min-h-0 w-full flex-1 flex-col overflow-hidden"
               : PHOTOS_GRID_CLASS
-            : PHOTOS_GRID_CLASS,
+            : PHOTOS_LIST_CLASS,
         )}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -548,7 +743,7 @@ export function VehiculoFotosGaleria({
               onClick={handleAddClick}
               className={cn(
                 ADD_TILE_BUTTON_CLASS,
-                isDragging &&
+                isFileDragging &&
                   storageFolderId &&
                   !uploading &&
                   "border-brand bg-brand/15 ring-2 ring-brand/30 dark:border-brand-bright dark:bg-brand-bright/15 dark:ring-brand-bright/30",
@@ -560,7 +755,7 @@ export function VehiculoFotosGaleria({
                 <>
                   <Plus size={28} strokeWidth={2.25} />
                   <span className="text-center text-[11px] font-black uppercase leading-tight tracking-wider">
-                    {isDragging && storageFolderId ? "Soltar" : "Añadir"}
+                    {isFileDragging && storageFolderId ? "Soltar" : "Añadir"}
                   </span>
                 </>
               )}
@@ -568,50 +763,73 @@ export function VehiculoFotosGaleria({
           )
         ) : (
         <>
-        {visibleEntries.map(({ path, index }, visibleIndex) => {
-          const publicUrl = galleryPublicSrc(path, mediaEpoch);
-          return (
-            <div
-              key={path}
-              className={cn(TILE_CLASS, "bg-zinc-100 dark:bg-zinc-800")}
-            >
-              <img
-                src={publicUrl}
-                alt=""
-                className="size-full object-cover"
+        <DndContext
+          sensors={sortSensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragStart={handleSortStart}
+          onDragEnd={handleSortEnd}
+          onDragCancel={() => setActiveDragPath(null)}
+        >
+          <SortableContext
+            items={photoIds}
+            strategy={verticalListSortingStrategy}
+          >
+            {visibleEntries.map(({ path, index }, visibleIndex) => {
+              const publicUrl = galleryPublicSrc(path, mediaEpoch);
+              const tileBusy =
+                recropLoadingPath === path ||
+                (uploading && recrop?.path === path);
+              return (
+                <SortablePhotoRow
+                  key={path}
+                  path={path}
+                  publicUrl={publicUrl}
+                  photoLabel={
+                    visibleIndex === 0 ? "Principal" : `Foto ${visibleIndex + 1}`
+                  }
+                  busy={tileBusy}
+                  locked={galleryLocked}
+                  canSort={canSortPhotos}
+                  onRecrop={() => void openRecrop(path)}
+                  onRemove={() => requestRemoveAt(index)}
+                />
+              );
+            })}
+          </SortableContext>
+          <DragOverlay dropAnimation={null}>
+            {activeDragPath ? (
+              <PhotoRowView
+                publicUrl={galleryPublicSrc(activeDragPath, mediaEpoch)}
+                photoLabel={
+                  photoIds[0] === activeDragPath
+                    ? "Principal"
+                    : `Foto ${(photoIds.indexOf(activeDragPath) + 1) || 1}`
+                }
+                busy={false}
+                locked
+                canSort
+                isOverlay
+                onRecrop={() => undefined}
+                onRemove={() => undefined}
               />
-              {visibleIndex === 0 && principalImageIndex >= 0 ? (
-                <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                  Principal
-                </span>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => requestRemoveAt(index)}
-                disabled={uploading}
-                className="absolute right-1.5 top-1.5 flex size-7 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-600 shadow-sm transition-colors hover:bg-red-200 disabled:opacity-50 dark:bg-red-950/80 dark:text-red-300 dark:hover:bg-red-900"
-                aria-label="Quitar foto"
-              >
-                <X size={16} strokeWidth={2.5} />
-              </button>
-            </div>
-          );
-        })}
+            ) : null}
+          </DragOverlay>
+        </DndContext>
         {localTiles
           .filter((tile) => !tile.isPdf)
           .map((tile, localIndex) => (
-            <div
-              key={tile.key}
-              className={cn(TILE_CLASS, "bg-zinc-100 dark:bg-zinc-800")}
-            >
-              <img src={tile.url} alt="" className="size-full object-cover" />
-              {principalImageIndex < 0 && localIndex === 0 ? (
-                <span className="pointer-events-none absolute bottom-1.5 left-1.5 rounded-md bg-black/55 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white">
-                  Principal
+            <div key={tile.key} className={PHOTO_ROW_CLASS}>
+              <div className={cn(PHOTO_THUMB_CLASS, "bg-zinc-100 dark:bg-zinc-800")}>
+                <img src={tile.url} alt="" className="size-full object-cover" />
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
+                  <Loader2 size={22} className="animate-spin text-white" />
                 </span>
-              ) : null}
-              <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/25">
-                <Loader2 size={22} className="animate-spin text-white" />
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                {principalImageIndex < 0 && localIndex === 0
+                  ? "Principal"
+                  : "Subiendo"}
               </span>
             </div>
           ))}
@@ -619,14 +837,14 @@ export function VehiculoFotosGaleria({
         {canAdd ? (
           <button
             type="button"
-            disabled={uploading || !storageFolderId}
+            disabled={galleryLocked || !storageFolderId}
             onClick={handleAddClick}
             className={cn(
-              ADD_TILE_BUTTON_CLASS,
-              isDragging &&
+              ADD_LIST_BUTTON_CLASS,
+              isFileDragging &&
                 canAdd &&
                 storageFolderId &&
-                !uploading &&
+                !galleryLocked &&
                 "border-brand bg-brand/15 ring-2 ring-brand/30 dark:border-brand-bright dark:bg-brand-bright/15 dark:ring-brand-bright/30",
             )}
           >
@@ -636,7 +854,7 @@ export function VehiculoFotosGaleria({
               <>
                 <Plus size={28} strokeWidth={2.25} />
                 <span className="text-center text-[11px] font-black uppercase leading-tight tracking-wider">
-                  {isDragging && canAdd && storageFolderId
+                  {isFileDragging && canAdd && storageFolderId
                     ? "Soltar"
                     : "Añadir"}
                 </span>
@@ -646,51 +864,170 @@ export function VehiculoFotosGaleria({
         ) : null}
         </>
         )}
-        {removePrompt ? (
-          <div
-            className={cn(
-              "absolute inset-0 z-30 flex items-center justify-center overflow-y-auto p-4",
-              mode === "factura" && facturaEntry
-                ? "bg-zinc-100/95 dark:bg-zinc-900/95"
-                : "rounded-2xl bg-white/95 dark:bg-zinc-900/95",
-            )}
-          >
-            <div className="w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-              <ModalConfirmDelete
-                key={`${removePrompt.kind}-${removePrompt.index}`}
-                title={
-                  removePrompt.kind === "factura"
-                    ? "¿Eliminar factura?"
-                    : "¿Eliminar fotografía?"
-                }
-                description={
-                  removePrompt.kind === "factura"
-                    ? "Se eliminará el PDF de la factura del vehículo. Tendrás que volver a subirlo si lo necesitas."
-                    : "Se quitará esta imagen de la galería del vehículo."
-                }
-                warningText={null}
-                confirmDelaySec={7}
-                pending={removePending}
-                onCancel={() => {
+      </div>
+      {removePrompt && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fixed inset-0 z-[210] flex items-center justify-center overflow-y-auto p-4">
+              <div
+                aria-hidden
+                className="absolute inset-0 bg-black/40 dark:bg-black/55"
+                onClick={() => {
                   if (!removePending) setRemovePrompt(null);
                 }}
-                onConfirm={() => void confirmRemove()}
               />
-            </div>
-          </div>
-        ) : null}
-      </div>
-      {cropQueue[0] ? (
+              <div className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                <ModalConfirmDelete
+                  key={`${removePrompt.kind}-${removePrompt.index}`}
+                  title={
+                    removePrompt.kind === "factura"
+                      ? "¿Eliminar factura?"
+                      : "¿Eliminar fotografía?"
+                  }
+                  description={
+                    removePrompt.kind === "factura"
+                      ? "Se eliminará el PDF de la factura del vehículo. Tendrás que volver a subirlo si lo necesitas."
+                      : "Se quitará esta imagen de la galería del vehículo."
+                  }
+                  warningText={null}
+                  confirmDelaySec={7}
+                  pending={removePending}
+                  onCancel={() => {
+                    if (!removePending) setRemovePrompt(null);
+                  }}
+                  onConfirm={() => void confirmRemove()}
+                />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
+      {recrop ? (
         <ImageEditorModal
-          file={cropQueue[0]}
+          file={recrop.file}
           aspect={VEHICLE_PHOTO_ASPECT}
           title="Recortar foto"
           hint="Encuadra la foto para que se vea todo."
-          onApply={handleCropApply}
-          onCancel={handleCropCancel}
+          onApply={handleRecropApply}
+          onCancel={handleRecropCancel}
         />
       ) : null}
     </>
+  );
+}
+
+type PhotoRowViewProps = {
+  publicUrl: string;
+  photoLabel: string;
+  busy: boolean;
+  locked: boolean;
+  canSort: boolean;
+  isOverlay?: boolean;
+  dragHandleProps?: React.ComponentProps<"button">;
+  onRecrop: () => void;
+  onRemove: () => void;
+};
+
+function PhotoRowView({
+  publicUrl,
+  photoLabel,
+  busy,
+  locked,
+  canSort,
+  isOverlay = false,
+  dragHandleProps,
+  onRecrop,
+  onRemove,
+}: PhotoRowViewProps) {
+  return (
+    <div
+      className={cn(
+        PHOTO_ROW_CLASS,
+        isOverlay && "pointer-events-none shadow-lg ring-2 ring-brand/30",
+      )}
+    >
+      <button
+        type="button"
+        {...dragHandleProps}
+        disabled={!canSort || locked}
+        className="flex size-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-xl text-zinc-400 outline-none active:cursor-grabbing disabled:cursor-default disabled:opacity-30"
+        aria-label="Ordenar fotografía"
+      >
+        <GripVertical size={18} strokeWidth={2.25} />
+      </button>
+      <button
+        type="button"
+        onClick={onRecrop}
+        disabled={locked}
+        className={cn(
+          PHOTO_THUMB_CLASS,
+          "group bg-zinc-100 dark:bg-zinc-800",
+          locked ? "cursor-wait" : "cursor-pointer",
+        )}
+        aria-label="Recortar fotografía"
+      >
+        <img src={publicUrl} alt="" className="size-full object-cover" />
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/35 group-disabled:bg-transparent">
+          <Crop
+            size={22}
+            strokeWidth={2.25}
+            className="text-white opacity-0 transition-opacity group-hover:opacity-100 group-disabled:opacity-0"
+          />
+        </span>
+        {busy ? (
+          <span className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/25">
+            <Loader2 size={22} className="animate-spin text-white" />
+          </span>
+        ) : null}
+      </button>
+      <span className="min-w-0 flex-1 text-xs font-bold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
+        {photoLabel}
+      </span>
+      {isOverlay ? null : (
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={locked}
+          className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-red-100 text-red-600 transition-colors hover:bg-red-200 disabled:opacity-50 dark:bg-red-950/80 dark:text-red-300 dark:hover:bg-red-900"
+          aria-label="Quitar foto"
+        >
+          <X size={16} strokeWidth={2.5} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+function SortablePhotoRow({
+  path,
+  ...props
+}: PhotoRowViewProps & { path: string }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: path,
+    disabled: !props.canSort || props.locked,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        transition,
+        zIndex: isDragging ? 20 : undefined,
+        opacity: isDragging ? 0.35 : undefined,
+      }}
+    >
+      <PhotoRowView
+        {...props}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
   );
 }
 

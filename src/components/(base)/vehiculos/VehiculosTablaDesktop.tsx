@@ -34,6 +34,7 @@ import {
   vehiculosTablaHeadRowClass,
 } from "./lib/tabla-vehiculos-ui";
 import { VehiculoFacturaChip } from "./VehiculosTablaMobileCards";
+import { prefetchInvoicePdfLibs } from "./lib/vehiculo-react-pdf";
 
 const cellPad = "px-3 py-3.5";
 const cellPadEstrecho = "px-1.5 py-3.5";
@@ -83,15 +84,21 @@ function VehiculosTablaFotoCell({
   onOpen: () => void;
 }) {
   return (
-    <SigetActionButton
-      label="Ver"
-      accentColor={sigetAccent.abrir}
-      morphFrom={ImageNode}
-      morphTo={ImagesNode}
-      onClick={onOpen}
-      className={sigetTablaFotosVerBotonClass}
-      ariaLabel={`Ver fotos y factura de ${row.placa}`}
-    />
+    <span
+      className="inline-flex"
+      onPointerEnter={prefetchInvoicePdfLibs}
+      onFocus={prefetchInvoicePdfLibs}
+    >
+      <SigetActionButton
+        label="Ver"
+        accentColor={sigetAccent.abrir}
+        morphFrom={ImageNode}
+        morphTo={ImagesNode}
+        onClick={onOpen}
+        className={sigetTablaFotosVerBotonClass}
+        ariaLabel={`Ver fotos y factura de ${row.placa}`}
+      />
+    </span>
   );
 }
 
@@ -264,6 +271,7 @@ export function VehiculosTablaDesktop({
                   <VehiculoFacturaChip
                     placa={row.placa}
                     compact
+                    onPrefetch={prefetchInvoicePdfLibs}
                     onClick={() => onVerFactura(row)}
                   />
                 </td>

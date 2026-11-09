@@ -31,6 +31,48 @@ function rotateSize(width: number, height: number, rotation: number) {
   };
 }
 
+export function centeredAspectCropArea(
+  width: number,
+  height: number,
+  aspect: number,
+): Area {
+  if (width < 1 || height < 1) {
+    throw new Error('INVALID_IMAGE');
+  }
+  const imageAspect = width / height;
+  if (imageAspect > aspect) {
+    const cropWidth = Math.min(width, height * aspect);
+    return {
+      x: Math.max(0, (width - cropWidth) / 2),
+      y: 0,
+      width: cropWidth,
+      height,
+    };
+  }
+  const cropHeight = Math.min(height, width / aspect);
+  return {
+    x: 0,
+    y: Math.max(0, (height - cropHeight) / 2),
+    width,
+    height: cropHeight,
+  };
+}
+
+function jpegFileNameFromSource(file: File): string {
+  return file.name.replace(/\.[^.]+$/, '.jpg') || 'foto.jpg';
+}
+
+async function canvasToJpegFile(
+  canvas: HTMLCanvasElement,
+  fileName: string,
+): Promise<File> {
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, 'image/jpeg', 0.95);
+  });
+  if (!blob) throw new Error('Canvas is empty');
+  return new File([blob], fileName, { type: 'image/jpeg' });
+}
+
 export async function getCroppedFile(
   imageSrc: string,
   pixelCrop: Area,
@@ -94,4 +136,50 @@ export async function getCroppedFile(
       0.95
     );
   });
+}
+
+export async function cropFileToCenteredAspect(
+  file: File,
+  aspect: number,
+): Promise<File> {
+  const fileName = jpegFileNameFromSource(file);
+
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file);
+      try {
+        const area = centeredAspectCropArea(bitmap.width, bitmap.height, aspect);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(area.width));
+        canvas.height = Math.max(1, Math.round(area.height));
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('No 2d context');
+        ctx.drawImage(
+          bitmap,
+          area.x,
+          area.y,
+          area.width,
+          area.height,
+          0,
+          0,
+          canvas.width,
+          canvas.height,
+        );
+        return await canvasToJpegFile(canvas, fileName);
+      } finally {
+        bitmap.close();
+      }
+    } catch {
+      /* fallback */
+    }
+  }
+
+  const url = URL.createObjectURL(file);
+  try {
+    const image = await createImage(url);
+    const area = centeredAspectCropArea(image.width, image.height, aspect);
+    return await getCroppedFile(url, area, 0, fileName, 'image/jpeg');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }

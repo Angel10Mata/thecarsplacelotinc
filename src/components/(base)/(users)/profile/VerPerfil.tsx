@@ -212,14 +212,14 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
     <div className="fixed inset-0 z-[201] flex items-center justify-center overflow-y-auto bg-background/60 p-4 backdrop-blur-md">
       <MagicCard
         className={cn(
-          "flex w-full flex-col overflow-hidden border border-border/60 bg-card shadow-none",
+          "flex w-full flex-col overflow-hidden border border-zinc-200/80 bg-zinc-100 shadow-lg dark:border-zinc-700 dark:bg-zinc-800",
           "max-h-[calc(100dvh-2rem)] rounded-3xl",
           view === "perfil"
             ? "max-w-[min(92%,60rem)]"
             : "max-w-[min(92%,48rem)]",
         )}
       >
-        <div className="relative shrink-0 border-b border-border/40 bg-muted/5 px-6 pb-4 pt-6">
+        <div className="relative shrink-0 border-b border-zinc-200/80 bg-white px-6 pb-4 pt-6 dark:border-zinc-700 dark:bg-zinc-900">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-4">
               <div className="relative aspect-square h-12 w-12 shrink-0 rounded-2xl border border-border/60 bg-background p-1">
@@ -275,7 +275,7 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
 
         <div
           className={cn(
-            "flex min-h-0 flex-1 flex-col bg-background/50 px-4 py-4 sm:px-6",
+            "flex min-h-0 flex-1 flex-col bg-white px-4 py-4 dark:bg-zinc-900 sm:px-6",
             view === "perfil"
               ? "overflow-hidden py-3 sm:px-2"
               : "overflow-y-auto custom-scrollbar",

@@ -25,22 +25,49 @@ export function ModuleTableFooter({
 }: ModuleTableFooterProps) {
   if (itemCount <= 0) return null;
 
+  const showPagination = totalPages > 1;
+
+  const pageSizeSelect = (
+    <PageSizeSelect
+      pageSize={pageSize}
+      setPageSize={(size) => {
+        setPageSize(size);
+        onPageChange(1);
+      }}
+      options={pageSizeOptions}
+    />
+  );
+
+  if (!showPagination) {
+    return (
+      <div
+        className={cn(
+          moduleTableFooterClass,
+          "w-full items-center justify-center",
+          className,
+        )}
+      >
+        {pageSizeSelect}
+      </div>
+    );
+  }
+
   return (
-    <div className={cn(moduleTableFooterClass, className)}>
-      <div className="flex items-center gap-4">
-        <PageSizeSelect
-          pageSize={pageSize}
-          setPageSize={(size) => {
-            setPageSize(size);
-            onPageChange(1);
-          }}
-          options={pageSizeOptions}
-        />
+    <div
+      className={cn(
+        moduleTableFooterClass,
+        "max-sm:flex-col max-sm:items-center max-sm:justify-center sm:justify-between",
+        className,
+      )}
+    >
+      <div className="flex shrink-0 max-sm:w-full max-sm:items-center max-sm:justify-center">
+        {pageSizeSelect}
       </div>
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={onPageChange}
+        className="max-sm:justify-center"
       />
     </div>
   );
@@ -98,7 +125,7 @@ export const moduleTableEmptyCellClass =
   "text-center py-14 text-zinc-400 font-bold";
 
 export const moduleTableFooterClass =
-  "flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-2 border-t border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400";
+  "mt-2 flex h-[3.5625rem] shrink-0 flex-wrap items-center justify-center gap-3 border-t border-zinc-200 px-4 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 sm:flex-row";
 
 // Contenedores de tabla
 export function ModuleTableShell({

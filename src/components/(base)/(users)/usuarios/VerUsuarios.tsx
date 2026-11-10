@@ -11,8 +11,10 @@ import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-but
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import SignUp from "@/components/(base)/(auth)/signup/SignUp";
 import {
-  modulePageBackRowStickyClass,
-  modulePageScrollClass,
+  modulePageHeaderClass,
+  modulePageHeaderStackClass,
+  modulePageShellClass,
+  modulePageTitleClass,
 } from "@/lib/module-layout";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import {
@@ -32,7 +34,7 @@ import { cn } from "@/lib/utils";
 
 // Usuarios
 export function VerUsuarios() {
-  const { effectiveRole, realRole } = useUserContext();
+  const { effectiveRole } = useUserContext();
   const canCreateUser = canCreateUsers(effectiveRole);
 
   // Datos
@@ -40,8 +42,6 @@ export function VerUsuarios() {
 
   // Estado
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState<number | "all">(10);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -73,31 +73,21 @@ export function VerUsuarios() {
 
   const roleLabels = ROLE_LABELS;
 
-  const availableRoles = useMemo(() => {
-    if (!users) return [];
-    const roles = Array.from(new Set(users.map((u) => u.rol))).filter(Boolean);
-    return roles;
-  }, [users]);
-
   const filteredUsers = useMemo(() => {
     if (!users) return [];
 
     return users
-      .filter((u) => {
-        const matchesSearch = (u.nombre || "")
+      .filter((u) =>
+        (u.nombre || "")
           .toLowerCase()
-          .includes(searchQuery.toLowerCase());
-        const matchesRole = roleFilter === "all" || u.rol === roleFilter;
-        return matchesSearch && matchesRole;
-      })
+          .includes(searchQuery.toLowerCase()),
+      )
       .sort((a, b) => {
         const nameA = a.nombre || "";
         const nameB = b.nombre || "";
-        return sortOrder === "asc"
-          ? nameA.localeCompare(nameB, "es", { sensitivity: "base" })
-          : nameB.localeCompare(nameA, "es", { sensitivity: "base" });
+        return nameA.localeCompare(nameB, "es", { sensitivity: "base" });
       });
-  }, [users, searchQuery, sortOrder, roleFilter]);
+  }, [users, searchQuery]);
 
   const totalUsers = filteredUsers.length;
   const isAll = pageSize === "all";
@@ -130,45 +120,37 @@ export function VerUsuarios() {
 
   return (
     <>
-      <div className={modulePageScrollClass}>
-        <div className={modulePageBackRowStickyClass}>
-          <ModuleHeaderBackButton />
-        </div>
-        <div className="mb-2 flex items-center justify-between gap-3 px-3 sm:px-4 md:px-0">
-          <div className="flex min-w-0 flex-col items-start gap-1.5">
-            <div className="min-w-0">
-              <h2 className="min-w-0 text-xl font-black uppercase leading-none tracking-tight text-foreground sm:text-2xl md:text-3xl">
-                Gestión de Usuarios
-              </h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Rol Actual:{" "}
-                <span className="text-[10px] font-bold uppercase underline">
-                  {roleLabels[effectiveRole] || effectiveRole}
-                </span>
-                {realRole !== effectiveRole && (
-                  <span className="ml-1 text-[10px] text-muted-foreground">
-                    (simulación)
-                  </span>
-                )}
-              </p>
+      <div
+        className={cn(
+          modulePageShellClass,
+          "min-h-0 gap-2 pt-0 pb-0 md:pt-0 md:pb-8 mt-0 md:mt-4",
+        )}
+      >
+        <header className={modulePageHeaderClass}>
+          <div className={modulePageHeaderStackClass}>
+            <ModuleHeaderBackButton />
+            <div className="flex w-full min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className={modulePageTitleClass}>Gestión de Usuarios</h1>
+              </div>
+              {canCreateUser && !isSignUpOpen && (
+                <SigetActionButton
+                  label="Crear"
+                  accentColor={sigetAccent.crear}
+                  morphFrom={UserPlus}
+                  morphTo={Check}
+                  onClick={() => setIsSignUpOpen(true)}
+                  ariaLabel="Crear usuario en la base de datos"
+                  className="w-auto shrink-0"
+                />
+              )}
             </div>
           </div>
-          {canCreateUser && !isSignUpOpen && (
-            <SigetActionButton
-              label="Crear"
-              accentColor={sigetAccent.crear}
-              morphFrom={UserPlus}
-              morphTo={Check}
-              onClick={() => setIsSignUpOpen(true)}
-              ariaLabel="Crear usuario en la base de datos"
-              className="w-auto shrink-0"
-            />
-          )}
-        </div>
+        </header>
 
-        <div className={cn(moduleTableShellClass, "p-0")}>
+        <div className={cn(moduleTableShellClass, "min-w-0 flex-1 flex-col p-0")}>
           <div className={moduleTableAccentBarClass} aria-hidden />
-          <div className="px-5 py-5">
+          <div className="px-3 py-4 sm:px-5 sm:py-5">
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -183,40 +165,18 @@ export function VerUsuarios() {
               />
             </div>
           </div>
-          <div className={cn(moduleTableScrollClass, "min-h-0 overflow-auto")}>
+          <div
+            className={cn(
+              moduleTableScrollClass,
+              "min-h-0 overflow-auto max-md:min-h-0 md:min-h-[400px]",
+            )}
+          >
             <table className={moduleTableClass}>
             <thead>
               <tr className={moduleTableHeadRowClass}>
-                <th className={moduleTableHeadCellClass}>
-                  <select
-                    value={sortOrder}
-                    onChange={(e) =>
-                      setSortOrder(e.target.value as "asc" | "desc")
-                    }
-                    className="bg-transparent font-black uppercase tracking-wider focus:outline-none cursor-pointer transition-colors w-full sm:w-auto"
-                  >
-                    <option value="asc">Ordenar (A-Z)</option>
-                    <option value="desc">Ordenar (Z-A)</option>
-                  </select>
-                </th>
+                <th className={moduleTableHeadCellClass}>Nombre</th>
                 <th className={cn(moduleTableHeadCellClass, "text-right")}>
-                  <div className="flex items-center justify-end gap-1">
-                    <select
-                      value={roleFilter}
-                      onChange={(e) => {
-                        setRoleFilter(e.target.value);
-                        setCurrentPage(1);
-                      }}
-                      className="bg-transparent font-black uppercase tracking-wider focus:outline-none cursor-pointer transition-colors text-right"
-                    >
-                      <option value="all">Rol: Todos</option>
-                      {availableRoles.map((role) => (
-                        <option key={role} value={role}>
-                          {roleLabels[role] || role}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  Rol
                 </th>
               </tr>
             </thead>
@@ -272,8 +232,8 @@ export function VerUsuarios() {
                 {searchQuery
                   ? "No se encontraron coincidencias."
                   : canCreateUser
-                    ? "No hay usuarios con estos filtros. Crea el primero con el botón superior."
-                    : "No hay usuarios disponibles con estos filtros."}
+                    ? "Aún no hay usuarios. Crea el primero con el botón superior."
+                    : "No hay usuarios disponibles."}
               </p>
               {canCreateUser && !searchQuery && !isSignUpOpen && (
                 <SigetActionButton

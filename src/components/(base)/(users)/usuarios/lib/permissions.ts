@@ -61,6 +61,16 @@ export function canCreateUsers(actorRole: string): boolean {
   return CREATOR_ROLES.has(normalizeKnownRole(actorRole));
 }
 
+export function canDeleteUser(
+  actorRole: string,
+  targetRole: string | null | undefined,
+  isSelf: boolean,
+): boolean {
+  if (isSelf) return false;
+  if (normalizeKnownRole(actorRole) !== "super") return false;
+  return normalizeKnownRole(targetRole) !== "super";
+}
+
 export function canAssignRole(actorRole: string, targetRole: string): boolean {
   const actor = normalizeKnownRole(actorRole);
   const target = normalizeKnownRole(targetRole);

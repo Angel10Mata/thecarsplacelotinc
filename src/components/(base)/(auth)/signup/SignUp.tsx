@@ -140,6 +140,8 @@ export default function SignUp({
     };
   }, [isOpen, presentation]);
 
+  const isFullscreen = presentation === "fullscreen";
+
   useEffect(() => {
     if (logic.state?.success && !hasMovedToStep2.current) {
       setSavedData({ user: logic.username, pass: logic.passwordValue });
@@ -187,8 +189,21 @@ export default function SignUp({
   if (!isOpen) return null;
 
   const card = (
-    <MagicCard className="rounded-3xl border border-border/50 bg-card shadow-none overflow-hidden flex flex-col w-full">
-      <div className="flex items-center justify-between p-4 md:p-6 border-b border-border/50 bg-muted/5 shrink-0">
+    <MagicCard
+      className={cn(
+        "flex w-full flex-col overflow-hidden border border-border/50 bg-card shadow-none",
+        isFullscreen
+          ? "h-full min-h-0 max-h-dvh flex-1 rounded-none border-0 max-md:h-dvh"
+          : "rounded-3xl",
+      )}
+    >
+      <div
+        className={cn(
+          "flex shrink-0 items-center justify-between border-b border-border/50 bg-muted/5 p-4 md:p-6",
+          isFullscreen &&
+            "bg-white pt-[max(0.75rem,env(safe-area-inset-top))] dark:bg-zinc-900 md:bg-muted/5 md:pt-6",
+        )}
+      >
         <div className="flex items-center gap-3 md:gap-4 min-w-0">
           <UserPlus size={26} className="text-primary shrink-0" />
           <div className="min-w-0">
@@ -210,7 +225,14 @@ export default function SignUp({
         </button>
       </div>
 
-      <div className="p-4 md:p-6 overflow-y-auto min-h-0 min-h-105 max-h-[min(70dvh,520px)]">
+      <div
+        className={cn(
+          "min-h-0 overflow-x-hidden custom-scrollbar",
+          isFullscreen
+            ? "flex flex-1 flex-col overflow-hidden"
+            : "overflow-y-auto p-4 md:p-6 min-h-105 max-h-[min(70dvh,520px)]",
+        )}
+      >
         <AnimatePresence mode="wait">
           {step === 1 ? (
             <motion.form
@@ -219,8 +241,19 @@ export default function SignUp({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 20, opacity: 0 }}
               action={logic.formAction}
-              className="space-y-5"
+              className={cn(
+                isFullscreen
+                  ? "flex min-h-0 flex-1 flex-col"
+                  : "space-y-5",
+              )}
             >
+              <div
+                className={cn(
+                  isFullscreen
+                    ? "min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 md:p-6"
+                    : "contents",
+                )}
+              >
               <div className="grid gap-2">
                 <Label htmlFor="name">Nombre Completo</Label>
                 <Input
@@ -362,16 +395,34 @@ export default function SignUp({
                 </div>
               )}
 
-              <SigetActionButton
-                label={logic.isPending ? "Creando" : "Crear"}
-                accentColor={sigetAccent.crear}
-                morphFrom={UserPlusNode}
-                morphTo={CheckNode}
-                type="submit"
-                disabled={logic.isPending}
-                ariaBusy={logic.isPending}
-                className="w-full max-w-none"
-              />
+              {!isFullscreen ? (
+                <SigetActionButton
+                  label={logic.isPending ? "Creando" : "Crear"}
+                  accentColor={sigetAccent.crear}
+                  morphFrom={UserPlusNode}
+                  morphTo={CheckNode}
+                  type="submit"
+                  disabled={logic.isPending}
+                  ariaBusy={logic.isPending}
+                  className="w-full max-w-none"
+                />
+              ) : null}
+              </div>
+
+              {isFullscreen ? (
+                <div className="mt-auto flex shrink-0 justify-end border-t border-border/60 px-4 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-3 md:px-6">
+                  <SigetActionButton
+                    label={logic.isPending ? "Creando" : "Crear"}
+                    accentColor={sigetAccent.crear}
+                    morphFrom={UserPlusNode}
+                    morphTo={CheckNode}
+                    type="submit"
+                    disabled={logic.isPending}
+                    ariaBusy={logic.isPending}
+                    className="w-full max-w-none shrink-0"
+                  />
+                </div>
+              ) : null}
             </motion.form>
           ) : (
             <motion.div
@@ -379,7 +430,10 @@ export default function SignUp({
               initial={{ x: 20, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -20, opacity: 0 }}
-              className="space-y-6"
+              className={cn(
+                "space-y-6",
+                isFullscreen && "flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6",
+              )}
             >
               <div className="p-5 rounded-2xl border border-border/60 bg-muted/30 space-y-5">
                 <div className="flex justify-between items-center border-b border-border/40 pb-4">
@@ -472,29 +526,33 @@ export default function SignUp({
     </MagicCard>
   );
 
-  if (presentation === "fullscreen") {
-    const fullscreen = (
+  if (isFullscreen) {
+    return createPortal(
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[110] flex items-center justify-center p-4 h-dvh w-full bg-background/60 backdrop-blur-sm"
-        style={{
-          paddingTop: "max(1rem, env(safe-area-inset-top))",
-          paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
-        }}
+        className={cn(
+          "fixed inset-0 z-[201] flex h-dvh w-full",
+          "max-md:flex-col max-md:bg-zinc-100 max-md:dark:bg-zinc-900",
+          "md:items-center md:justify-center md:overflow-y-auto md:bg-background/60 md:p-4 md:backdrop-blur-md",
+        )}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="w-full max-w-md relative"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          className={cn(
+            "relative flex min-h-0 w-full flex-col",
+            "max-md:h-dvh max-md:max-h-dvh max-md:flex-1",
+            "md:max-h-[min(42rem,calc(100dvh-2rem))] md:max-w-md md:flex-none",
+          )}
         >
           {card}
         </motion.div>
-      </motion.div>
+      </motion.div>,
+      document.body,
     );
-    return createPortal(fullscreen, document.body);
   }
 
   return (

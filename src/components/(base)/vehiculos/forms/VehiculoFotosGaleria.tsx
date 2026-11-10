@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import {
   closestCenter,
   DndContext,
@@ -23,7 +22,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Crop, GripVertical, Loader2, Plus, X } from "lucide-react";
 import { CarPdfInlineViewer } from "./CarPdfInlineViewer";
-import { ModalConfirmDelete, toast } from "@/components/ui/general-modal";
+import { ModalConfirmDeleteOverlay, toast } from "@/components/ui/general-modal";
 import { cn } from "@/lib/utils";
 import ImageEditorModal from "@/components/imgs/ImageEditorModal";
 import { cropFileToCenteredAspect } from "@/components/imgs/cropImage";
@@ -865,42 +864,28 @@ export function VehiculoFotosGaleria({
         </>
         )}
       </div>
-      {removePrompt && typeof document !== "undefined"
-        ? createPortal(
-            <div className="fixed inset-0 z-[210] flex items-center justify-center overflow-y-auto p-4">
-              <div
-                aria-hidden
-                className="absolute inset-0 bg-black/40 dark:bg-black/55"
-                onClick={() => {
-                  if (!removePending) setRemovePrompt(null);
-                }}
-              />
-              <div className="relative z-10 w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-2 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-                <ModalConfirmDelete
-                  key={`${removePrompt.kind}-${removePrompt.index}`}
-                  title={
-                    removePrompt.kind === "factura"
-                      ? "¿Eliminar factura?"
-                      : "¿Eliminar fotografía?"
-                  }
-                  description={
-                    removePrompt.kind === "factura"
-                      ? "Se eliminará el PDF de la factura del vehículo. Tendrás que volver a subirlo si lo necesitas."
-                      : "Se quitará esta imagen de la galería del vehículo."
-                  }
-                  warningText={null}
-                  confirmDelaySec={7}
-                  pending={removePending}
-                  onCancel={() => {
-                    if (!removePending) setRemovePrompt(null);
-                  }}
-                  onConfirm={() => void confirmRemove()}
-                />
-              </div>
-            </div>,
-            document.body,
-          )
-        : null}
+      {removePrompt ? (
+        <ModalConfirmDeleteOverlay
+          key={`${removePrompt.kind}-${removePrompt.index}`}
+          open
+          title={
+            removePrompt.kind === "factura"
+              ? "¿Eliminar factura?"
+              : "¿Eliminar fotografía?"
+          }
+          description={
+            removePrompt.kind === "factura"
+              ? "Se eliminará el PDF de la factura del vehículo. Tendrás que volver a subirlo si lo necesitas."
+              : "Se quitará esta imagen de la galería del vehículo."
+          }
+          warningText={null}
+          pending={removePending}
+          onCancel={() => {
+            if (!removePending) setRemovePrompt(null);
+          }}
+          onConfirm={() => void confirmRemove()}
+        />
+      ) : null}
       {recrop ? (
         <ImageEditorModal
           file={recrop.file}

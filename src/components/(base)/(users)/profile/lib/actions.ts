@@ -14,6 +14,9 @@ import {
   isUserVisibleToActor,
   normalizeKnownRole,
 } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { mensajeErrorEs } from "@/lib/supabase-errors-es";
+import { mensajeSiServiceRoleKeyInvalida } from "@/lib/supabase-service-role-env";
+import { MENSAJE_ERROR_SISTEMA } from "@/lib/mensajes-usuario";
 import { ProfileFormValues } from "./zod";
 
 // Helpers
@@ -63,6 +66,10 @@ export async function getProfileById(userId: string) {
 
 // Credenciales
 export async function getUserAuthData(userId: string) {
+  if (mensajeSiServiceRoleKeyInvalida()) {
+    return { username: "", phone: "", banned_until: null };
+  }
+
   const supabaseAdmin = getAdminClient();
 
   const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
@@ -183,6 +190,35 @@ export async function updateUserCredentials(
 ) {
   if (!username && !password) return { success: true };
 
+  if (mensajeSiServiceRoleKeyInvalida()) {
+    throw new Error(MENSAJE_ERROR_SISTEMA);
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user: actor },
+  } = await supabase.auth.getUser();
+  if (!actor) {
+    throw new Error("Debes iniciar sesión.");
+  }
+
+  const actorRole = await resolveUserRole(supabase, actor);
+  const isSelf = actor.id === userId;
+
+  if (!isSelf) {
+    if (!canManageUsers(actorRole)) {
+      throw new Error("No tienes permiso para editar este usuario.");
+    }
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("rol")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!isUserVisibleToActor(targetProfile?.rol, actorRole)) {
+      throw new Error("No tienes permiso para editar este usuario.");
+    }
+  }
+
   const supabaseAdmin = getAdminClient();
   const authUpdates: AdminUserAttributes = {};
 
@@ -191,10 +227,15 @@ export async function updateUserCredentials(
   }
 
   if (username) {
+    const { data: existing } = await supabaseAdmin.auth.admin.getUserById(userId);
+    const prevMeta =
+      (existing?.user?.user_metadata as Record<string, unknown> | undefined) ??
+      {};
     authUpdates.email = `${username}@app.com`;
     authUpdates.email_confirm = true;
     authUpdates.user_metadata = {
-      username: username,
+      ...prevMeta,
+      username,
     };
   }
 
@@ -204,9 +245,52 @@ export async function updateUserCredentials(
   );
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error(mensajeErrorEs(error.message));
   }
 
+  return { success: true };
+}
+
+export async function deleteUsuario(userId: string) {
+  if (mensajeSiServiceRoleKeyInvalida()) {
+    throw new Error(MENSAJE_ERROR_SISTEMA);
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user: actor },
+  } = await supabase.auth.getUser();
+  if (!actor) {
+    throw new Error("Debes iniciar sesión.");
+  }
+
+  if (actor.id === userId) {
+    throw new Error("No puedes eliminar tu propia cuenta.");
+  }
+
+  const actorRole = await resolveUserRole(supabase, actor);
+  if (normalizeKnownRole(actorRole) !== "super") {
+    throw new Error("No tienes permiso para eliminar usuarios.");
+  }
+
+  const { data: targetProfile } = await supabase
+    .from("profiles")
+    .select("rol")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (normalizeKnownRole(targetProfile?.rol) === "super") {
+    throw new Error("No se puede eliminar una cuenta Sistemas.");
+  }
+
+  const supabaseAdmin = getAdminClient();
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+
+  if (error) {
+    throw new Error(mensajeErrorEs(error.message));
+  }
+
+  revalidatePath(`${APP_AJUSTES_PATH}/usuarios`);
   return { success: true };
 }
 

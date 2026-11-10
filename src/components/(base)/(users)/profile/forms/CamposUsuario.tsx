@@ -13,10 +13,9 @@ import {
   ArrowLeft,
   UserX,
   UserCheck,
-  AlertTriangle,
   Loader2,
 } from "lucide-react";
-import { Save, Check, ArrowLeft as ArrowLeftIcon } from "lucide";
+import { Save, Check, ArrowLeft as ArrowLeftIcon, Trash2, Trash } from "lucide";
 import { toast } from "react-toastify";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import { profileObjectSchema } from "../lib/zod";
@@ -25,13 +24,20 @@ import {
   useProfile,
   useUserCredentials,
 } from "../lib/hooks";
-import { toggleUserStatus, updateProfile } from "../lib/actions";
+import {
+  deleteUsuario,
+  toggleUserStatus,
+  updateProfile,
+} from "../lib/actions";
+import { ModalConfirmDeleteOverlay } from "@/components/ui/general-modal";
+import { mensajeParaUsuario, MENSAJE_ERROR_GENERAL } from "@/lib/mensajes-usuario";
 import {
   useUser,
   useUserContext,
 } from "@/components/(base)/providers/UserProvider";
 import {
   canAssignRole,
+  canDeleteUser,
   canManageUsers,
   getManageableRoles,
   isUserVisibleToActor,
@@ -44,6 +50,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { generateStrongPassword } from "@/utils/general/password-generator";
 import { AuroraText } from "@/components/ui/aurora-text";
+import { ModalFooter } from "@/components/ui/general-modal";
+
+const mobileProfileStickyFooterClass =
+  "mt-auto md:hidden max-md:!-mx-0 max-md:!mb-0 max-md:!w-full max-md:!grid max-md:grid-cols-2 max-md:items-stretch max-md:gap-2 max-md:rounded-none max-md:border-x-0 max-md:px-4 max-md:pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom))]";
+
+const mobileProfileFooterBtnClass = "w-full max-w-none min-w-0 shrink-0";
 import { AnimatePresence, motion } from "framer-motion";
 
 // Switch
@@ -113,19 +125,13 @@ const UserStatusToggle = ({
   const isActive = !isBanned;
 
   return (
-    <div className="py-10">
-      <div className="flex justify-between items-end mb-2">
-        {isSelf ? (
-          <span className="text-[10px] font-bold text-red-600 uppercase flex items-center gap-1">
-            <AlertTriangle size={12} /> No puede banear su propio perfil
-          </span>
-        ) : (
-          <span className="text-xs font-semibold leading-none text-foreground/70">
-            {isActive
-              ? "Acceso permitido al sistema"
-              : "Inicio de sesión bloqueado"}
-          </span>
-        )}
+    <div className="py-4 max-md:py-3 md:py-10">
+      <div className="mb-2 flex items-end justify-between">
+        <span className="text-xs font-semibold leading-none text-foreground/70">
+          {isActive
+            ? "Acceso permitido al sistema"
+            : "Inicio de sesión bloqueado"}
+        </span>
       </div>
 
       <div
@@ -180,11 +186,17 @@ interface InfoUserProps {
   userId: string;
   canEdit: boolean;
   isSuper: boolean;
+  onClose?: () => void;
+  targetName?: string;
 }
 
-// Usuario
-export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
-  const { effectiveRole } = useUserContext();
+export function CamposUsuario({
+  userId,
+  canEdit,
+  onClose,
+  targetName,
+}: InfoUserProps) {
+  const { effectiveRole, realRole } = useUserContext();
   const queryClient = useQueryClient();
   const { data: usersList } = useUsers(
     canManageUsers(effectiveRole) ? effectiveRole : undefined,
@@ -199,6 +211,11 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
   );
   const targetRole = profile?.rol || "user";
   const isSelf = useUser()?.id === userId;
+  const canDelete = canDeleteUser(
+    realRole,
+    profile?.rol,
+    isSelf,
+  );
   const canChangeRole =
     canEdit &&
     !isSelf &&
@@ -218,6 +235,8 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
   const [hasChanges, setHasChanges] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [savedData, setSavedData] = useState({ user: "", pass: "" });
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (profile?.rol) {
@@ -325,7 +344,24 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
 
       setHasChanges(false);
     } catch (error: unknown) {
-      toast.error((error as Error).message);
+      const raw = error instanceof Error ? error.message : "";
+      toast.error(mensajeParaUsuario(raw, MENSAJE_ERROR_GENERAL));
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteUsuario(userId);
+      await queryClient.invalidateQueries({ queryKey: ["users-list"] });
+      toast.success("Usuario eliminado.");
+      setConfirmDelete(false);
+      onClose?.();
+    } catch (error: unknown) {
+      const raw = error instanceof Error ? error.message : "";
+      toast.error(mensajeParaUsuario(raw, MENSAJE_ERROR_GENERAL));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -343,24 +379,29 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
       </div>
     );
 
+  const showActionFooter =
+    step === 1 &&
+    (canEdit || (canDelete && !confirmDelete));
+
   return (
-    <div className="w-full max-w-sm mx-auto flex flex-col h-full">
-      <div className="flex items-center gap-2 pb-2 border-b border-border/40 mb-3">
+    <div className="mx-auto w-full max-w-sm md:max-w-none max-md:flex max-md:h-full max-md:min-h-0 max-md:max-w-none max-md:flex-1 max-md:flex-col max-md:overflow-visible">
+      <div className="mb-3 flex shrink-0 items-center gap-2 border-b border-border/40 pb-2 max-md:px-4">
         <Shield size={25} className=" text-purple-500" />
         <h3 className="text-xs font-bold uppercase tracking-wider">
           Acceso y Seguridad
         </h3>
       </div>
 
-      <AnimatePresence mode="wait">
-        {step === 1 ? (
-          <motion.div
-            key="form"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="space-y-3"
-          >
+      <div className="max-md:min-h-0 max-md:flex-1 max-md:overflow-hidden max-md:overflow-x-hidden">
+        <AnimatePresence mode="wait">
+          {step === 1 ? (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-3 pb-2 max-md:px-4"
+            >
             <div className="space-y-2.5 ">
               <div>
                 <label className="text-xs font-semibold text-foreground/70 mb-1 block">
@@ -531,29 +572,118 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
               onStatusChange={refetch}
               canEdit={canEdit}
             />
-            {canEdit && (
-              <SigetActionButton
-                label={mutation.isPending ? "Guardando" : "Guardar"}
-                accentColor={sigetAccent.guardar}
-                morphFrom={Save}
-                morphTo={Check}
-                onClick={handleSave}
-                disabled={
-                  (!hasChanges && !roleChanged) || mutation.isPending
-                }
-                ariaBusy={mutation.isPending}
-                className="w-auto shrink-0 mt-2"
-              />
-            )}
-          </motion.div>
-        ) : (
-          <SuccessView
-            savedData={savedData}
-            phone={credentials?.phone || ""}
-            onBack={() => setStep(1)}
+
+            {showActionFooter ? (
+              <div className="mt-6 hidden w-full items-center justify-between gap-3 md:flex">
+                {canDelete && !confirmDelete ? (
+                  <SigetActionButton
+                    label="Eliminar"
+                    accentColor={sigetAccent.quitar}
+                    morphFrom={Trash2}
+                    morphTo={Trash}
+                    onClick={() => setConfirmDelete(true)}
+                    ariaLabel="Eliminar usuario"
+                    className="w-auto shrink-0"
+                  />
+                ) : (
+                  <span className="shrink-0" aria-hidden />
+                )}
+                {canEdit ? (
+                  <SigetActionButton
+                    label={mutation.isPending ? "Guardando" : "Guardar"}
+                    accentColor={sigetAccent.guardar}
+                    morphFrom={Save}
+                    morphTo={Check}
+                    onClick={handleSave}
+                    disabled={
+                      (!hasChanges && !roleChanged) || mutation.isPending
+                    }
+                    ariaBusy={mutation.isPending}
+                    className="w-auto shrink-0"
+                  />
+                ) : null}
+              </div>
+            ) : null}
+
+            </motion.div>
+          ) : (
+            <SuccessView
+              savedData={savedData}
+              phone={credentials?.phone || ""}
+              onBack={() => setStep(1)}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {showActionFooter ? (
+        <ModalFooter
+          className={cn(
+            mobileProfileStickyFooterClass,
+            !(canDelete && !confirmDelete && canEdit) &&
+              "max-md:grid-cols-1 max-md:justify-items-stretch",
+          )}
+        >
+          {canDelete && !confirmDelete ? (
+            <SigetActionButton
+              label="Eliminar"
+              accentColor={sigetAccent.quitar}
+              morphFrom={Trash2}
+              morphTo={Trash}
+              onClick={() => setConfirmDelete(true)}
+              ariaLabel="Eliminar usuario"
+              className={mobileProfileFooterBtnClass}
+            />
+          ) : null}
+          {canEdit ? (
+            <SigetActionButton
+              label={mutation.isPending ? "Guardando" : "Guardar"}
+              accentColor={sigetAccent.guardar}
+              morphFrom={Save}
+              morphTo={Check}
+              onClick={handleSave}
+              disabled={
+                (!hasChanges && !roleChanged) || mutation.isPending
+              }
+              ariaBusy={mutation.isPending}
+              className={mobileProfileFooterBtnClass}
+            />
+          ) : null}
+        </ModalFooter>
+      ) : null}
+
+      {step === 2 ? (
+        <ModalFooter
+          className={cn(
+            mobileProfileStickyFooterClass,
+            "max-md:grid-cols-1",
+          )}
+        >
+          <SigetActionButton
+            label="Volver"
+            accentColor={sigetAccent.cancelar}
+            morphFrom={ArrowLeftIcon}
+            morphTo={ArrowLeftIcon}
+            morphOnHover={false}
+            onClick={() => setStep(1)}
+            ariaLabel="Volver al formulario de acceso"
+            className={cn(mobileProfileFooterBtnClass, "md:hidden")}
           />
-        )}
-      </AnimatePresence>
+        </ModalFooter>
+      ) : null}
+
+      <ModalConfirmDeleteOverlay
+        open={Boolean(canDelete && confirmDelete)}
+        title="¿Eliminar usuario?"
+        message={
+          targetName
+            ? `Se eliminará la cuenta de ${targetName}.`
+            : "Se eliminará esta cuenta de forma permanente."
+        }
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+        pending={deleting}
+      />
     </div>
   );
 }
@@ -582,7 +712,7 @@ const SuccessView = ({
     <motion.div
       initial={{ x: 20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      className="space-y-4"
+      className="space-y-4 max-md:px-4"
     >
       <div className="p-4 rounded-xl border bg-muted/30 space-y-3">
         <div className="flex justify-between items-center pb-2 border-b border-border/50">
@@ -641,7 +771,7 @@ const SuccessView = ({
       <button
         type="button"
         onClick={onBack}
-        className="w-fit max-w-full h-9 border rounded-lg text-xs font-bold uppercase flex items-center justify-center gap-2 transition-colors cursor-pointer"
+        className="hidden h-9 w-fit max-w-full items-center justify-center gap-2 rounded-lg border text-xs font-bold uppercase transition-colors cursor-pointer md:flex"
       >
         <ArrowLeft size={14} /> Volver
       </button>

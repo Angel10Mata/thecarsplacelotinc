@@ -962,11 +962,13 @@ export function ModalConfirmDelete({
 }) {
   const isPending = loading || pending;
   const isDeactivate = intent === "deactivate";
-  const delayLeft = useConfirmDeleteDelay(confirmDelaySec);
+  const resolvedConfirmDelaySec =
+    confirmDelaySec ?? (intent === "delete" ? 7 : undefined);
+  const delayLeft = useConfirmDeleteDelay(resolvedConfirmDelaySec);
   const confirmLocked = delayLeft > 0;
 
   const delayHint =
-    confirmLocked && confirmDelaySec
+    confirmLocked && resolvedConfirmDelaySec
       ? `Podrás confirmar en ${delayLeft} s.`
       : null;
 
@@ -1094,6 +1096,64 @@ export function ModalConfirmDelete({
         />
       </div>
     </div>
+  );
+}
+
+export type ModalConfirmDeleteProps = Parameters<typeof ModalConfirmDelete>[0];
+
+export function ModalConfirmDeleteOverlay({
+  open,
+  onCancel,
+  pending,
+  loading,
+  ...rest
+}: ModalConfirmDeleteProps & { open: boolean }) {
+  const [mounted, setMounted] = useState(false);
+  const isPending = Boolean(loading || pending);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!open || !mounted || typeof document === "undefined") return null;
+
+  return createPortal(
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          key="confirm-delete-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[220] flex items-center justify-center overflow-y-auto p-4"
+        >
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-black/40 dark:bg-black/55"
+            onClick={() => {
+              if (!isPending) onCancel();
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            className="relative z-10 my-auto w-full max-w-md overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-lg dark:border-zinc-700 dark:bg-zinc-900 sm:p-5"
+            role="alertdialog"
+            aria-modal="true"
+          >
+            <ModalConfirmDelete
+              onCancel={onCancel}
+              pending={pending}
+              loading={loading}
+              {...rest}
+            />
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>,
+    document.body,
   );
 }
 

@@ -7,7 +7,6 @@ import {
   Fingerprint,
   Calendar,
   Heart,
-  Loader2,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -18,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { updateProfile } from "../lib/actions";
 import { useProfile } from "../lib/hooks";
 import { cn } from "@/lib/utils";
+import { ModalFooter } from "@/components/ui/general-modal";
 
 // UI
 const Label = ({
@@ -126,35 +126,49 @@ export const CamposPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
   };
 
   const NavButtons = (
-    <div className="flex md:hidden items-center gap-2 text-muted-foreground/60">
+    <div className="flex items-center gap-2 text-muted-foreground/60 md:hidden">
       <button
+        type="button"
         onClick={() => setStep((s) => Math.max(1, s - 1))}
         disabled={step === 1}
-        className="active:scale-90 disabled:opacity-10 transition-all p-1"
+        aria-label="Sección anterior"
+        className="cursor-pointer p-1 transition-all active:scale-90 disabled:opacity-10"
       >
-        <ChevronLeft size={32} />
+        <ChevronLeft size={32} aria-hidden />
       </button>
       <button
+        type="button"
         onClick={() => setStep((s) => Math.min(3, s + 1))}
         disabled={step === 3}
-        className="active:scale-90 disabled:opacity-10 transition-all p-1"
+        aria-label="Sección siguiente"
+        className="cursor-pointer p-1 transition-all active:scale-90 disabled:opacity-10"
       >
-        <ChevronRight size={32} />
+        <ChevronRight size={32} aria-hidden />
       </button>
     </div>
   );
 
-  const SectionPersonal = (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <User size={25} className="text-blue-700" />
-          <h3 className="text-md font-bold uppercase tracking-tight">
-            Personal
-          </h3>
-        </div>
-        {NavButtons}
+  const SectionHeader = ({
+    icon: Icon,
+    title,
+    iconClass,
+  }: {
+    icon: typeof User;
+    title: string;
+    iconClass: string;
+  }) => (
+    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+      <div className="flex items-center gap-2">
+        <Icon size={25} className={iconClass} />
+        <h3 className="text-md font-bold uppercase tracking-tight">{title}</h3>
       </div>
+      {NavButtons}
+    </div>
+  );
+
+  const SectionPersonal = (
+    <div className="space-y-5">
+      <SectionHeader icon={User} title="Personal" iconClass="text-blue-700 dark:text-blue-400" />
       <div className="space-y-4">
         <div>
           <Label>Nombre Completo</Label>
@@ -225,16 +239,8 @@ export const CamposPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
   );
 
   const SectionContacto = (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <MapPin size={25} className="text-green-700" />
-          <h3 className="text-md font-bold uppercase tracking-tight">
-            Contacto
-          </h3>
-        </div>
-        {NavButtons}
-      </div>
+    <div className="space-y-5">
+      <SectionHeader icon={MapPin} title="Contacto" iconClass="text-green-700 dark:text-green-400" />
       <div className="space-y-4">
         <div>
           <Label>Correo Electrónico</Label>
@@ -270,16 +276,8 @@ export const CamposPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
   );
 
   const SectionEmergencia = (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between pb-2 border-b border-border/40">
-        <div className="flex items-center gap-2">
-          <Heart size={25} className="text-red-500" />
-          <h3 className="text-md font-bold uppercase tracking-tight">
-            Emergencia
-          </h3>
-        </div>
-        {NavButtons}
-      </div>
+    <div className="space-y-5">
+      <SectionHeader icon={Heart} title="Emergencia" iconClass="text-red-500 dark:text-red-400" />
       <div className="space-y-4">
         <div>
           <Label>Nombre Contacto</Label>
@@ -305,48 +303,53 @@ export const CamposPerfil = ({ userId, canEdit }: InfoPerfilProps) => {
     </div>
   );
 
+  const mobileProfileStickyFooterClass =
+    "mt-auto md:hidden max-md:!-mx-0 max-md:!mb-0 max-md:!w-full max-md:!grid max-md:grid-cols-1 max-md:justify-items-stretch max-md:rounded-none max-md:border-x-0 max-md:px-4 max-md:pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom))]";
+
   return (
-    <div className="w-full flex flex-col h-full animate-in fade-in duration-300 ">
-      <div className="hidden md:grid md:grid-cols-3 md:mx-20 gap-10 pb-6">
+    <div className="flex h-full min-h-0 w-full min-w-0 max-w-full flex-1 flex-col overflow-x-hidden max-md:overflow-visible">
+      <div className="hidden gap-10 pb-6 md:mx-12 md:grid md:grid-cols-3 lg:mx-20">
         {SectionPersonal}
         {SectionContacto}
         {SectionEmergencia}
       </div>
 
-      <div className="md:hidden flex flex-col flex-1">
-        <div className="flex-1 space-y-6">
-          {step === 1 && (
-            <div className="animate-in fade-in duration-300">
-              {SectionPersonal}
-            </div>
-          )}
-          {step === 2 && (
-            <div className="animate-in fade-in duration-300">
-              {SectionContacto}
-            </div>
-          )}
-          {step === 3 && (
-            <div className="animate-in fade-in duration-300">
-              {SectionEmergencia}
-            </div>
-          )}
+      <div className="min-h-0 flex-1 overflow-hidden md:hidden">
+        <div className="px-4 pb-2 pt-1">
+          {step === 1 && SectionPersonal}
+          {step === 2 && SectionContacto}
+          {step === 3 && SectionEmergencia}
         </div>
       </div>
 
-      {canEdit && (
-        <div className="mt-8 pt-6 border-t border-border/60 flex justify-end">
-          <SigetActionButton
-            label={saving ? "Guardando" : "Guardar"}
-            accentColor={sigetAccent.guardar}
-            morphFrom={Save}
-            morphTo={Check}
-            onClick={handleSave}
-            disabled={!hasChanges || saving}
-            ariaBusy={saving}
-            className="w-auto shrink-0"
-          />
-        </div>
-      )}
+      {canEdit ? (
+        <>
+          <ModalFooter className={mobileProfileStickyFooterClass}>
+            <SigetActionButton
+              label={saving ? "Guardando" : "Guardar"}
+              accentColor={sigetAccent.guardar}
+              morphFrom={Save}
+              morphTo={Check}
+              onClick={handleSave}
+              disabled={!hasChanges || saving}
+              ariaBusy={saving}
+              className="w-full max-w-none min-w-0 shrink-0"
+            />
+          </ModalFooter>
+          <div className="mt-6 hidden justify-end border-t border-border/60 pt-4 md:flex">
+            <SigetActionButton
+              label={saving ? "Guardando" : "Guardar"}
+              accentColor={sigetAccent.guardar}
+              morphFrom={Save}
+              morphTo={Check}
+              onClick={handleSave}
+              disabled={!hasChanges || saving}
+              ariaBusy={saving}
+              className="w-auto shrink-0"
+            />
+          </div>
+        </>
+      ) : null}
     </div>
   );
 };

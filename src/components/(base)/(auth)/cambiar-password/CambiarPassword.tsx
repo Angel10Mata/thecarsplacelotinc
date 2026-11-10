@@ -22,6 +22,10 @@ import {
 } from "@/components/ui/siget-action-button";
 import { APP_BASE_PATH } from "@/lib/app-config";
 import { modalAccentClass } from "@/components/ui/general-modal";
+import {
+  patchUltimaActualizacionContraseña,
+  readUltimaActualizacionContraseña,
+} from "@/lib/profiles-ultima-contrasena";
 
 const guardarMorph: { from: IconNode; to: IconNode } = { from: Save, to: Check };
 
@@ -62,11 +66,12 @@ export function CambiarPassword() {
         setUser(data.user);
         supabase
           .from("profiles")
-          .select("ultima_actualizacion_contraseña")
+          .select("*")
           .eq("id", data.user.id)
           .single()
           .then(({ data: profile }) => {
-            setLastChange(profile?.ultima_actualizacion_contraseña ?? null);
+            const stamp = readUltimaActualizacionContraseña(profile);
+            setLastChange(stamp === undefined ? null : stamp);
           });
       }
     });
@@ -116,7 +121,7 @@ export function CambiarPassword() {
       if (user) {
         const { error: profileError } = await supabase
           .from("profiles")
-          .update({ ultima_actualizacion_contraseña: new Date().toISOString() })
+          .update(patchUltimaActualizacionContraseña(new Date().toISOString()))
           .eq("id", user.id);
 
         if (profileError) throw profileError;

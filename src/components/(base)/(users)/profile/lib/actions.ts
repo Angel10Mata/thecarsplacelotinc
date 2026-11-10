@@ -19,6 +19,7 @@ import {
   MENSAJE_ERROR_SISTEMA,
   mensajeParaUsuario,
 } from "@/lib/mensajes-usuario";
+import { patchUltimaActualizacionContraseña } from "@/lib/profiles-ultima-contrasena";
 import { ProfileFormValues } from "./zod";
 
 // Perfil
@@ -239,7 +240,7 @@ export async function updateUserCredentials(
   if (password && !isSelf) {
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({ ultima_actualizacion_contraseña: null })
+      .update(patchUltimaActualizacionContraseña(null))
       .eq("id", userId);
     if (profileError) {
       console.error(

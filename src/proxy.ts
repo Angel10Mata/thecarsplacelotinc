@@ -7,6 +7,7 @@ import {
   PUBLIC_CATALOG_PATH,
 } from "@/lib/app-config";
 import { profileRequiresPasswordChange } from "@/lib/password-change-policy";
+import { readUltimaActualizacionContraseña } from "@/lib/profiles-ultima-contrasena";
 import { isAdminRole, resolveUserRole } from "@/lib/user-role";
 import { clearSupabaseAuthCookies, createClient } from "@/utils/supabase/proxy";
 
@@ -88,12 +89,12 @@ export async function proxy(request: NextRequest) {
     const realRoleForPassword = await getRealRole();
     const { data: passwordProfile } = await supabase
       .from("profiles")
-      .select("ultima_actualizacion_contraseña")
+      .select("*")
       .eq("id", user.id)
       .maybeSingle();
 
     const needsPasswordChange = profileRequiresPasswordChange(
-      passwordProfile?.ultima_actualizacion_contraseña,
+      readUltimaActualizacionContraseña(passwordProfile),
       realRoleForPassword,
     );
 

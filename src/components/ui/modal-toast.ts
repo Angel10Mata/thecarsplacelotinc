@@ -1,4 +1,5 @@
 import { toast } from "react-toastify";
+import { mensajeParaUsuario } from "@/lib/mensajes-usuario";
 
 export { toast };
 
@@ -30,6 +31,8 @@ export function actionErrorMessage(
   result: { error?: string | null; detail?: string | null },
   fallback: string,
 ) {
-  if (result.detail?.trim()) return result.detail;
+  if (result.detail?.trim()) {
+    return mensajeParaUsuario(result.detail, fallback);
+  }
   return modalActionMessage(result.error ?? undefined, fallback);
 }

@@ -592,12 +592,13 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
                     {adminOpen && (
                       <div className="border-t border-zinc-200/90 dark:border-zinc-700/80">
                         <Link
-                          href={`${APP_BASE_PATH}/admin`}
+                          href={APP_AJUSTES_PATH}
                           onClick={closeMenu}
                           className={cn(
                             "flex items-center gap-3 px-4 py-3",
                             menuRowHover,
-                            pathname === `${APP_BASE_PATH}/admin` &&
+                            (pathname === APP_AJUSTES_PATH ||
+                              pathname === `${APP_AJUSTES_PATH}/`) &&
                               "bg-red-50/80 border-l-4 border-l-brand dark:bg-red-950/15 dark:border-l-brand-bright",
                           )}
                         >

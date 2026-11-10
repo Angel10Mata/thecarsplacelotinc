@@ -25,6 +25,10 @@ import { INITIAL_USER_PASSWORD } from "./lib/zod";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { getManageableRoles } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import {
+  MENSAJE_ERROR_CREAR_USUARIO,
+  mensajeParaUsuario,
+} from "@/lib/mensajes-usuario";
 import { extractRolesFromProfiles } from "@/components/(base)/(users)/usuarios/lib/helpers";
 import { useUsers } from "@/components/(base)/(users)/usuarios/lib/hooks";
 import { SelectorRol } from "@/components/(base)/(users)/usuarios/forms/SelectorRol";
@@ -350,7 +354,10 @@ export default function SignUp({
               {logic.state?.message && (
                 <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2">
                   <p className="text-xs text-destructive font-semibold">
-                    {logic.state.message}
+                    {mensajeParaUsuario(
+                      logic.state.message,
+                      MENSAJE_ERROR_CREAR_USUARIO,
+                    )}
                   </p>
                 </div>
               )}

@@ -10,7 +10,10 @@ import { UserX, Search } from "lucide-react";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
 import SignUp from "@/components/(base)/(auth)/signup/SignUp";
-import { modulePageScrollClass } from "@/lib/module-layout";
+import {
+  modulePageBackRowStickyClass,
+  modulePageScrollClass,
+} from "@/lib/module-layout";
 import { ModuleHeaderBackButton } from "@/components/(base)/layout/ModuleHeaderBackButton";
 import {
   moduleTableAccentBarClass,
@@ -128,9 +131,11 @@ export function VerUsuarios() {
   return (
     <>
       <div className={modulePageScrollClass}>
+        <div className={modulePageBackRowStickyClass}>
+          <ModuleHeaderBackButton />
+        </div>
         <div className="mb-2 flex items-center justify-between gap-3 px-3 sm:px-4 md:px-0">
           <div className="flex min-w-0 flex-col items-start gap-1.5">
-            <ModuleHeaderBackButton />
             <div className="min-w-0">
               <h2 className="min-w-0 text-xl font-black uppercase leading-none tracking-tight text-foreground sm:text-2xl md:text-3xl">
                 Gestión de Usuarios

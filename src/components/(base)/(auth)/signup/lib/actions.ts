@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { APP_AJUSTES_PATH, APP_BASE_PATH } from "@/lib/app-config";
 import { authSchema, INITIAL_USER_PASSWORD } from "./zod";
 import { mensajeErrorEs } from "@/lib/supabase-errors-es";
+import { MENSAJE_ERROR_CREAR_USUARIO, MENSAJE_ERROR_SISTEMA } from "@/lib/mensajes-usuario";
 import { mensajeSiServiceRoleKeyInvalida } from "@/lib/supabase-service-role-env";
 import { canAssignRole, canCreateUsers } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
@@ -98,7 +99,8 @@ export async function signup(
 
     const serviceKeyError = mensajeSiServiceRoleKeyInvalida();
     if (serviceKeyError) {
-      return { message: serviceKeyError };
+      console.error("[signup]", serviceKeyError);
+      return { message: MENSAJE_ERROR_SISTEMA };
     }
 
     const fakeEmail = `${username}@app.com`;
@@ -143,11 +145,8 @@ export async function signup(
 
       if (profileError) {
         await supabaseAdmin.auth.admin.deleteUser(data.user.id);
-        return {
-          message:
-            "Error al crear perfil de usuario: " +
-            mensajeErrorEs(profileError.message),
-        };
+        console.error("[signup] profile:", profileError.message);
+        return { message: MENSAJE_ERROR_CREAR_USUARIO };
       }
     }
 

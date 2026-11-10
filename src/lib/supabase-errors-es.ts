@@ -1,21 +1,28 @@
-// TRADUCCIÓN ERRORES SUPABASE
+import {
+  MENSAJE_ERROR_CREAR_USUARIO,
+  MENSAJE_ERROR_GENERAL,
+  MENSAJE_ERROR_SISTEMA,
+  mensajeParaUsuario,
+} from "@/lib/mensajes-usuario";
 
 export function mensajeErrorEs(mensaje: string | undefined | null): string {
   if (!mensaje?.trim()) {
-    return "Ocurrió un error desconocido.";
+    return MENSAJE_ERROR_GENERAL;
   }
 
-  const original = mensaje.trim();
-  const lower = original.toLowerCase();
+  const lower = mensaje.trim().toLowerCase();
 
   const reglas: { match: (s: string) => boolean; es: string }[] = [
     {
-      match: (s) => s.includes("valid bearer token"),
-      es: "La clave SUPABASE_SERVICE_ROLE_KEY no es válida o está incompleta. Copia de nuevo la service_role completa en .env.local y reinicia pnpm dev.",
+      match: (s) =>
+        s.includes("valid bearer token") ||
+        s.includes("invalid api key") ||
+        s.includes("invalid jwt"),
+      es: MENSAJE_ERROR_SISTEMA,
     },
     {
       match: (s) => s.includes("user not allowed"),
-      es: "No se permite crear el usuario. Verifica que SUPABASE_SERVICE_ROLE_KEY esté configurada en el servidor y que Auth en Supabase permita crear usuarios (Dashboard → Authentication → Settings).",
+      es: MENSAJE_ERROR_CREAR_USUARIO,
     },
     {
       match: (s) =>
@@ -26,12 +33,8 @@ export function mensajeErrorEs(mensaje: string | undefined | null): string {
       es: "Ese nombre de usuario o correo ya está registrado. Elige otro.",
     },
     {
-      match: (s) => s.includes("invalid api key") || s.includes("invalid jwt"),
-      es: "Clave de Supabase inválida. Revisa NEXT_PUBLIC_SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.",
-    },
-    {
       match: (s) => s.includes("signup is disabled"),
-      es: "El registro público está desactivado. La creación desde administración requiere la clave de servicio (SERVICE_ROLE).",
+      es: MENSAJE_ERROR_CREAR_USUARIO,
     },
     {
       match: (s) => s.includes("password should be at least"),
@@ -39,19 +42,19 @@ export function mensajeErrorEs(mensaje: string | undefined | null): string {
     },
     {
       match: (s) => s.includes("invalid email"),
-      es: "El correo generado para el usuario no es válido.",
+      es: "Los datos del usuario no son válidos. Revisa el formulario.",
     },
     {
       match: (s) => s.includes("row-level security") || s.includes("rls"),
-      es: "Permiso denegado en la base de datos (políticas RLS). Contacta al administrador técnico.",
+      es: "No tienes permiso para realizar esta acción.",
     },
     {
       match: (s) => s.includes("violates foreign key"),
-      es: "No se pudo vincular el registro con la base de datos. Revisa integridad de datos.",
+      es: MENSAJE_ERROR_GENERAL,
     },
     {
       match: (s) => s.includes("network") || s.includes("fetch failed"),
-      es: "Error de conexión con el servidor. Intenta de nuevo.",
+      es: "Error de conexión. Intenta de nuevo.",
     },
     {
       match: (s) => s.includes("rate limit"),
@@ -65,9 +68,5 @@ export function mensajeErrorEs(mensaje: string | undefined | null): string {
     }
   }
 
-  if (/^error al crear perfil/i.test(original)) {
-    return original;
-  }
-
-  return original;
+  return mensajeParaUsuario(mensaje, MENSAJE_ERROR_GENERAL);
 }

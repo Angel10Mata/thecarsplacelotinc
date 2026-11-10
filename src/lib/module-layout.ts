@@ -77,6 +77,15 @@ export const modulePageHeaderRowClass =
 export const modulePageHeaderStackClass =
   "flex flex-col items-start gap-1.5 px-3 sm:px-4 md:px-0";
 
+export const modulePageBackRowClass =
+  "w-full flex shrink-0 flex-col items-start";
+
+export const modulePageBackRowStickyClass = [
+  modulePageBackRowClass,
+  modulePageHeaderStackClass,
+  "sticky top-0 z-20 bg-white pb-2 dark:bg-zinc-950",
+].join(" ");
+
 export const modulePageHeaderRowInsetClass = "flex items-center gap-3";
 
 export const modulePageTitleClass =

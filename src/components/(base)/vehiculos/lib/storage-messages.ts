@@ -1,4 +1,7 @@
-import { mensajeSiServiceRoleKeyInvalida } from "@/lib/supabase-service-role-env";
+import {
+  MENSAJE_ERROR_SISTEMA,
+  MENSAJE_ERROR_SUBIR_ARCHIVO,
+} from "@/lib/mensajes-usuario";
 
 export function classifyStorageError(message: string) {
   const m = message.toLowerCase();
@@ -23,34 +26,28 @@ export function classifyStorageError(message: string) {
 
 export function carStorageErrorMessage(
   code: string,
-  detail?: string | null,
+  _detail?: string | null,
 ): string {
   if (code === "STORAGE_RLS") {
-    return "Storage sin permisos. En Supabase → SQL Editor ejecuta db/storage-cars.sql.";
+    return "No tienes permiso para subir archivos.";
   }
   if (code === "STORAGE_BUCKET") {
-    return "No existe el bucket «cars-images» o «Facturas». Ejecuta db/storage-cars.sql en Supabase.";
+    return MENSAJE_ERROR_SISTEMA;
   }
   if (code === "STORAGE_DUPLICATE") {
-    return "Esa ruta ya tiene una foto (p. ej. 1/1.jpg). Quita una miniatura o usa otra carpeta.";
+    return "Ya existe un archivo en esa ubicación. Quita una imagen o elige otra carpeta.";
   }
   if (code === "STORAGE_SIZE") {
-    return "El archivo supera el límite del bucket (fotos 200 KB en cars-images, PDF 10 MB en Facturas).";
+    return "El archivo es demasiado grande. Reduce el tamaño e intenta de nuevo.";
   }
   if (code === "UNAUTHORIZED") {
     return "Inicia sesión para subir imágenes.";
   }
   if (code === "VALIDATION") {
-    return "Ruta de imagen inválida. Vuelve al paso 1 y pulsa Siguiente otra vez.";
+    return "Datos de imagen no válidos. Revisa el formulario e intenta de nuevo.";
   }
   if (code === "SERVICE_ROLE_CONFIG") {
-    return (
-      mensajeSiServiceRoleKeyInvalida() ??
-      "Revisa SUPABASE_SERVICE_ROLE_KEY en .env.local."
-    );
+    return MENSAJE_ERROR_SISTEMA;
   }
-  if (detail?.trim()) {
-    return `Storage: ${detail.trim()}`;
-  }
-  return "No se pudo subir a Storage. Revisa bucket cars-images, políticas RLS y la service role en .env.local.";
+  return MENSAJE_ERROR_SUBIR_ARCHIVO;
 }

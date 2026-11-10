@@ -63,12 +63,11 @@ export function canCreateUsers(actorRole: string): boolean {
 
 export function canDeleteUser(
   actorRole: string,
-  targetRole: string | null | undefined,
+  _targetRole: string | null | undefined,
   isSelf: boolean,
 ): boolean {
   if (isSelf) return false;
-  if (normalizeKnownRole(actorRole) !== "super") return false;
-  return normalizeKnownRole(targetRole) !== "super";
+  return normalizeKnownRole(actorRole) === "super";
 }
 
 export function canAssignRole(actorRole: string, targetRole: string): boolean {
@@ -83,7 +82,7 @@ export function isUserVisibleToActor(
   actorRole: string,
 ): boolean {
   const actor = normalizeKnownRole(actorRole);
-  if (actor === "super") return true;
+  if (actor === "super" || actor === "admin") return true;
   const role = normalizeKnownRole(targetRole);
   return getManageableRoles(actor).includes(role);
 }

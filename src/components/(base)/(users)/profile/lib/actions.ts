@@ -239,11 +239,11 @@ export async function updateUserCredentials(
   if (password && !isSelf) {
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({ ultimo_cambio_password: null })
+      .update({ ultima_actualizacion_contraseña: null })
       .eq("id", userId);
     if (profileError) {
       console.error(
-        "[updateUserCredentials] ultimo_cambio_password:",
+        "[updateUserCredentials] ultima_actualizacion_contraseña:",
         profileError.message,
       );
     }
@@ -289,16 +289,6 @@ export async function deleteUsuario(
     const actorRole = await resolveUserRole(supabase, actor);
     if (normalizeKnownRole(actorRole) !== "super") {
       return { ok: false, message: "No tienes permiso para eliminar usuarios." };
-    }
-
-    const { data: targetProfile } = await supabase
-      .from("profiles")
-      .select("rol")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (normalizeKnownRole(targetProfile?.rol) === "super") {
-      return { ok: false, message: "No se puede eliminar una cuenta Sistemas." };
     }
 
     const supabaseAdmin = createAdminClient();

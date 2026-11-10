@@ -88,12 +88,12 @@ export async function proxy(request: NextRequest) {
     const realRoleForPassword = await getRealRole();
     const { data: passwordProfile } = await supabase
       .from("profiles")
-      .select("ultimo_cambio_password")
+      .select("ultima_actualizacion_contraseña")
       .eq("id", user.id)
       .maybeSingle();
 
     const needsPasswordChange = profileRequiresPasswordChange(
-      passwordProfile?.ultimo_cambio_password,
+      passwordProfile?.ultima_actualizacion_contraseña,
       realRoleForPassword,
     );
 

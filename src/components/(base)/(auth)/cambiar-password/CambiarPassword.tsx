@@ -62,11 +62,11 @@ export function CambiarPassword() {
         setUser(data.user);
         supabase
           .from("profiles")
-          .select("ultimo_cambio_password")
+          .select("ultima_actualizacion_contraseña")
           .eq("id", data.user.id)
           .single()
           .then(({ data: profile }) => {
-            setLastChange(profile?.ultimo_cambio_password ?? null);
+            setLastChange(profile?.ultima_actualizacion_contraseña ?? null);
           });
       }
     });
@@ -116,7 +116,7 @@ export function CambiarPassword() {
       if (user) {
         const { error: profileError } = await supabase
           .from("profiles")
-          .update({ ultimo_cambio_password: new Date().toISOString() })
+          .update({ ultima_actualizacion_contraseña: new Date().toISOString() })
           .eq("id", user.id);
 
         if (profileError) throw profileError;

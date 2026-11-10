@@ -15,9 +15,7 @@ export function useUsers(userRole?: string) {
         .order("nombre", { ascending: true });
 
       const actor = normalizeKnownRole(userRole);
-      if (actor === "super") {
-      } else if (actor === "admin") {
-        query = query.neq("rol", "super");
+      if (actor === "super" || actor === "admin") {
       } else {
         query = query.eq("rol", "user");
       }

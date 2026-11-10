@@ -2,6 +2,7 @@
 
 import { useState, type CSSProperties } from "react";
 import type { IconNode } from "lucide";
+import { Loader2 } from "lucide-react";
 import { MorphHoverIcon } from "@/components/ui/morph-hover-icon";
 import { RippleButton } from "@/components/ui/ripple-button";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,7 @@ export function SigetActionButton({
   type = "button",
   iconOnly = false,
   iconLeft = false,
+  loading = false,
   style,
 }: {
   label: string;
@@ -88,9 +90,21 @@ export function SigetActionButton({
   type?: "button" | "submit";
   iconOnly?: boolean;
   iconLeft?: boolean;
+  loading?: boolean;
   style?: CSSProperties;
 }) {
   const [hovered, setHovered] = useState(false);
+  const busy = loading || ariaBusy;
+
+  const iconSlot = (
+    <SigetActionIcon
+      from={morphFrom}
+      to={morphTo}
+      color={accentColor}
+      hovered={hovered}
+      morphOnHover={morphOnHover}
+    />
+  );
 
   return (
     <RippleButton
@@ -100,47 +114,55 @@ export function SigetActionButton({
       aria-label={ariaLabel ?? label}
       role={role}
       aria-checked={ariaChecked}
-      aria-busy={ariaBusy || undefined}
-      disabled={disabled}
+      aria-busy={busy || undefined}
+      aria-live={busy ? "polite" : undefined}
+      disabled={disabled || busy}
       style={style}
-      onPointerEnter={morphOnHover ? () => setHovered(true) : undefined}
-      onPointerLeave={morphOnHover ? () => setHovered(false) : undefined}
+      onPointerEnter={!busy && morphOnHover ? () => setHovered(true) : undefined}
+      onPointerLeave={!busy && morphOnHover ? () => setHovered(false) : undefined}
       className={cn(
         sigetBtnSurface,
         iconOnly ? "size-9 w-9 shrink-0 px-0" : "w-full",
-        disabled && "pointer-events-none opacity-60",
+        disabled && !busy && "pointer-events-none opacity-60",
+        busy &&
+          "pointer-events-none cursor-wait border-primary/50 ring-2 ring-primary/30 motion-reduce:ring-0",
         className,
       )}
     >
       <span
         className={cn(
           "inline-flex max-w-full items-center justify-center leading-none",
-          !iconOnly && "w-full gap-1",
+          !iconOnly && "w-full gap-2",
         )}
       >
-        {iconLeft ? (
-          <SigetActionIcon
-            from={morphFrom}
-            to={morphTo}
-            color={accentColor}
-            hovered={hovered}
-            morphOnHover={morphOnHover}
-          />
-        ) : null}
-        {!iconOnly ? (
-          <span className="truncate leading-none" style={{ color: accentColor }}>
-            {label}
-          </span>
-        ) : null}
-        {!iconLeft ? (
-          <SigetActionIcon
-            from={morphFrom}
-            to={morphTo}
-            color={accentColor}
-            hovered={hovered}
-            morphOnHover={morphOnHover}
-          />
-        ) : null}
+        {busy && !iconOnly ? (
+          <>
+            <Loader2
+              className="size-5 shrink-0 animate-spin motion-reduce:animate-none"
+              style={{ color: accentColor }}
+              aria-hidden
+            />
+            <span
+              className="truncate leading-none motion-reduce:animate-none animate-pulse"
+              style={{ color: accentColor }}
+            >
+              {label}
+            </span>
+          </>
+        ) : (
+          <>
+            {iconLeft && !iconOnly ? iconSlot : null}
+            {!iconOnly ? (
+              <span
+                className="truncate leading-none"
+                style={{ color: accentColor }}
+              >
+                {label}
+              </span>
+            ) : null}
+            {!iconLeft ? iconSlot : null}
+          </>
+        )}
       </span>
     </RippleButton>
   );

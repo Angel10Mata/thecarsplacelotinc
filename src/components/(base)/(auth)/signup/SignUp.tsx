@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useFormStatus } from "react-dom";
 import { createPortal } from "react-dom";
 import { MagicCard } from "@/components/ui/magic-card";
 import {
@@ -21,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useSignupLogic } from "./lib/hooks";
 import { AnimatePresence, motion } from "framer-motion";
-import { INITIAL_USER_PASSWORD } from "./lib/zod";
+import { authSchema, INITIAL_USER_PASSWORD } from "./lib/zod";
 import { AuroraText } from "@/components/ui/aurora-text";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
 import { getManageableRoles } from "@/components/(base)/(users)/usuarios/lib/permissions";
@@ -29,10 +30,42 @@ import {
   MENSAJE_ERROR_CREAR_USUARIO,
   mensajeParaUsuario,
 } from "@/lib/mensajes-usuario";
-import { extractRolesFromProfiles } from "@/components/(base)/(users)/usuarios/lib/helpers";
+import {
+  DEFAULT_SIGNUP_ROLE,
+  extractRolesFromProfiles,
+} from "@/components/(base)/(users)/usuarios/lib/helpers";
 import { useUsers } from "@/components/(base)/(users)/usuarios/lib/hooks";
 import { SelectorRol } from "@/components/(base)/(users)/usuarios/forms/SelectorRol";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
+import { toast } from "react-toastify";
+
+const MENSAJE_CAMPOS_OBLIGATORIOS =
+  "Complete los campos obligatorios antes de continuar.";
+
+function SignUpCrearSubmitButton({
+  actionPending,
+  className,
+}: {
+  actionPending: boolean;
+  className?: string;
+}) {
+  const { pending: formPending } = useFormStatus();
+  const busy = formPending || actionPending;
+
+  return (
+    <SigetActionButton
+      label={busy ? "Creando" : "Crear"}
+      accentColor={sigetAccent.crear}
+      morphFrom={UserPlusNode}
+      morphTo={CheckNode}
+      type="submit"
+      loading={busy}
+      ariaBusy={busy}
+      ariaLabel={busy ? "Creando usuario" : "Crear usuario"}
+      className={cn("h-9 w-full max-w-none", className)}
+    />
+  );
+}
 
 // Props
 interface SignUpProps {
@@ -88,7 +121,48 @@ export default function SignUp({
   const [copied, setCopied] = useState(false);
   const [isUsernameEdited, setIsUsernameEdited] = useState(false);
   const [savedData, setSavedData] = useState({ user: "", pass: "" });
+  const [submitStarted, setSubmitStarted] = useState(false);
+  const [clientErrors, setClientErrors] = useState<Record<
+    string,
+    string[]
+  > | null>(null);
   const hasMovedToStep2 = useRef(false);
+  const actionPending = logic.isPending || submitStarted;
+
+  const fieldErrors = useMemo(
+    () => ({
+      ...(clientErrors ?? {}),
+      ...(logic.state?.errors ?? {}),
+    }),
+    [clientErrors, logic.state?.errors],
+  );
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const validated = authSchema.safeParse({
+      name: logic.name,
+      username: logic.username,
+      password: logic.passwordValue,
+      rol: logic.rol,
+    });
+
+    if (!validated.success) {
+      event.preventDefault();
+      setSubmitStarted(false);
+      setClientErrors(validated.error.flatten().fieldErrors);
+      toast.error(MENSAJE_CAMPOS_OBLIGATORIOS);
+      return;
+    }
+
+    setClientErrors(null);
+    setSubmitStarted(true);
+  };
+
+  const handleRolChange = useCallback(
+    (newRol: string) => {
+      logic.setRol(newRol);
+    },
+    [logic.setRol],
+  );
 
   const suggestedUsername = useMemo(() => {
     if (logic.name.trim().length > 3) {
@@ -117,13 +191,15 @@ export default function SignUp({
     logic.setName("");
     logic.setUsername("");
     logic.setPasswordValue(INITIAL_USER_PASSWORD);
-    logic.setRol(creatableRoles[0] || "user");
+    logic.setRol(DEFAULT_SIGNUP_ROLE);
     logic.setShowPassword(false);
     setPhoneNumber("");
     setCopied(false);
     setIsUsernameEdited(false);
     setStep(1);
     setSavedData({ user: "", pass: "" });
+    setSubmitStarted(false);
+    setClientErrors(null);
     hasMovedToStep2.current = false;
   };
 
@@ -146,10 +222,28 @@ export default function SignUp({
     if (logic.state?.success && !hasMovedToStep2.current) {
       setSavedData({ user: logic.username, pass: logic.passwordValue });
       hasMovedToStep2.current = true;
+      setSubmitStarted(false);
       setStep(2);
       onSuccess?.();
     }
   }, [logic.state?.success, logic.username, logic.passwordValue, onSuccess]);
+
+  useEffect(() => {
+    if (!logic.isPending && !logic.state?.success) {
+      setSubmitStarted(false);
+    }
+  }, [logic.isPending, logic.state?.success]);
+
+  useEffect(() => {
+    if (!logic.state?.errors) return;
+    const hasFieldErrors = Object.values(logic.state.errors).some(
+      (messages) => Array.isArray(messages) && messages.length > 0,
+    );
+    if (hasFieldErrors) {
+      setSubmitStarted(false);
+      toast.error(MENSAJE_CAMPOS_OBLIGATORIOS);
+    }
+  }, [logic.state?.errors]);
 
   const handleCopy = () => {
     const textToCopy = `*CREDENCIALES DE ACCESO*\n\n*Usuario:* ${savedData.user}\n*Contraseña:* ${savedData.pass}\n\n_Por seguridad, cambie su clave al ingresar_`;
@@ -241,6 +335,7 @@ export default function SignUp({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 20, opacity: 0 }}
               action={logic.formAction}
+              onSubmit={handleFormSubmit}
               className={cn(
                 isFullscreen
                   ? "flex min-h-0 flex-1 flex-col"
@@ -261,17 +356,27 @@ export default function SignUp({
                   name="name"
                   placeholder="ej. Juan Pérez"
                   value={logic.name}
-                  onChange={(e) => logic.setName(e.target.value)}
+                  onChange={(e) => {
+                    logic.setName(e.target.value);
+                    if (clientErrors?.name) {
+                      setClientErrors((prev) => {
+                        if (!prev) return null;
+                        const next = { ...prev };
+                        delete next.name;
+                        return Object.keys(next).length > 0 ? next : null;
+                      });
+                    }
+                  }}
                   className={cn(
-                    logic.state?.errors?.name &&
+                    fieldErrors.name &&
                       "border-destructive ring-1 ring-destructive",
                   )}
                 />
-                {logic.state?.errors?.name && (
+                {fieldErrors.name?.[0] ? (
                   <p className="text-[10px] text-destructive font-bold px-1 italic">
-                    {logic.state.errors.name[0]}
+                    {fieldErrors.name[0]}
                   </p>
-                )}
+                ) : null}
               </div>
 
               <div className="grid gap-2">
@@ -309,37 +414,45 @@ export default function SignUp({
                   onChange={(e) => {
                     logic.setUsername(e.target.value);
                     if (!isUsernameEdited) setIsUsernameEdited(true);
+                    if (clientErrors?.username) {
+                      setClientErrors((prev) => {
+                        if (!prev) return null;
+                        const next = { ...prev };
+                        delete next.username;
+                        return Object.keys(next).length > 0 ? next : null;
+                      });
+                    }
                   }}
                   className={cn(
-                    logic.state?.errors?.username &&
+                    fieldErrors.username &&
                       "border-destructive ring-1 ring-destructive",
                   )}
                 />
-                {logic.state?.errors?.username && (
+                {fieldErrors.username?.[0] ? (
                   <p className="text-[10px] text-destructive font-bold px-1 italic">
-                    {logic.state.errors.username[0]}
+                    {fieldErrors.username[0]}
                   </p>
-                )}
+                ) : null}
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="rol">Rol</Label>
                 <SelectorRol
                   value={logic.rol}
-                  onChange={(newRol) => logic.setRol(newRol)}
+                  onChange={handleRolChange}
                   roleOptions={creatableRoles}
                   allowCustom={effectiveRole === "super"}
-                  preferredRole={creatableRoles[0]}
+                  preferredRole={DEFAULT_SIGNUP_ROLE}
                   resetKey={isOpen}
                   inputClassName="focus-visible:ring-2 focus-visible:ring-ring"
                   selectClassName="appearance-none focus-visible:ring-2 focus-visible:ring-ring"
                   toggleClassName="border-border bg-background"
                 />
-                {logic.state?.errors?.rol && (
+                {fieldErrors.rol?.[0] ? (
                   <p className="text-[10px] text-destructive font-bold px-1 italic">
-                    {logic.state.errors.rol[0]}
+                    {fieldErrors.rol[0]}
                   </p>
-                )}
+                ) : null}
               </div>
 
               <div className="grid gap-2">
@@ -377,11 +490,11 @@ export default function SignUp({
                     )}
                   </button>
                 </div>
-                {logic.state?.errors?.password && (
+                {fieldErrors.password?.[0] ? (
                   <p className="text-[10px] text-destructive font-bold px-1 italic">
-                    {logic.state.errors.password[0]}
+                    {fieldErrors.password[0]}
                   </p>
-                )}
+                ) : null}
               </div>
 
               {logic.state?.message && (
@@ -399,31 +512,13 @@ export default function SignUp({
 
               {!isFullscreen ? (
                 <div className="mt-auto shrink-0 pt-2 md:pt-6">
-                  <SigetActionButton
-                    label={logic.isPending ? "Creando" : "Crear"}
-                    accentColor={sigetAccent.crear}
-                    morphFrom={UserPlusNode}
-                    morphTo={CheckNode}
-                    type="submit"
-                    disabled={logic.isPending}
-                    ariaBusy={logic.isPending}
-                    className="h-9 w-full max-w-none"
-                  />
+                  <SignUpCrearSubmitButton actionPending={actionPending} />
                 </div>
               ) : null}
 
               {isFullscreen ? (
                 <div className="mt-auto flex w-full shrink-0 items-center justify-center border-t border-zinc-200/80 bg-zinc-100 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] dark:border-zinc-700 dark:bg-zinc-800">
-                  <SigetActionButton
-                    label={logic.isPending ? "Creando" : "Crear"}
-                    accentColor={sigetAccent.crear}
-                    morphFrom={UserPlusNode}
-                    morphTo={CheckNode}
-                    type="submit"
-                    disabled={logic.isPending}
-                    ariaBusy={logic.isPending}
-                    className="h-9 w-full max-w-none"
-                  />
+                  <SignUpCrearSubmitButton actionPending={actionPending} />
                 </div>
               ) : null}
             </motion.form>
@@ -436,14 +531,14 @@ export default function SignUp({
               className={cn(
                 isFullscreen
                   ? "flex min-h-0 flex-1 flex-col overflow-hidden"
-                  : "space-y-6",
+                  : "flex min-h-full flex-col gap-5",
               )}
             >
               <div
                 className={cn(
                   isFullscreen
                     ? "min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4"
-                    : "contents",
+                    : "flex flex-1 flex-col gap-6",
                 )}
               >
               <div className="p-5 rounded-2xl border border-border/60 bg-muted/30 space-y-5">
@@ -535,15 +630,17 @@ export default function SignUp({
                   />
                 </div>
               ) : (
-                <SigetActionButton
-                  label="Volver"
-                  accentColor={sigetAccent.cancelar}
-                  morphFrom={ArrowLeftNode}
-                  morphTo={ArrowLeftNode}
-                  morphOnHover={false}
-                  onClick={resetForm}
-                  className="w-full max-w-none"
-                />
+                <div className="mt-auto shrink-0 pt-2 md:pt-6">
+                  <SigetActionButton
+                    label="Volver"
+                    accentColor={sigetAccent.cancelar}
+                    morphFrom={ArrowLeftNode}
+                    morphTo={ArrowLeftNode}
+                    morphOnHover={false}
+                    onClick={resetForm}
+                    className="h-9 w-full max-w-none"
+                  />
+                </div>
               )}
             </motion.div>
           )}

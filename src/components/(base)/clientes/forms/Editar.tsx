@@ -135,7 +135,11 @@ export default function EditarClienteModal({
         </ModalField>
         <ModalFooter>
           <ModalCancelButton onClick={handleClose} disabled={actualizar.isPending} />
-          <ModalSubmit disabled={actualizar.isPending} label="Guardar" />
+          <ModalSubmit
+            disabled={actualizar.isPending}
+            loading={actualizar.isPending}
+            label="Guardar"
+          />
         </ModalFooter>
       </ModalForm>
     </ModalShell>

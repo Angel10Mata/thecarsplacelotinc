@@ -11,6 +11,13 @@ import { readUltimaActualizacionContraseña } from "@/lib/profiles-ultima-contra
 import { isAdminRole, resolveUserRole } from "@/lib/user-role";
 import { clearSupabaseAuthCookies, createClient } from "@/utils/supabase/proxy";
 
+function isServerActionRequest(request: NextRequest): boolean {
+  return (
+    request.method === "POST" &&
+    (request.headers.has("next-action") || request.headers.has("Next-Action"))
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
@@ -71,6 +78,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user) {
+    if (isServerActionRequest(request)) {
+      return getResponse();
+    }
+
     const { data: settings } = await supabase
       .from("app_settings")
       .select("require_device_authorization")
@@ -86,7 +97,6 @@ export async function proxy(request: NextRequest) {
       return cachedRole;
     };
 
-    const realRoleForPassword = await getRealRole();
     const { data: passwordProfile } = await supabase
       .from("profiles")
       .select("*")
@@ -95,7 +105,6 @@ export async function proxy(request: NextRequest) {
 
     const needsPasswordChange = profileRequiresPasswordChange(
       readUltimaActualizacionContraseña(passwordProfile),
-      realRoleForPassword,
     );
 
     if (needsPasswordChange) {

@@ -800,18 +800,29 @@ export function ModalSubmit({
   disabled,
   className,
   label = "Guardar",
+  loading = false,
 }: {
   disabled?: boolean;
   className?: string;
   label?: string;
+  loading?: boolean;
 }) {
+  const busy = loading;
   return (
     <SigetActionButton
-      label={label}
+      label={
+        busy
+          ? label === "Crear" || label === "Creando"
+            ? "Creando"
+            : "Guardando"
+          : label
+      }
       accentColor={sigetAccent.guardar}
       morphFrom={Save}
       morphTo={CheckNode}
-      disabled={disabled}
+      disabled={disabled || busy}
+      loading={busy}
+      ariaBusy={busy}
       type="submit"
       className={cn("w-auto shrink-0", className)}
     />
@@ -990,6 +1001,7 @@ export function ModalConfirmDelete({
             morphTo={Trash}
             onClick={onConfirm}
             disabled={isPending || confirmLocked}
+            loading={isPending}
             ariaLabel={
               confirmLocked
                 ? `Confirmar eliminación en ${delayLeft} segundos`
@@ -1087,6 +1099,7 @@ export function ModalConfirmDelete({
           morphTo={isDeactivate ? BanNode : Trash}
           onClick={onConfirm}
           disabled={isPending || confirmLocked}
+          loading={isPending}
           ariaLabel={
             confirmLocked
               ? `${confirmText} en ${delayLeft} segundos`

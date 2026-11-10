@@ -9,7 +9,12 @@ import { UserPlus, Check } from "lucide";
 import { UserX, Search } from "lucide-react";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import VerPerfil from "@/components/(base)/(users)/profile/VerPerfil";
-import SignUp from "@/components/(base)/(auth)/signup/SignUp";
+import dynamic from "next/dynamic";
+
+const SignUp = dynamic(
+  () => import("@/components/(base)/(auth)/signup/SignUp"),
+  { ssr: false },
+);
 import {
   modulePageHeaderClass,
   modulePageHeaderStackClass,

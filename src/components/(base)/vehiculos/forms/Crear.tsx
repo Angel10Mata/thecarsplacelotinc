@@ -538,6 +538,7 @@ export default function CrearVehiculoModal({
                 ) : (
                   <ModalSubmit
                     disabled={pending || imagesBusy || !carStorageFolderId}
+                    loading={pending}
                     label="Guardar"
                     className={vehiculosWizardFooterButtonClass}
                   />

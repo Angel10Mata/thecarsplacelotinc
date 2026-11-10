@@ -4,11 +4,16 @@ import { z } from "zod";
 export const INITIAL_USER_PASSWORD = "Acceso" as const;
 
 export const authSchema = z.object({
-  name: z.string().min(3, "El nombre es obligatorio").trim(),
+  name: z
+    .string()
+    .trim()
+    .min(1, "El nombre es obligatorio")
+    .min(3, "El nombre debe tener al menos 3 caracteres"),
   username: z
     .string()
-    .min(3, "Mínimo 3 caracteres")
     .trim()
+    .min(1, "El usuario es obligatorio")
+    .min(3, "Mínimo 3 caracteres")
     .toLowerCase()
     .regex(
       /^[a-z0-9]+$/,

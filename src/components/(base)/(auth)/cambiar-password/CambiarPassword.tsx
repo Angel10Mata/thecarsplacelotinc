@@ -95,6 +95,8 @@ export function CambiarPassword() {
   };
 
   const handleSave = async () => {
+    if (loading) return;
+
     if (!isPasswordValid || formData.newPassword !== formData.confirmPassword) {
       return;
     }
@@ -176,7 +178,7 @@ export function CambiarPassword() {
             en el sistema.
           </p>
           <span className="text-center text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            Este proceso se solicita en el primer ingreso y cada 3 meses.
+            Este paso solo aplica en el primer ingreso al sistema.
           </span>
         </div>
 
@@ -258,7 +260,7 @@ export function CambiarPassword() {
           />
 
           <SigetActionButton
-            label="Guardar"
+            label={loading ? "Guardando" : "Guardar"}
             accentColor={sigetAccent.guardar}
             morphFrom={guardarMorph.from}
             morphTo={guardarMorph.to}
@@ -268,6 +270,8 @@ export function CambiarPassword() {
               formData.newPassword !== formData.confirmPassword ||
               loading
             }
+            loading={loading}
+            ariaBusy={loading}
             ariaLabel="Guardar nueva contraseña"
             className="mx-auto mt-6 w-full max-w-xs"
           />

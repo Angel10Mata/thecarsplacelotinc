@@ -129,7 +129,11 @@ export default function CrearClienteModal({
         </ModalField>
         <ModalFooter>
           <ModalCancelButton onClick={handleClose} disabled={crear.isPending} />
-          <ModalSubmit disabled={crear.isPending} label="Guardar" />
+          <ModalSubmit
+            disabled={crear.isPending}
+            loading={crear.isPending}
+            label="Guardar"
+          />
         </ModalFooter>
       </ModalForm>
     </ModalShell>

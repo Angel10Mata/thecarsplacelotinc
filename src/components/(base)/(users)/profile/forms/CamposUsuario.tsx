@@ -237,6 +237,8 @@ export function CamposUsuario({
   const [savedData, setSavedData] = useState({ user: "", pass: "" });
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const saveBusy = saving || mutation.isPending;
 
   useEffect(() => {
     if (profile?.rol) {
@@ -285,6 +287,8 @@ export function CamposUsuario({
   };
 
   const handleSave = async () => {
+    if (saveBusy) return;
+
     const credentialsChanged =
       formData.username !== (credentials?.username || "") ||
       formData.newPassword.length > 0;
@@ -311,6 +315,7 @@ export function CamposUsuario({
       }
     }
 
+    setSaving(true);
     try {
       if (credentialsChanged) {
         await mutation.mutateAsync({
@@ -346,6 +351,8 @@ export function CamposUsuario({
     } catch (error: unknown) {
       const raw = error instanceof Error ? error.message : "";
       toast.error(mensajeParaUsuario(raw, MENSAJE_ERROR_GENERAL));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -596,15 +603,14 @@ export function CamposUsuario({
                 )}
                 {canEdit ? (
                   <SigetActionButton
-                    label={mutation.isPending ? "Guardando" : "Guardar"}
+                    label={saveBusy ? "Guardando" : "Guardar"}
+                    loading={saveBusy}
                     accentColor={sigetAccent.guardar}
                     morphFrom={Save}
                     morphTo={Check}
-                    onClick={handleSave}
-                    disabled={
-                      (!hasChanges && !roleChanged) || mutation.isPending
-                    }
-                    ariaBusy={mutation.isPending}
+                    onClick={() => void handleSave()}
+                    disabled={(!hasChanges && !roleChanged) || saveBusy}
+                    ariaBusy={saveBusy}
                     className="w-auto shrink-0"
                   />
                 ) : null}
@@ -643,15 +649,14 @@ export function CamposUsuario({
           ) : null}
           {canEdit ? (
             <SigetActionButton
-              label={mutation.isPending ? "Guardando" : "Guardar"}
+              label={saveBusy ? "Guardando" : "Guardar"}
               accentColor={sigetAccent.guardar}
               morphFrom={Save}
               morphTo={Check}
-              onClick={handleSave}
-              disabled={
-                (!hasChanges && !roleChanged) || mutation.isPending
-              }
-              ariaBusy={mutation.isPending}
+              onClick={() => void handleSave()}
+              disabled={(!hasChanges && !roleChanged) || saveBusy}
+              loading={saveBusy}
+              ariaBusy={saveBusy}
               className={mobileProfileFooterBtnClass}
             />
           ) : null}

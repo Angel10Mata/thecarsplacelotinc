@@ -9,8 +9,31 @@ import { isAdminRole, resolveUserRole } from "@/lib/user-role";
 import { clearSupabaseAuthCookies, createClient } from "@/utils/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
-  const { supabase, getResponse } = createClient(request);
   const pathname = request.nextUrl.pathname;
+
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+  ) {
+    console.error(
+      "Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY en el entorno.",
+    );
+    return NextResponse.json(
+      { error: "Configuración del servidor incompleta." },
+      { status: 500 },
+    );
+  }
+
+  let supabase: ReturnType<typeof createClient>["supabase"];
+  let getResponse: ReturnType<typeof createClient>["getResponse"];
+  try {
+    const client = createClient(request);
+    supabase = client.supabase;
+    getResponse = client.getResponse;
+  } catch (error) {
+    console.error("Error creando cliente Supabase en proxy:", error);
+    return NextResponse.json({ error: "Error de autenticación." }, { status: 500 });
+  }
 
   if (pathname === LOGOUT_PATH) {
     await supabase.auth.signOut();

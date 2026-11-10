@@ -1,10 +1,8 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import {
-  createClient as createSupabaseAdmin,
-  type AdminUserAttributes,
-} from "@supabase/supabase-js";
+import type { AdminUserAttributes } from "@supabase/supabase-js";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { APP_AJUSTES_PATH, APP_BASE_PATH } from "@/lib/app-config";
 import { resolveUserRole } from "@/lib/user-role";
@@ -23,20 +21,6 @@ import {
 } from "@/lib/mensajes-usuario";
 import { ProfileFormValues } from "./zod";
 
-// Helpers
-function getAdminClient() {
-  return createSupabaseAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    },
-  );
-}
-
 // Perfil
 export async function getProfileById(userId: string) {
   if (!userId) return null;
@@ -51,7 +35,7 @@ export async function getProfileById(userId: string) {
   if (error) {
     if (error.code === 'PGRST116') {
       // Fallback a admin client por si RLS bloquea (típico en usuarios nuevos)
-      const admin = getAdminClient();
+      const admin = createAdminClient();
       const { data: adminData, error: adminErr } = await admin
         .from("profiles")
         .select("*")
@@ -74,7 +58,7 @@ export async function getUserAuthData(userId: string) {
     return { username: "", phone: "", banned_until: null };
   }
 
-  const supabaseAdmin = getAdminClient();
+  const supabaseAdmin = createAdminClient();
 
   const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
 
@@ -97,7 +81,7 @@ export async function updateProfile(
   formData: Partial<ProfileFormValues>,
 ) {
   const supabase = await createClient();
-  const supabaseAdmin = getAdminClient();
+  const supabaseAdmin = createAdminClient();
 
   const {
     data: { user: actor },
@@ -223,7 +207,7 @@ export async function updateUserCredentials(
     }
   }
 
-  const supabaseAdmin = getAdminClient();
+  const supabaseAdmin = createAdminClient();
   const authUpdates: AdminUserAttributes = {};
 
   if (password) {
@@ -304,7 +288,7 @@ export async function deleteUsuario(
       return { ok: false, message: "No se puede eliminar una cuenta Sistemas." };
     }
 
-    const supabaseAdmin = getAdminClient();
+    const supabaseAdmin = createAdminClient();
 
     const { error: deleteAuthError } =
       await supabaseAdmin.auth.admin.deleteUser(userId);
@@ -334,7 +318,7 @@ export async function deleteUsuario(
 
 // Estado cuenta
 export async function toggleUserStatus(userId: string, isBanned: boolean) {
-  const supabaseAdmin = getAdminClient();
+  const supabaseAdmin = createAdminClient();
 
   const banDuration = isBanned ? "876600h" : "none";
 

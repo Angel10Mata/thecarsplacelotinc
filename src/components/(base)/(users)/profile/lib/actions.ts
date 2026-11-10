@@ -7,6 +7,13 @@ import {
 } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { APP_AJUSTES_PATH, APP_BASE_PATH } from "@/lib/app-config";
+import { resolveUserRole } from "@/lib/user-role";
+import {
+  canAssignRole,
+  canManageUsers,
+  isUserVisibleToActor,
+  normalizeKnownRole,
+} from "@/components/(base)/(users)/usuarios/lib/permissions";
 import { ProfileFormValues } from "./zod";
 
 // Helpers
@@ -81,6 +88,41 @@ export async function updateProfile(
   const supabase = await createClient();
   const supabaseAdmin = getAdminClient();
 
+  const {
+    data: { user: actor },
+  } = await supabase.auth.getUser();
+  if (!actor) {
+    throw new Error("Debes iniciar sesión.");
+  }
+
+  const actorRole = await resolveUserRole(supabase, actor);
+  const isSelf = actor.id === userId;
+
+  const { data: targetProfile } = await supabase
+    .from("profiles")
+    .select("rol")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const targetRole = targetProfile?.rol || "user";
+
+  if (formData.rol) {
+    formData.rol = normalizeKnownRole(formData.rol) as ProfileFormValues["rol"];
+  }
+
+  if (formData.rol && formData.rol !== normalizeKnownRole(targetRole)) {
+    if (isSelf) {
+      throw new Error("No puedes cambiar tu propio rol.");
+    }
+    if (
+      !canManageUsers(actorRole) ||
+      !isUserVisibleToActor(targetRole, actorRole) ||
+      !canAssignRole(actorRole, formData.rol)
+    ) {
+      throw new Error("No tienes permiso para cambiar este rol.");
+    }
+  }
+
   const rawData = {
     nombre: formData.nombre,
     email: formData.email,
@@ -109,6 +151,8 @@ export async function updateProfile(
   if (profileError) {
     throw new Error(profileError.message);
   }
+
+  revalidatePath(`${APP_AJUSTES_PATH}/usuarios`);
 
   const metadataUpdates: Record<string, string> = {};
 

@@ -5,25 +5,45 @@ export const ROLE_LABELS: Record<string, string> = {
   super: "Sistemas",
 };
 
-export function labelRol(role: string): string {
-  return ROLE_LABELS[role] ?? role;
-}
-
 export const ROLE_ORDER = ["super", "admin", "user"] as const;
 
 const KNOWN_ROLES = [...ROLE_ORDER];
 const KNOWN_ROLE_SET = new Set<string>(KNOWN_ROLES);
+
+const CREATOR_ROLES = new Set<string>(["super", "admin"]);
+
+export function normalizeKnownRole(role: string | null | undefined): string {
+  if (!role?.trim()) return "user";
+  const trimmed = role.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === "administrador" || lower === "admin") return "admin";
+  if (lower === "sistemas" || lower === "super") return "super";
+  if (lower === "usuario" || lower === "user") return "user";
+  return trimmed;
+}
+
+export function labelRol(role: string): string {
+  const key = normalizeKnownRole(role);
+  return ROLE_LABELS[key] ?? ROLE_LABELS[role] ?? role;
+}
 
 // Permisos
 export function getManageableRoles(
   actorRole: string,
   customRoles: string[] = [],
 ): string[] {
-  if (actorRole === "super") {
-    const extras = customRoles.filter((r) => !KNOWN_ROLE_SET.has(r));
+  const actor = normalizeKnownRole(actorRole);
+  if (actor === "super") {
+    const extras = Array.from(
+      new Set(
+        customRoles
+          .map((r) => normalizeKnownRole(r))
+          .filter((r) => !KNOWN_ROLE_SET.has(r)),
+      ),
+    );
     return orderRoles([...KNOWN_ROLES, ...extras]);
   }
-  if (actorRole === "admin") {
+  if (actor === "admin") {
     return orderRoles(KNOWN_ROLES.filter((r) => r !== "super"));
   }
   return [];
@@ -38,21 +58,24 @@ export function canManageUsers(actorRole: string): boolean {
 }
 
 export function canCreateUsers(actorRole: string): boolean {
-  return canManageUsers(actorRole);
+  return CREATOR_ROLES.has(normalizeKnownRole(actorRole));
 }
 
 export function canAssignRole(actorRole: string, targetRole: string): boolean {
-  if (actorRole === "super") return true;
-  return getManageableRoles(actorRole).includes(targetRole);
+  const actor = normalizeKnownRole(actorRole);
+  const target = normalizeKnownRole(targetRole);
+  if (actor === "super") return true;
+  return getManageableRoles(actor).includes(target);
 }
 
 export function isUserVisibleToActor(
   targetRole: string | null | undefined,
   actorRole: string,
 ): boolean {
-  if (actorRole === "super") return true;
-  const role = targetRole || "user";
-  return getManageableRoles(actorRole).includes(role);
+  const actor = normalizeKnownRole(actorRole);
+  if (actor === "super") return true;
+  const role = normalizeKnownRole(targetRole);
+  return getManageableRoles(actor).includes(role);
 }
 
 export function orderRoles(roles: string[]): string[] {

@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { normalizeKnownRole } from "./permissions";
 
 // Consultas
 export function useUsers(userRole?: string) {
@@ -13,8 +14,9 @@ export function useUsers(userRole?: string) {
         .select("id, nombre, rol")
         .order("nombre", { ascending: true });
 
-      if (userRole === "super") {
-      } else if (userRole === "admin") {
+      const actor = normalizeKnownRole(userRole);
+      if (actor === "super") {
+      } else if (actor === "admin") {
         query = query.neq("rol", "super");
       } else {
         query = query.eq("rol", "user");

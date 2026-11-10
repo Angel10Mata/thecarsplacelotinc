@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ROLE_LABELS } from "../lib/permissions";
+import { ROLE_LABELS, normalizeKnownRole } from "../lib/permissions";
 import { resolveKnownRole } from "../lib/helpers";
 
 // Props
@@ -41,9 +41,15 @@ export function SelectorRol({
 }: SelectorRolProps) {
   const [isCustomRole, setIsCustomRole] = useState(false);
 
+  const canonicalValue = normalizeKnownRole(value);
+
   const displayRoleOptions = useMemo(() => {
     const trimmed = value.trim();
-    if (!trimmed || roleOptions.includes(trimmed)) return roleOptions;
+    if (!trimmed) return roleOptions;
+    const canonical = normalizeKnownRole(trimmed);
+    if (roleOptions.includes(canonical) || roleOptions.includes(trimmed)) {
+      return roleOptions;
+    }
     return [...roleOptions, trimmed];
   }, [roleOptions, value]);
 
@@ -107,8 +113,10 @@ export function SelectorRol({
           <select
             id={id}
             name={name}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
+            value={roleOptions.includes(canonicalValue) ? canonicalValue : value}
+            onChange={(e) =>
+              onChange(normalizeKnownRole(e.target.value) || e.target.value)
+            }
             disabled={disabled || readOnly}
             className={cn(
               fieldClassName,
@@ -117,15 +125,18 @@ export function SelectorRol({
             )}
           >
             {readOnly ? (
-              <option value={value}>
-                {ROLE_LABELS[value] || value || "Usuario"}
+              <option value={canonicalValue}>
+                {ROLE_LABELS[canonicalValue] || value || "Usuario"}
               </option>
             ) : (
-              displayRoleOptions.map((role) => (
-                <option key={role} value={role}>
-                  {ROLE_LABELS[role] || role}
-                </option>
-              ))
+              displayRoleOptions.map((role) => {
+                const key = normalizeKnownRole(role);
+                return (
+                  <option key={role} value={key}>
+                    {ROLE_LABELS[key] || role}
+                  </option>
+                );
+              })
             )}
           </select>
         )}

@@ -20,9 +20,27 @@ import { Save, Check, ArrowLeft as ArrowLeftIcon } from "lucide";
 import { toast } from "react-toastify";
 import { SigetActionButton, sigetAccent } from "@/components/ui/siget-action-button";
 import { profileObjectSchema } from "../lib/zod";
-import { useUserCredentials, useCredentialsMutation } from "../lib/hooks";
-import { toggleUserStatus } from "../lib/actions";
-import { useUser } from "@/components/(base)/providers/UserProvider";
+import {
+  useCredentialsMutation,
+  useProfile,
+  useUserCredentials,
+} from "../lib/hooks";
+import { toggleUserStatus, updateProfile } from "../lib/actions";
+import {
+  useUser,
+  useUserContext,
+} from "@/components/(base)/providers/UserProvider";
+import {
+  canAssignRole,
+  canManageUsers,
+  getManageableRoles,
+  isUserVisibleToActor,
+  normalizeKnownRole,
+} from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { extractRolesFromProfiles } from "@/components/(base)/(users)/usuarios/lib/helpers";
+import { useUsers } from "@/components/(base)/(users)/usuarios/lib/hooks";
+import { SelectorRol } from "@/components/(base)/(users)/usuarios/forms/SelectorRol";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { generateStrongPassword } from "@/utils/general/password-generator";
 import { AuroraText } from "@/components/ui/aurora-text";
@@ -71,11 +89,11 @@ const UserStatusToggle = ({
   canEdit: boolean;
 }) => {
   const user = useUser();
+  const { effectiveRole } = useUserContext();
   const [isLoading, setIsLoading] = useState(false);
 
-  const currentUserRole = user?.user_metadata?.rol;
   const isSelf = user?.id === userId;
-  const hasPermission = ["super", "admin"].includes(currentUserRole || "");
+  const hasPermission = canManageUsers(effectiveRole);
 
   if (!hasPermission) return null;
 
@@ -166,11 +184,31 @@ interface InfoUserProps {
 
 // Usuario
 export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
-  // Estado
+  const { effectiveRole } = useUserContext();
+  const queryClient = useQueryClient();
+  const { data: usersList } = useUsers(
+    canManageUsers(effectiveRole) ? effectiveRole : undefined,
+  );
+  const { profile, refetch: refetchProfile } = useProfile(userId, true);
   const { credentials, loading, refetch } = useUserCredentials(userId);
   const mutation = useCredentialsMutation();
 
+  const roleOptions = getManageableRoles(
+    effectiveRole,
+    extractRolesFromProfiles(usersList),
+  );
+  const targetRole = profile?.rol || "user";
+  const isSelf = useUser()?.id === userId;
+  const canChangeRole =
+    canEdit &&
+    !isSelf &&
+    canManageUsers(effectiveRole) &&
+    isUserVisibleToActor(targetRole, effectiveRole) &&
+    roleOptions.length > 0 &&
+    !(effectiveRole === "admin" && targetRole === "super");
+
   const [step, setStep] = useState(1);
+  const [selectedRole, setSelectedRole] = useState("user");
   const [formData, setFormData] = useState({
     username: "",
     newPassword: "",
@@ -180,6 +218,12 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
   const [hasChanges, setHasChanges] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [savedData, setSavedData] = useState({ user: "", pass: "" });
+
+  useEffect(() => {
+    if (profile?.rol) {
+      setSelectedRole(normalizeKnownRole(profile.rol));
+    }
+  }, [profile?.rol, userId]);
 
   useEffect(() => {
     const applyCredentials = async () => {
@@ -194,6 +238,8 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
     };
     applyCredentials();
   }, [credentials]);
+
+  const roleChanged = selectedRole !== (profile?.rol || "user");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!canEdit) return;
@@ -213,36 +259,70 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
       });
   };
 
-  const handleSave = async () => {
-    const valid = profileObjectSchema
-      .pick({ username: true, newPassword: true, confirmPassword: true })
-      .refine(
-        (data) =>
-          !data.newPassword || data.newPassword === data.confirmPassword,
-        { path: ["confirmPassword"] },
-      )
-      .safeParse(formData);
+  const handleRoleChange = (role: string) => {
+    if (!canEdit || !canChangeRole) return;
+    setSelectedRole(role);
+    setHasChanges(true);
+  };
 
-    if (!valid.success) {
-      const fieldErrors: Record<string, string> = {};
-      valid.error.issues.forEach((i) => {
-        if (i.path[0]) fieldErrors[i.path[0].toString()] = i.message;
-      });
-      setErrors(fieldErrors);
-      return;
+  const handleSave = async () => {
+    const credentialsChanged =
+      formData.username !== (credentials?.username || "") ||
+      formData.newPassword.length > 0;
+
+    if (!credentialsChanged && !roleChanged) return;
+
+    if (credentialsChanged) {
+      const valid = profileObjectSchema
+        .pick({ username: true, newPassword: true, confirmPassword: true })
+        .refine(
+          (data) =>
+            !data.newPassword || data.newPassword === data.confirmPassword,
+          { path: ["confirmPassword"] },
+        )
+        .safeParse(formData);
+
+      if (!valid.success) {
+        const fieldErrors: Record<string, string> = {};
+        valid.error.issues.forEach((i) => {
+          if (i.path[0]) fieldErrors[i.path[0].toString()] = i.message;
+        });
+        setErrors(fieldErrors);
+        return;
+      }
     }
 
     try {
-      await mutation.mutateAsync({
-        userId,
-        username: formData.username,
-        password: formData.newPassword || undefined,
-      });
-      setSavedData({
-        user: formData.username,
-        pass: formData.newPassword || "Sin cambios",
-      });
-      setStep(2);
+      if (credentialsChanged) {
+        await mutation.mutateAsync({
+          userId,
+          username: formData.username,
+          password: formData.newPassword || undefined,
+        });
+      }
+
+      if (roleChanged) {
+        if (!canAssignRole(effectiveRole, selectedRole)) {
+          toast.error("No tienes permiso para asignar este rol.");
+          return;
+        }
+        await updateProfile(userId, {
+          rol: selectedRole as "user" | "admin" | "super",
+        });
+        await refetchProfile();
+        await queryClient.invalidateQueries({ queryKey: ["users-list"] });
+      }
+
+      if (credentialsChanged) {
+        setSavedData({
+          user: formData.username,
+          pass: formData.newPassword || "Sin cambios",
+        });
+        setStep(2);
+      } else if (roleChanged) {
+        toast.success("Rol actualizado.");
+      }
+
       setHasChanges(false);
     } catch (error: unknown) {
       toast.error((error as Error).message);
@@ -297,6 +377,24 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
                   )}
                 />
               </div>
+
+              {canManageUsers(effectiveRole) && (
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-foreground/70">
+                    Rol
+                  </label>
+                  <SelectorRol
+                    value={selectedRole}
+                    onChange={handleRoleChange}
+                    roleOptions={roleOptions}
+                    readOnly={!canChangeRole}
+                    disabled={!canEdit || !canChangeRole}
+                    preferredRole={profile?.rol}
+                    resetKey={userId}
+                    allowCustom={effectiveRole === "super"}
+                  />
+                </div>
+              )}
 
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
@@ -440,7 +538,9 @@ export function CamposUsuario({ userId, canEdit }: InfoUserProps) {
                 morphFrom={Save}
                 morphTo={Check}
                 onClick={handleSave}
-                disabled={!hasChanges || mutation.isPending}
+                disabled={
+                  (!hasChanges && !roleChanged) || mutation.isPending
+                }
                 ariaBusy={mutation.isPending}
                 className="w-auto shrink-0 mt-2"
               />

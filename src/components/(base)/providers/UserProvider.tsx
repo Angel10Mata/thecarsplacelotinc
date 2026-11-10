@@ -4,7 +4,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { User } from "@supabase/supabase-js";
-import { createClient } from "@/utils/supabase/client"; // Asegúrate de tener este cliente
+import { createClient } from "@/utils/supabase/client";
+import { normalizeKnownRole } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 interface UserContextValue {
   user: User | null;
@@ -36,9 +37,11 @@ function resolveRealRole(
       ? metadata.rol.trim()
       : null;
   const fromProfile = profileRole ?? initialProfileRole;
-  if (fromProfile) return fromProfile;
-  if (fromMeta) return fromMeta;
-  if (user.role && user.role !== "authenticated") return user.role;
+  if (fromProfile) return normalizeKnownRole(fromProfile);
+  if (fromMeta) return normalizeKnownRole(fromMeta);
+  if (user.role && user.role !== "authenticated") {
+    return normalizeKnownRole(user.role);
+  }
   return "user";
 }
 

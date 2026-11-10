@@ -2,9 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import {
   APP_AJUSTES_PATH,
   APP_BASE_PATH,
+  CAMBIAR_PASSWORD_PATH,
   LOGOUT_PATH,
   PUBLIC_CATALOG_PATH,
 } from "@/lib/app-config";
+import { profileRequiresPasswordChange } from "@/lib/password-change-policy";
 import { isAdminRole, resolveUserRole } from "@/lib/user-role";
 import { clearSupabaseAuthCookies, createClient } from "@/utils/supabase/proxy";
 
@@ -83,6 +85,36 @@ export async function proxy(request: NextRequest) {
       return cachedRole;
     };
 
+    const realRoleForPassword = await getRealRole();
+    const { data: passwordProfile } = await supabase
+      .from("profiles")
+      .select("ultimo_cambio_password")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const needsPasswordChange = profileRequiresPasswordChange(
+      passwordProfile?.ultimo_cambio_password,
+      realRoleForPassword,
+    );
+
+    if (needsPasswordChange) {
+      if (
+        pathname !== CAMBIAR_PASSWORD_PATH &&
+        !pathname.startsWith("/api/auth")
+      ) {
+        const url = request.nextUrl.clone();
+        url.pathname = CAMBIAR_PASSWORD_PATH;
+        return NextResponse.redirect(url);
+      }
+    } else if (
+      pathname === CAMBIAR_PASSWORD_PATH ||
+      pathname === "/login"
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = APP_BASE_PATH;
+      return NextResponse.redirect(url);
+    }
+
     if (pathname === "/esperando-acceso") {
       if (!requireAuth) {
         const url = request.nextUrl.clone();
@@ -112,12 +144,6 @@ export async function proxy(request: NextRequest) {
         url.pathname = APP_BASE_PATH;
         return NextResponse.redirect(url);
       }
-    }
-
-    if (pathname === "/login") {
-      const url = request.nextUrl.clone();
-      url.pathname = APP_BASE_PATH;
-      return NextResponse.redirect(url);
     }
 
     if (pathname.startsWith(APP_BASE_PATH)) {

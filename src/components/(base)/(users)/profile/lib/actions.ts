@@ -236,6 +236,19 @@ export async function updateUserCredentials(
     throw new Error(mensajeErrorEs(error.message));
   }
 
+  if (password && !isSelf) {
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .update({ ultimo_cambio_password: null })
+      .eq("id", userId);
+    if (profileError) {
+      console.error(
+        "[updateUserCredentials] ultimo_cambio_password:",
+        profileError.message,
+      );
+    }
+  }
+
   return { success: true };
 }
 

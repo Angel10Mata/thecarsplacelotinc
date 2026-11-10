@@ -16,7 +16,11 @@ import {
 } from "@/components/(base)/(users)/usuarios/lib/permissions";
 import { mensajeErrorEs } from "@/lib/supabase-errors-es";
 import { mensajeSiServiceRoleKeyInvalida } from "@/lib/supabase-service-role-env";
-import { MENSAJE_ERROR_SISTEMA } from "@/lib/mensajes-usuario";
+import {
+  MENSAJE_ERROR_GENERAL,
+  MENSAJE_ERROR_SISTEMA,
+  mensajeParaUsuario,
+} from "@/lib/mensajes-usuario";
 import { ProfileFormValues } from "./zod";
 
 // Helpers
@@ -251,47 +255,81 @@ export async function updateUserCredentials(
   return { success: true };
 }
 
-export async function deleteUsuario(userId: string) {
-  if (mensajeSiServiceRoleKeyInvalida()) {
-    throw new Error(MENSAJE_ERROR_SISTEMA);
+export type DeleteUsuarioResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+export async function deleteUsuario(
+  userId: string,
+): Promise<DeleteUsuarioResult> {
+  try {
+    if (!userId?.trim()) {
+      return { ok: false, message: MENSAJE_ERROR_GENERAL };
+    }
+
+    if (mensajeSiServiceRoleKeyInvalida()) {
+      return { ok: false, message: MENSAJE_ERROR_SISTEMA };
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+    if (!supabaseUrl || !serviceKey) {
+      return { ok: false, message: MENSAJE_ERROR_SISTEMA };
+    }
+
+    const supabase = await createClient();
+    const {
+      data: { user: actor },
+    } = await supabase.auth.getUser();
+    if (!actor) {
+      return { ok: false, message: "Debes iniciar sesión." };
+    }
+
+    if (actor.id === userId) {
+      return { ok: false, message: "No puedes eliminar tu propia cuenta." };
+    }
+
+    const actorRole = await resolveUserRole(supabase, actor);
+    if (normalizeKnownRole(actorRole) !== "super") {
+      return { ok: false, message: "No tienes permiso para eliminar usuarios." };
+    }
+
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("rol")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (normalizeKnownRole(targetProfile?.rol) === "super") {
+      return { ok: false, message: "No se puede eliminar una cuenta Sistemas." };
+    }
+
+    const supabaseAdmin = getAdminClient();
+
+    const { error: deleteAuthError } =
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+
+    if (deleteAuthError) {
+      return {
+        ok: false,
+        message: mensajeParaUsuario(
+          mensajeErrorEs(deleteAuthError.message),
+          MENSAJE_ERROR_GENERAL,
+        ),
+      };
+    }
+
+    try {
+      revalidatePath(`${APP_AJUSTES_PATH}/usuarios`);
+    } catch (revalidateError) {
+      console.error("revalidatePath usuarios:", revalidateError);
+    }
+
+    return { ok: true };
+  } catch (error: unknown) {
+    console.error("deleteUsuario:", error);
+    return { ok: false, message: MENSAJE_ERROR_GENERAL };
   }
-
-  const supabase = await createClient();
-  const {
-    data: { user: actor },
-  } = await supabase.auth.getUser();
-  if (!actor) {
-    throw new Error("Debes iniciar sesión.");
-  }
-
-  if (actor.id === userId) {
-    throw new Error("No puedes eliminar tu propia cuenta.");
-  }
-
-  const actorRole = await resolveUserRole(supabase, actor);
-  if (normalizeKnownRole(actorRole) !== "super") {
-    throw new Error("No tienes permiso para eliminar usuarios.");
-  }
-
-  const { data: targetProfile } = await supabase
-    .from("profiles")
-    .select("rol")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (normalizeKnownRole(targetProfile?.rol) === "super") {
-    throw new Error("No se puede eliminar una cuenta Sistemas.");
-  }
-
-  const supabaseAdmin = getAdminClient();
-  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-  if (error) {
-    throw new Error(mensajeErrorEs(error.message));
-  }
-
-  revalidatePath(`${APP_AJUSTES_PATH}/usuarios`);
-  return { success: true };
 }
 
 // Estado cuenta

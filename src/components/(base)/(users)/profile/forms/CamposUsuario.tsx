@@ -352,7 +352,13 @@ export function CamposUsuario({
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      await deleteUsuario(userId);
+      const result = await deleteUsuario(userId);
+      if (!result.ok) {
+        toast.error(
+          mensajeParaUsuario(result.message, MENSAJE_ERROR_GENERAL),
+        );
+        return;
+      }
       await queryClient.invalidateQueries({ queryKey: ["users-list"] });
       toast.success("Usuario eliminado.");
       setConfirmDelete(false);

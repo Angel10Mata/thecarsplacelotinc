@@ -244,14 +244,14 @@ export default function SignUp({
               className={cn(
                 isFullscreen
                   ? "flex min-h-0 flex-1 flex-col"
-                  : "space-y-5",
+                  : "flex min-h-full flex-col gap-5",
               )}
             >
               <div
                 className={cn(
                   isFullscreen
                     ? "min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 md:p-6"
-                    : "contents",
+                    : "flex flex-1 flex-col gap-5",
                 )}
               >
               <div className="grid gap-2">
@@ -395,22 +395,10 @@ export default function SignUp({
                 </div>
               )}
 
-              {!isFullscreen ? (
-                <SigetActionButton
-                  label={logic.isPending ? "Creando" : "Crear"}
-                  accentColor={sigetAccent.crear}
-                  morphFrom={UserPlusNode}
-                  morphTo={CheckNode}
-                  type="submit"
-                  disabled={logic.isPending}
-                  ariaBusy={logic.isPending}
-                  className="w-full max-w-none"
-                />
-              ) : null}
               </div>
 
-              {isFullscreen ? (
-                <div className="mt-auto flex shrink-0 justify-end border-t border-border/60 px-4 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-3 md:px-6">
+              {!isFullscreen ? (
+                <div className="mt-auto shrink-0 pt-2 md:pt-6">
                   <SigetActionButton
                     label={logic.isPending ? "Creando" : "Crear"}
                     accentColor={sigetAccent.crear}
@@ -419,7 +407,22 @@ export default function SignUp({
                     type="submit"
                     disabled={logic.isPending}
                     ariaBusy={logic.isPending}
-                    className="w-full max-w-none shrink-0"
+                    className="h-9 w-full max-w-none"
+                  />
+                </div>
+              ) : null}
+
+              {isFullscreen ? (
+                <div className="mt-auto flex w-full shrink-0 items-center justify-center border-t border-zinc-200/80 bg-zinc-100 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] dark:border-zinc-700 dark:bg-zinc-800">
+                  <SigetActionButton
+                    label={logic.isPending ? "Creando" : "Crear"}
+                    accentColor={sigetAccent.crear}
+                    morphFrom={UserPlusNode}
+                    morphTo={CheckNode}
+                    type="submit"
+                    disabled={logic.isPending}
+                    ariaBusy={logic.isPending}
+                    className="h-9 w-full max-w-none"
                   />
                 </div>
               ) : null}
@@ -431,10 +434,18 @@ export default function SignUp({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -20, opacity: 0 }}
               className={cn(
-                "space-y-6",
-                isFullscreen && "flex min-h-0 flex-1 flex-col overflow-y-auto p-4 md:p-6",
+                isFullscreen
+                  ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+                  : "space-y-6",
               )}
             >
+              <div
+                className={cn(
+                  isFullscreen
+                    ? "min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-4"
+                    : "contents",
+                )}
+              >
               <div className="p-5 rounded-2xl border border-border/60 bg-muted/30 space-y-5">
                 <div className="flex justify-between items-center border-b border-border/40 pb-4">
                   <span className="text-[10px] font-black uppercase text-muted-foreground tracking-tighter">
@@ -509,16 +520,31 @@ export default function SignUp({
                   />
                 </div>
               </div>
+              </div>
 
-              <SigetActionButton
-                label="Volver"
-                accentColor={sigetAccent.cancelar}
-                morphFrom={ArrowLeftNode}
-                morphTo={ArrowLeftNode}
-                morphOnHover={false}
-                onClick={resetForm}
-                className="w-full max-w-none"
-              />
+              {isFullscreen ? (
+                <div className="mt-auto flex w-full shrink-0 items-center justify-center border-t border-zinc-200/80 bg-zinc-100 px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] dark:border-zinc-700 dark:bg-zinc-800">
+                  <SigetActionButton
+                    label="Volver"
+                    accentColor={sigetAccent.cancelar}
+                    morphFrom={ArrowLeftNode}
+                    morphTo={ArrowLeftNode}
+                    morphOnHover={false}
+                    onClick={resetForm}
+                    className="h-9 w-full max-w-none"
+                  />
+                </div>
+              ) : (
+                <SigetActionButton
+                  label="Volver"
+                  accentColor={sigetAccent.cancelar}
+                  morphFrom={ArrowLeftNode}
+                  morphTo={ArrowLeftNode}
+                  morphOnHover={false}
+                  onClick={resetForm}
+                  className="w-full max-w-none"
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>

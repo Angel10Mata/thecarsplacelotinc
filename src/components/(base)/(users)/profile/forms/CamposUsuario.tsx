@@ -196,7 +196,7 @@ export function CamposUsuario({
   onClose,
   targetName,
 }: InfoUserProps) {
-  const { effectiveRole, realRole } = useUserContext();
+  const { effectiveRole } = useUserContext();
   const queryClient = useQueryClient();
   const { data: usersList } = useUsers(
     canManageUsers(effectiveRole) ? effectiveRole : undefined,
@@ -212,7 +212,7 @@ export function CamposUsuario({
   const targetRole = profile?.rol || "user";
   const isSelf = useUser()?.id === userId;
   const canDelete = canDeleteUser(
-    realRole,
+    effectiveRole,
     profile?.rol,
     isSelf,
   );

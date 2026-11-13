@@ -99,8 +99,13 @@ const menuRowHover =
 
 export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
   const pathname = usePathname();
-  const { realRole, effectiveRole, simulatedRole, setSimulatedRole } =
-    useUserContext();
+  const {
+    realRole,
+    effectiveRole,
+    simulatedRole,
+    setSimulatedRole,
+    isSimulating,
+  } = useUserContext();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPasskeysOpen, setIsPasskeysOpen] = useState(false);
   const [modulosOpen, setModulosOpen] = useState(true);
@@ -228,6 +233,11 @@ export default function Menu({ isOpen, setIsOpen, user }: MenuProps) {
                     </p>
                     <p className="font-bold leading-tight text-brand dark:text-brand-bright uppercase truncate">
                       {labelRol(effectiveRole)}
+                      {isSimulating ? (
+                        <span className="block text-[9px] font-semibold normal-case tracking-normal text-amber-600 dark:text-amber-400">
+                          (simulando)
+                        </span>
+                      ) : null}
                     </p>
                   </div>
                   <div className="col-span-2 min-w-0 border-t border-border/40 pt-3">

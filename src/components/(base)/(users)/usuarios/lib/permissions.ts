@@ -57,6 +57,15 @@ export function canManageUsers(actorRole: string): boolean {
   return getManageableRoles(actorRole).length > 0;
 }
 
+export function isAdminRole(role: string): boolean {
+  const normalized = normalizeKnownRole(role);
+  return normalized === "super" || normalized === "admin";
+}
+
+export function canEditUserData(actorRole: string): boolean {
+  return canManageUsers(actorRole);
+}
+
 export function canCreateUsers(actorRole: string): boolean {
   return CREATOR_ROLES.has(normalizeKnownRole(actorRole));
 }

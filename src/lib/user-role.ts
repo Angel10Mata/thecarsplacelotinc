@@ -2,7 +2,12 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { APP_BASE_PATH } from "@/lib/app-config";
-import { normalizeKnownRole } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import {
+  isAdminRole,
+  normalizeKnownRole,
+} from "@/components/(base)/(users)/usuarios/lib/permissions";
+
+export { isAdminRole };
 
 // RESOLUCIÓN Y ROLES ADMIN
 
@@ -25,11 +30,6 @@ export async function resolveUserRole(
   }
 
   return "user";
-}
-
-export function isAdminRole(role: string): boolean {
-  const normalized = normalizeKnownRole(role);
-  return normalized === "super" || normalized === "admin";
 }
 
 // GUARD PÁGINAS ADMIN (SERVER)

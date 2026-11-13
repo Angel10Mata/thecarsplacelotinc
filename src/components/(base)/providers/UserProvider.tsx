@@ -2,10 +2,19 @@
 
 // CONTEXTO DE USUARIO Y ROL
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { User } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { normalizeKnownRole } from "@/components/(base)/(users)/usuarios/lib/permissions";
+
+const SIMULATED_ROLE_STORAGE_KEY = "tcpl-simulated-role";
 
 interface UserContextValue {
   user: User | null;
@@ -13,6 +22,7 @@ interface UserContextValue {
   setSimulatedRole: (role: string | null) => void;
   effectiveRole: string;
   realRole: string;
+  isSimulating: boolean;
   initialProfileRole: string | null;
 }
 
@@ -22,6 +32,7 @@ const UserContext = createContext<UserContextValue>({
   setSimulatedRole: () => {},
   effectiveRole: "user",
   realRole: "user",
+  isSimulating: false,
   initialProfileRole: null,
 });
 
@@ -140,16 +151,58 @@ export function UserProvider({
   }, [user?.id, supabase]);
 
   const realRole = resolveRealRole(user, profileRole, initialProfileRole);
+
+  const setSimulatedRolePersisted = useCallback(
+    (role: string | null) => {
+      if (normalizeKnownRole(realRole) !== "super") {
+        setSimulatedRole(null);
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem(SIMULATED_ROLE_STORAGE_KEY);
+        }
+        return;
+      }
+      const next = role ? normalizeKnownRole(role) : null;
+      setSimulatedRole(next);
+      if (typeof window !== "undefined") {
+        if (next) {
+          sessionStorage.setItem(SIMULATED_ROLE_STORAGE_KEY, next);
+        } else {
+          sessionStorage.removeItem(SIMULATED_ROLE_STORAGE_KEY);
+        }
+      }
+    },
+    [realRole],
+  );
+
+  useEffect(() => {
+    if (normalizeKnownRole(realRole) !== "super") {
+      setSimulatedRole(null);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(SIMULATED_ROLE_STORAGE_KEY);
+      }
+      return;
+    }
+    if (typeof window === "undefined") return;
+    const stored = sessionStorage.getItem(SIMULATED_ROLE_STORAGE_KEY);
+    if (!stored) return;
+    const normalized = normalizeKnownRole(stored);
+    if (normalized === "admin" || normalized === "user") {
+      setSimulatedRole(normalized);
+    }
+  }, [realRole]);
+
   const effectiveRole = simulatedRole || realRole;
+  const isSimulating = simulatedRole !== null;
 
   return (
     <UserContext.Provider
       value={{
         user,
         simulatedRole,
-        setSimulatedRole,
+        setSimulatedRole: setSimulatedRolePersisted,
         effectiveRole,
         realRole,
+        isSimulating,
         initialProfileRole,
       }}
     >

@@ -10,6 +10,7 @@ import { UserProvider } from "@/components/(base)/providers/UserProvider";
 import { InventarioUiProvider } from "@/components/(base)/inventario-publico/lib/inventario-ui-context";
 import OfflineBanner from "@/components/OfflineBanner";
 import ObsToastContainer from "@/components/(base)/layout/ObsToastContainer";
+import { SimulatedRoleShell } from "@/components/(base)/layout/SimulatedRoleShell";
 import { APP_LOGO_PATH, APP_NAME_UPPER } from "@/lib/app-config";
 import { resolveUserRole } from "@/lib/user-role";
 
@@ -92,6 +93,7 @@ export default async function RootLayout({
               <InventarioUiProvider>
                 <OfflineBanner />
                 <EncabezadoApp />
+                <SimulatedRoleShell />
                 <main className="flex-1 w-full flex flex-col">
                   {children}
                 </main>

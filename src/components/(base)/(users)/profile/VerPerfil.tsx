@@ -12,6 +12,7 @@ import {
 } from "@/components/(base)/providers/UserProvider";
 import {
   canAssignRole,
+  canEditUserData,
   canManageUsers,
   getManageableRoles,
   isUserVisibleToActor,
@@ -68,7 +69,7 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
 
   const targetId = userId || sessionUser?.id || "";
   const isSelf = sessionUser?.id === targetId;
-  const isSuper = realRole === "super";
+  const isSuper = normalizeKnownRole(effectiveRole) === "super";
 
   const { data: usersList } = useUsers(
     canManageUsers(effectiveRole) ? effectiveRole : undefined,
@@ -92,10 +93,10 @@ export default function VerPerfil({ isOpen, onClose, userId }: VerPerfilProps) {
   );
 
   const canEdit =
-    isSelf ||
-    (!!profile?.rol &&
-      canManageUsers(effectiveRole) &&
-      isUserVisibleToActor(profile.rol, effectiveRole));
+    canEditUserData(effectiveRole) &&
+    (!!profile?.rol
+      ? isSelf || isUserVisibleToActor(profile.rol, effectiveRole)
+      : isSelf);
 
   const canChangeRole =
     canEdit &&

@@ -92,6 +92,10 @@ export async function updateProfile(
   }
 
   const actorRole = await resolveUserRole(supabase, actor);
+  if (!canManageUsers(actorRole)) {
+    throw new Error("No tienes permiso para editar esta información.");
+  }
+
   const isSelf = actor.id === userId;
 
   const { data: targetProfile } = await supabase
@@ -192,12 +196,13 @@ export async function updateUserCredentials(
   }
 
   const actorRole = await resolveUserRole(supabase, actor);
+  if (!canManageUsers(actorRole)) {
+    throw new Error("No tienes permiso para editar credenciales.");
+  }
+
   const isSelf = actor.id === userId;
 
   if (!isSelf) {
-    if (!canManageUsers(actorRole)) {
-      throw new Error("No tienes permiso para editar este usuario.");
-    }
     const { data: targetProfile } = await supabase
       .from("profiles")
       .select("rol")
@@ -322,6 +327,18 @@ export async function deleteUsuario(
 
 // Estado cuenta
 export async function toggleUserStatus(userId: string, isBanned: boolean) {
+  const supabase = await createClient();
+  const {
+    data: { user: actor },
+  } = await supabase.auth.getUser();
+  if (!actor) {
+    throw new Error("Debes iniciar sesión.");
+  }
+  const actorRole = await resolveUserRole(supabase, actor);
+  if (!canManageUsers(actorRole)) {
+    throw new Error("No tienes permiso para cambiar el estado de la cuenta.");
+  }
+
   const supabaseAdmin = createAdminClient();
 
   const banDuration = isBanned ? "876600h" : "none";

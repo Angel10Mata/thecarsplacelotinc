@@ -55,7 +55,7 @@ export function AboutSection() {
           className="space-y-6 lg:space-y-8 text-center lg:text-left"
         >
           <p className="text-muted-foreground text-base lg:text-lg font-medium leading-relaxed italic">
-            At The Cars Place Lot INC, we build trust through transparency.
+            At The Car Place lot inc, we build trust through transparency.
             Every unit is documented for your peace of mind.
           </p>
           <div className="grid gap-4">

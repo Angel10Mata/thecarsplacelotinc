@@ -106,7 +106,7 @@ export function ContactSection() {
         className="text-center mt-auto space-y-1"
       >
         <p className="text-xs font-bold uppercase tracking-widest opacity-40">
-          © {new Date().getFullYear()} THE CARS PLACE LOT INC.
+          © {new Date().getFullYear()} THE CAR PLACE LOT INC.
         </p>
         <p className="text-xs font-bold uppercase tracking-widest">
           Powered by{" "}

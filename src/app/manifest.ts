@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: APP_NAME_UPPER,
     short_name: APP_NAME_UPPER,
-    description: "THE CARS PLACE LOT INC — gestión vehicular",
+    description: "THE CAR PLACE LOT INC — gestión vehicular",
     start_url: PUBLIC_CATALOG_PATH,
     display: "standalone",
     orientation: "portrait",

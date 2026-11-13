@@ -37,7 +37,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: APP_NAME_UPPER,
   applicationName: APP_NAME_UPPER,
-  description: "THE CARS PLACE LOT INC — gestión vehicular",
+  description: "THE CAR PLACE LOT INC — gestión vehicular",
   other: {
     google: "notranslate",
   },

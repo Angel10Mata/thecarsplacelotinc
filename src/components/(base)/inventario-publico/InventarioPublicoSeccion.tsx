@@ -112,7 +112,7 @@ export function InventarioPublicoSeccion({
             className="text-3xl text-zinc-500 sm:text-5xl lg:text-6xl dark:text-zinc-400"
             colors={[...TCPL_AURORA_MUTED]}
           >
-            at The Cars Place.
+            at The Car Place.
           </AuroraText>
         </h1>
 

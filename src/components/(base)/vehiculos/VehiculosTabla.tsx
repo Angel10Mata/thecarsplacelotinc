@@ -62,13 +62,13 @@ import type { VehiculoListRow } from "./lib/zod";
 import { rowHasUploadedPdf } from "./lib/vehiculo-galeria-items";
 import { prefetchInvoicePdfLibs } from "./lib/vehiculo-react-pdf";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { canManageClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 type PageSize = SigetTablaPageSizeValue;
 
 export function VehiculosTabla() {
   const { effectiveRole } = useUserContext();
-  const canEditar = canEditClientesYVehiculos(effectiveRole);
+  const puedeGestionar = canManageClientesYVehiculos(effectiveRole);
   const { data: vehiculos, isLoading, isError } = useCars();
   const [crearOpen, setCrearOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -157,13 +157,15 @@ export function VehiculosTabla() {
 
   return (
     <>
-      <CrearVehiculoModal open={crearOpen} onOpenChange={setCrearOpen} />
+      {puedeGestionar ? (
+        <CrearVehiculoModal open={crearOpen} onOpenChange={setCrearOpen} />
+      ) : null}
       <VehiculoGaleriaViewerModal
         row={galeriaRow}
         initialView={galeriaView}
         onClose={cerrarGaleria}
       />
-      {canEditar ? (
+      {puedeGestionar ? (
         <EditarVehiculoModal
           open={editarCarId !== null}
           carId={editarCarId}
@@ -220,14 +222,16 @@ export function VehiculosTabla() {
                   setPage(1);
                 }}
               />
-              <button
-                type="button"
-                className={vehiculosTablaAddOutlineButtonClass}
-                onClick={() => setCrearOpen(true)}
-              >
-                <Plus className="size-4 shrink-0" aria-hidden />
-                Añadir
-              </button>
+              {puedeGestionar ? (
+                <button
+                  type="button"
+                  className={vehiculosTablaAddOutlineButtonClass}
+                  onClick={() => setCrearOpen(true)}
+                >
+                  <Plus className="size-4 shrink-0" aria-hidden />
+                  Añadir
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -252,7 +256,7 @@ export function VehiculosTabla() {
             }
             onVerGaleria={abrirGaleria}
             onVerFactura={(row) => abrirGaleria(row, "invoice")}
-            canEditar={canEditar}
+            canEditar={puedeGestionar}
             onEditar={(row) => setEditarCarId(row.id)}
           />
 
@@ -269,7 +273,7 @@ export function VehiculosTabla() {
                 onVerGaleria={abrirGaleria}
                 onVerFactura={(row) => abrirGaleria(row, "invoice")}
                 renderAcciones={(row) =>
-                  canEditar ? (
+                  puedeGestionar ? (
                     <VehiculoTablaFilaMenu
                       row={row}
                       canEditar

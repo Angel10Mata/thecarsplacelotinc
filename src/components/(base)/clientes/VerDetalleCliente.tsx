@@ -23,7 +23,7 @@ import {
 } from "./lib/rutas-clientes";
 import { clientesTablaAccentBarClass } from "./lib/tabla-clientes-ui";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { canManageClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 function DetalleLabel({ children }: { children: string }) {
   return (
@@ -74,7 +74,7 @@ function VerDetalleClienteBody({
 }) {
   const router = useRouter();
   const { effectiveRole } = useUserContext();
-  const canEditar = canEditClientesYVehiculos(effectiveRole);
+  const puedeGestionar = canManageClientesYVehiculos(effectiveRole);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [entradaLista, setEntradaLista] = useState(true);
 
@@ -146,7 +146,7 @@ function VerDetalleClienteBody({
         initialView={galeriaView}
         onClose={() => setGaleriaRow(null)}
       />
-      {canEditar ? (
+      {puedeGestionar ? (
         <EditarVehiculoModal
           open={editarCarId !== null}
           carId={editarCarId}
@@ -206,7 +206,7 @@ function VerDetalleClienteBody({
               isError={false}
               onVerGaleria={abrirGaleria}
               onVerFactura={(row) => abrirGaleria(row, "invoice")}
-              canEditar={canEditar}
+              canEditar={puedeGestionar}
               onEditar={(row) => setEditarCarId(row.id)}
             />
           </div>

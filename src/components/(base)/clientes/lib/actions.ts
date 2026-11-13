@@ -5,7 +5,7 @@ import { APP_BASE_PATH } from "@/lib/app-config";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
 import { resolveUserRole } from "@/lib/user-role";
-import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { canManageClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 import { carRowSchema } from "@/components/(base)/vehiculos/lib/zod";
 import {
   buildNumeroRegistroPorId,
@@ -109,6 +109,11 @@ export async function crearCustomerAction(raw: unknown) {
     } = await supabase.auth.getUser();
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
 
+    const role = await resolveUserRole(supabase, user);
+    if (!canManageClientesYVehiculos(role)) {
+      return { ok: false as const, code: "FORBIDDEN" };
+    }
+
     const payload = {
       customer_name: parsed.data.customer_name,
       customer_nit: parsed.data.customer_nit?.trim() || null,
@@ -152,7 +157,7 @@ export async function actualizarCustomerAction(raw: unknown) {
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
 
     const role = await resolveUserRole(supabase, user);
-    if (!canEditClientesYVehiculos(role)) {
+    if (!canManageClientesYVehiculos(role)) {
       return { ok: false as const, code: "FORBIDDEN" };
     }
 

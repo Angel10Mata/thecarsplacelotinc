@@ -62,7 +62,7 @@ import { useCustomers } from "./lib/hooks";
 import { clienteDetallePath, guardarClienteDetalleEnSesion } from "./lib/rutas-clientes";
 import type { ClienteListRow } from "./lib/zod";
 import { useUserContext } from "@/components/(base)/providers/UserProvider";
-import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { canManageClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 const cellPad = "px-3 py-3.5";
 const cellPadEstrecho = "px-1.5 py-3.5";
@@ -111,7 +111,7 @@ function ClienteFilaMenu({
 export function ClientesTabla() {
   const router = useRouter();
   const { effectiveRole } = useUserContext();
-  const canEditar = canEditClientesYVehiculos(effectiveRole);
+  const puedeGestionar = canManageClientesYVehiculos(effectiveRole);
   const { data: clientes, isLoading, isError } = useCustomers();
   const [crearOpen, setCrearOpen] = useState(false);
   const [editarCliente, setEditarCliente] = useState<ClienteListRow | null>(null);
@@ -161,8 +161,10 @@ export function ClientesTabla() {
 
   return (
     <>
-      <CrearClienteModal open={crearOpen} onOpenChange={setCrearOpen} />
-      {canEditar ? (
+      {puedeGestionar ? (
+        <CrearClienteModal open={crearOpen} onOpenChange={setCrearOpen} />
+      ) : null}
+      {puedeGestionar ? (
         <EditarClienteModal
           open={editarCliente !== null}
           onOpenChange={(open) => {
@@ -211,14 +213,16 @@ export function ClientesTabla() {
                   "min-w-0 w-full max-lg:col-span-full",
                 )}
               >
-                <button
-                  type="button"
-                  className={clientesTablaAddOutlineButtonClass}
-                  onClick={() => setCrearOpen(true)}
-                >
-                  <Plus className="size-4 shrink-0" aria-hidden />
-                  Añadir
-                </button>
+                {puedeGestionar ? (
+                  <button
+                    type="button"
+                    className={clientesTablaAddOutlineButtonClass}
+                    onClick={() => setCrearOpen(true)}
+                  >
+                    <Plus className="size-4 shrink-0" aria-hidden />
+                    Añadir
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -244,7 +248,7 @@ export function ClientesTabla() {
                   <col style={clientesTablaColAnchoStyle(clientesTablaAnchoNit)} />
                   <col />
                   <col style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)} />
-                  {canEditar ? (
+                  {puedeGestionar ? (
                     <col style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)} />
                   ) : null}
                 </colgroup>
@@ -298,7 +302,7 @@ export function ClientesTabla() {
                     >
                       Veh.
                     </th>
-                    {canEditar ? (
+                    {puedeGestionar ? (
                       <th
                         className={sigetTablaCeldaBotonHeaderClass}
                         style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
@@ -312,12 +316,14 @@ export function ClientesTabla() {
                   {pageItems.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={canEditar ? 6 : 5}
+                        colSpan={puedeGestionar ? 6 : 5}
                         className="px-4 py-14 text-center text-sm font-semibold text-muted-foreground"
                       >
                         {search.trim()
                           ? "Sin coincidencias con la búsqueda."
-                          : "Sin clientes. Usa Añadir para registrar uno."}
+                          : puedeGestionar
+                            ? "Sin clientes. Usa Añadir para registrar uno."
+                            : "Sin clientes registrados."}
                       </td>
                     </tr>
                   ) : (
@@ -383,7 +389,7 @@ export function ClientesTabla() {
                             </button>
                           </div>
                         </td>
-                        {canEditar ? (
+                        {puedeGestionar ? (
                           <td
                             className={sigetTablaCeldaAccionesClass}
                             style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
@@ -409,7 +415,9 @@ export function ClientesTabla() {
                 <p className="px-4 py-14 text-center text-base font-semibold text-muted-foreground">
                   {search.trim()
                     ? "Sin coincidencias con la búsqueda."
-                    : "Sin clientes. Usa Añadir para registrar uno."}
+                    : puedeGestionar
+                      ? "Sin clientes. Usa Añadir para registrar uno."
+                      : "Sin clientes registrados."}
                 </p>
               ) : (
                 <ClientesTablaMobileCards
@@ -417,7 +425,7 @@ export function ClientesTabla() {
                   rowOffset={rowOffset}
                   onVerVehiculos={abrirDetalleCliente}
                   renderAcciones={(row) =>
-                    canEditar ? (
+                    puedeGestionar ? (
                       <ClienteFilaMenu
                         row={row}
                         canEditar

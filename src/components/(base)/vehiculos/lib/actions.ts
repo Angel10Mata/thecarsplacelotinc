@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { APP_BASE_PATH, PUBLIC_CATALOG_PATH, VEHICULOS_INVENTARIO_PATH } from "@/lib/app-config";
 import { createClient } from "@/utils/supabase/server";
 import { resolveUserRole } from "@/lib/user-role";
-import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
+import { canManageClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 import { DEFAULT_CAR_INCOTERMS, DEFAULT_CAR_STATUS } from "./helpers";
 import { loadCustomersByIds } from "./load-customers";
 import { codeFromPgUniqueViolation } from "./action-errors";
@@ -73,6 +73,11 @@ export async function verificarFacturaDuplicadaAction(
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" as const };
+
+    const role = await resolveUserRole(supabase, user);
+    if (!canManageClientesYVehiculos(role)) {
+      return { ok: false as const, code: "FORBIDDEN" as const };
+    }
 
     const dup = await facturaDuplicadaEnBase(
       supabase,
@@ -165,6 +170,11 @@ export async function crearCarAction(raw: unknown) {
     } = await supabase.auth.getUser();
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
 
+    const role = await resolveUserRole(supabase, user);
+    if (!canManageClientesYVehiculos(role)) {
+      return { ok: false as const, code: "FORBIDDEN" as const };
+    }
+
     const carImages = (parsed.data.car_image_urls ?? [])
       .map((url) => url.trim())
       .filter(Boolean);
@@ -237,6 +247,11 @@ export async function getCarForEditAction(id: string) {
     } = await supabase.auth.getUser();
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
 
+    const role = await resolveUserRole(supabase, user);
+    if (!canManageClientesYVehiculos(role)) {
+      return { ok: false as const, code: "FORBIDDEN" as const };
+    }
+
     const { data, error } = await supabase
       .from("cars")
       .select("*")
@@ -284,7 +299,7 @@ export async function actualizarCarAction(raw: unknown) {
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
 
     const role = await resolveUserRole(supabase, user);
-    if (!canEditClientesYVehiculos(role)) {
+    if (!canManageClientesYVehiculos(role)) {
       return { ok: false as const, code: "FORBIDDEN" as const };
     }
 

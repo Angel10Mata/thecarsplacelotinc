@@ -13,6 +13,8 @@ import CrearClienteModal from "@/components/(base)/clientes/forms/Crear";
 import { useCustomersSearch } from "@/components/(base)/clientes/lib/hooks";
 import { customerRowFromClienteListRow } from "@/components/(base)/clientes/lib/helpers";
 import type { CustomerRow } from "@/components/(base)/clientes/lib/zod";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import { canManageClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 const MIN_SEARCH = 3;
 
@@ -33,6 +35,8 @@ export function BuscarClienteField({
   onSelect,
   onClearSelection,
 }: BuscarClienteFieldProps) {
+  const { effectiveRole } = useUserContext();
+  const puedeGestionar = canManageClientesYVehiculos(effectiveRole);
   const [open, setOpen] = useState(false);
   const [crearClienteOpen, setCrearClienteOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -52,15 +56,17 @@ export function BuscarClienteField({
 
   return (
     <div ref={rootRef} className="relative">
-    <CrearClienteModal
-      open={crearClienteOpen}
-      onOpenChange={setCrearClienteOpen}
-      onCreated={(customer) => {
-        onSelect(customer);
-        onQueryChange("");
-        setOpen(false);
-      }}
-    />
+    {puedeGestionar ? (
+      <CrearClienteModal
+        open={crearClienteOpen}
+        onOpenChange={setCrearClienteOpen}
+        onCreated={(customer) => {
+          onSelect(customer);
+          onQueryChange("");
+          setOpen(false);
+        }}
+      />
+    ) : null}
     <ModalField>
       <ModalLabel htmlFor="buscar-cliente">{label}</ModalLabel>
       <div className="flex items-center gap-2">
@@ -113,20 +119,22 @@ export function BuscarClienteField({
             </div>
           ) : null}
         </div>
-        <SigetActionButton
-          label="Crear"
-          iconOnly
-          accentColor={sigetAccent.crear}
-          morphFrom={Plus}
-          morphTo={Plus}
-          morphOnHover={false}
-          ariaLabel="Crear cliente"
-          className="size-10 w-10 shrink-0"
-          onClick={() => {
-            setOpen(false);
-            setCrearClienteOpen(true);
-          }}
-        />
+        {puedeGestionar ? (
+          <SigetActionButton
+            label="Crear"
+            iconOnly
+            accentColor={sigetAccent.crear}
+            morphFrom={Plus}
+            morphTo={Plus}
+            morphOnHover={false}
+            ariaLabel="Crear cliente"
+            className="size-10 w-10 shrink-0"
+            onClick={() => {
+              setOpen(false);
+              setCrearClienteOpen(true);
+            }}
+          />
+        ) : null}
       </div>
       {selected ? (
         <button

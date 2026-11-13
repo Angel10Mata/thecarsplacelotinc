@@ -62,7 +62,7 @@ export function isAdminRole(role: string): boolean {
   return normalized === "super" || normalized === "admin";
 }
 
-export function canEditClientesYVehiculos(actorRole: string): boolean {
+export function canManageClientesYVehiculos(actorRole: string): boolean {
   return isAdminRole(actorRole);
 }
 

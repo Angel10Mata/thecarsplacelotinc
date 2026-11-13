@@ -3,6 +3,8 @@
 import { mensajeSiServiceRoleKeyInvalida } from "@/lib/supabase-service-role-env";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient } from "@/utils/supabase/server";
+import { resolveUserRole } from "@/lib/user-role";
+import { canManageClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 import {
   CAR_IMAGE_MAX_BYTES,
   CAR_PDF_MAX_BYTES,
@@ -11,12 +13,22 @@ import {
 } from "./car-images";
 import { classifyStorageError } from "./storage-messages";
 
-async function requireAuthenticatedUser() {
+async function requireStorageAccess(): Promise<
+  | { ok: true; user: { id: string } }
+  | { ok: false; code: "UNAUTHORIZED" | "FORBIDDEN" }
+> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user;
+  if (!user) return { ok: false, code: "UNAUTHORIZED" };
+
+  const role = await resolveUserRole(supabase, user);
+  if (!canManageClientesYVehiculos(role)) {
+    return { ok: false, code: "FORBIDDEN" };
+  }
+
+  return { ok: true, user };
 }
 
 function storageClient() {
@@ -27,9 +39,9 @@ function storageClient() {
 }
 
 export async function uploadCarImageStorageAction(formData: FormData) {
-  const user = await requireAuthenticatedUser();
-  if (!user) {
-    return { ok: false as const, code: "UNAUTHORIZED" as const };
+  const auth = await requireStorageAccess();
+  if (!auth.ok) {
+    return { ok: false as const, code: auth.code };
   }
 
   const file = formData.get("file");
@@ -87,9 +99,9 @@ export async function uploadCarImageStorageAction(formData: FormData) {
 }
 
 export async function removeCarImageStorageAction(path: string) {
-  const user = await requireAuthenticatedUser();
-  if (!user) {
-    return { ok: false as const, code: "UNAUTHORIZED" as const };
+  const auth = await requireStorageAccess();
+  if (!auth.ok) {
+    return { ok: false as const, code: auth.code };
   }
 
   const trimmed = path.trim();

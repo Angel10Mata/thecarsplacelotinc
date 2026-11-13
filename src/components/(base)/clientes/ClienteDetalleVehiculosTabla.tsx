@@ -32,6 +32,7 @@ type ClienteDetalleVehiculosTablaProps = {
   onVerGaleria: (row: VehiculoListRow) => void;
   onVerFactura: (row: VehiculoListRow) => void;
   onEditar: (row: VehiculoListRow) => void;
+  canEditar?: boolean;
 };
 
 export function ClienteDetalleVehiculosTabla({
@@ -41,6 +42,7 @@ export function ClienteDetalleVehiculosTabla({
   onVerGaleria,
   onVerFactura,
   onEditar,
+  canEditar = true,
 }: ClienteDetalleVehiculosTablaProps) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<PageSize>(15);
@@ -76,6 +78,7 @@ export function ClienteDetalleVehiculosTabla({
               emptyMessage={emptyMessage}
               onVerGaleria={onVerGaleria}
               onVerFactura={onVerFactura}
+              canEditar={canEditar}
               onEditar={onEditar}
             />
 
@@ -89,12 +92,15 @@ export function ClienteDetalleVehiculosTabla({
                   items={pageItems}
                   onVerGaleria={onVerGaleria}
                   onVerFactura={onVerFactura}
-                  renderAcciones={(row) => (
-                    <VehiculoTablaFilaMenu
-                      row={row}
-                      onEditar={() => onEditar(row)}
-                    />
-                  )}
+                  renderAcciones={(row) =>
+                    canEditar ? (
+                      <VehiculoTablaFilaMenu
+                        row={row}
+                        canEditar
+                        onEditar={() => onEditar(row)}
+                      />
+                    ) : null
+                  }
                 />
               )}
             </div>

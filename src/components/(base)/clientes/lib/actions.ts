@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { APP_BASE_PATH } from "@/lib/app-config";
 import { z } from "zod";
 import { createClient } from "@/utils/supabase/server";
+import { resolveUserRole } from "@/lib/user-role";
+import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 import { carRowSchema } from "@/components/(base)/vehiculos/lib/zod";
 import {
   buildNumeroRegistroPorId,
@@ -148,6 +150,11 @@ export async function actualizarCustomerAction(raw: unknown) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
+
+    const role = await resolveUserRole(supabase, user);
+    if (!canEditClientesYVehiculos(role)) {
+      return { ok: false as const, code: "FORBIDDEN" };
+    }
 
     const payload = {
       customer_name: parsed.data.customer_name,

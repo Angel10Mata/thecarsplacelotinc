@@ -43,10 +43,14 @@ const marcaModeloCell = "pl-2.5 pr-1";
 export function VehiculoTablaFilaMenu({
   row,
   onEditar,
+  canEditar = true,
 }: {
   row: VehiculoListRow;
   onEditar: () => void;
+  canEditar?: boolean;
 }) {
+  if (!canEditar) return null;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -108,6 +112,7 @@ type VehiculosTablaDesktopProps = {
   onVerGaleria: (row: VehiculoListRow) => void;
   onVerFactura: (row: VehiculoListRow) => void;
   onEditar: (row: VehiculoListRow) => void;
+  canEditar?: boolean;
 };
 
 export function VehiculosTablaDesktop({
@@ -116,7 +121,9 @@ export function VehiculosTablaDesktop({
   onVerGaleria,
   onVerFactura,
   onEditar,
+  canEditar = true,
 }: VehiculosTablaDesktopProps) {
+  const colCount = canEditar ? 7 : 6;
   return (
     <div className={vehiculosTablaDesktopTableWrapClass}>
       <table className="w-full table-fixed border-collapse text-base">
@@ -127,7 +134,7 @@ export function VehiculosTablaDesktop({
           <col />
           <col style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoFactura)} />
           <col style={vehiculosTablaColAnchoStyle(vehiculosTablaAnchoFotos)} />
-          <col style={sigetTablaAnchoAccionesColStyle} />
+          {canEditar ? <col style={sigetTablaAnchoAccionesColStyle} /> : null}
         </colgroup>
         <thead>
           <tr className={vehiculosTablaHeadRowClass}>
@@ -185,19 +192,21 @@ export function VehiculosTablaDesktop({
             >
               Fotos
             </th>
-            <th
-              className={sigetTablaCeldaBotonHeaderClass}
-              style={sigetTablaAnchoAccionesColStyle}
-            >
-              ACC
-            </th>
+            {canEditar ? (
+              <th
+                className={sigetTablaCeldaBotonHeaderClass}
+                style={sigetTablaAnchoAccionesColStyle}
+              >
+                ACC
+              </th>
+            ) : null}
           </tr>
         </thead>
         <tbody>
           {pageItems.length === 0 ? (
             <tr>
               <td
-                colSpan={7}
+                colSpan={colCount}
                 className="px-4 py-14 text-center text-sm font-semibold text-muted-foreground"
               >
                 {emptyMessage}
@@ -289,17 +298,20 @@ export function VehiculosTablaDesktop({
                     />
                   </div>
                 </td>
-                <td
-                  className={sigetTablaCeldaAccionesClass}
-                  style={sigetTablaAnchoAccionesColStyle}
-                >
-                  <div className={sigetTablaCeldaBotonCentrarClass}>
-                    <VehiculoTablaFilaMenu
-                      row={row}
-                      onEditar={() => onEditar(row)}
-                    />
-                  </div>
-                </td>
+                {canEditar ? (
+                  <td
+                    className={sigetTablaCeldaAccionesClass}
+                    style={sigetTablaAnchoAccionesColStyle}
+                  >
+                    <div className={sigetTablaCeldaBotonCentrarClass}>
+                      <VehiculoTablaFilaMenu
+                        row={row}
+                        canEditar
+                        onEditar={() => onEditar(row)}
+                      />
+                    </div>
+                  </td>
+                ) : null}
               </tr>
             ))
           )}

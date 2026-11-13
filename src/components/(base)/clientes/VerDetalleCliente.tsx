@@ -22,6 +22,8 @@ import {
   leerClienteDetalleEnSesion,
 } from "./lib/rutas-clientes";
 import { clientesTablaAccentBarClass } from "./lib/tabla-clientes-ui";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 function DetalleLabel({ children }: { children: string }) {
   return (
@@ -71,6 +73,8 @@ function VerDetalleClienteBody({
   nombre: string;
 }) {
   const router = useRouter();
+  const { effectiveRole } = useUserContext();
+  const canEditar = canEditClientesYVehiculos(effectiveRole);
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [entradaLista, setEntradaLista] = useState(true);
 
@@ -142,13 +146,15 @@ function VerDetalleClienteBody({
         initialView={galeriaView}
         onClose={() => setGaleriaRow(null)}
       />
-      <EditarVehiculoModal
-        open={editarCarId !== null}
-        carId={editarCarId}
-        onOpenChange={(next) => {
-          if (!next) setEditarCarId(null);
-        }}
-      />
+      {canEditar ? (
+        <EditarVehiculoModal
+          open={editarCarId !== null}
+          carId={editarCarId}
+          onOpenChange={(next) => {
+            if (!next) setEditarCarId(null);
+          }}
+        />
+      ) : null}
       <div className={cn(modulePageShellClass, "min-h-0 gap-2 pt-0 pb-0 md:pt-0 md:pb-8 mt-0 md:mt-4")}>
         <header className={modulePageHeaderClass}>
           <div className={modulePageHeaderStackClass}>
@@ -200,6 +206,7 @@ function VerDetalleClienteBody({
               isError={false}
               onVerGaleria={abrirGaleria}
               onVerFactura={(row) => abrirGaleria(row, "invoice")}
+              canEditar={canEditar}
               onEditar={(row) => setEditarCarId(row.id)}
             />
           </div>

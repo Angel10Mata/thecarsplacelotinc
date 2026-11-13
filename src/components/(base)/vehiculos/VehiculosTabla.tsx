@@ -61,10 +61,14 @@ import {
 import type { VehiculoListRow } from "./lib/zod";
 import { rowHasUploadedPdf } from "./lib/vehiculo-galeria-items";
 import { prefetchInvoicePdfLibs } from "./lib/vehiculo-react-pdf";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 type PageSize = SigetTablaPageSizeValue;
 
 export function VehiculosTabla() {
+  const { effectiveRole } = useUserContext();
+  const canEditar = canEditClientesYVehiculos(effectiveRole);
   const { data: vehiculos, isLoading, isError } = useCars();
   const [crearOpen, setCrearOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -159,13 +163,15 @@ export function VehiculosTabla() {
         initialView={galeriaView}
         onClose={cerrarGaleria}
       />
-      <EditarVehiculoModal
-        open={editarCarId !== null}
-        carId={editarCarId}
-        onOpenChange={(next) => {
-          if (!next) setEditarCarId(null);
-        }}
-      />
+      {canEditar ? (
+        <EditarVehiculoModal
+          open={editarCarId !== null}
+          carId={editarCarId}
+          onOpenChange={(next) => {
+            if (!next) setEditarCarId(null);
+          }}
+        />
+      ) : null}
       <div
         className={cn(
           "flex w-full min-w-0 flex-col shrink-0",
@@ -246,6 +252,7 @@ export function VehiculosTabla() {
             }
             onVerGaleria={abrirGaleria}
             onVerFactura={(row) => abrirGaleria(row, "invoice")}
+            canEditar={canEditar}
             onEditar={(row) => setEditarCarId(row.id)}
           />
 
@@ -261,12 +268,15 @@ export function VehiculosTabla() {
                 items={pageItems}
                 onVerGaleria={abrirGaleria}
                 onVerFactura={(row) => abrirGaleria(row, "invoice")}
-                renderAcciones={(row) => (
-                  <VehiculoTablaFilaMenu
-                    row={row}
-                    onEditar={() => setEditarCarId(row.id)}
-                  />
-                )}
+                renderAcciones={(row) =>
+                  canEditar ? (
+                    <VehiculoTablaFilaMenu
+                      row={row}
+                      canEditar
+                      onEditar={() => setEditarCarId(row.id)}
+                    />
+                  ) : null
+                }
               />
             )}
           </div>

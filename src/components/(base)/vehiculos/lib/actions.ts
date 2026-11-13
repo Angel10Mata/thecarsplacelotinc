@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { APP_BASE_PATH, PUBLIC_CATALOG_PATH, VEHICULOS_INVENTARIO_PATH } from "@/lib/app-config";
 import { createClient } from "@/utils/supabase/server";
+import { resolveUserRole } from "@/lib/user-role";
+import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 import { DEFAULT_CAR_INCOTERMS, DEFAULT_CAR_STATUS } from "./helpers";
 import { loadCustomersByIds } from "./load-customers";
 import { codeFromPgUniqueViolation } from "./action-errors";
@@ -280,6 +282,11 @@ export async function actualizarCarAction(raw: unknown) {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return { ok: false as const, code: "UNAUTHORIZED" };
+
+    const role = await resolveUserRole(supabase, user);
+    if (!canEditClientesYVehiculos(role)) {
+      return { ok: false as const, code: "FORBIDDEN" as const };
+    }
 
     const carImages = (parsed.data.car_image_urls ?? [])
       .map((url) => url.trim())

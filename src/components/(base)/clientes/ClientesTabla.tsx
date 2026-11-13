@@ -61,6 +61,8 @@ import EditarClienteModal from "./forms/Editar";
 import { useCustomers } from "./lib/hooks";
 import { clienteDetallePath, guardarClienteDetalleEnSesion } from "./lib/rutas-clientes";
 import type { ClienteListRow } from "./lib/zod";
+import { useUserContext } from "@/components/(base)/providers/UserProvider";
+import { canEditClientesYVehiculos } from "@/components/(base)/(users)/usuarios/lib/permissions";
 
 const cellPad = "px-3 py-3.5";
 const cellPadEstrecho = "px-1.5 py-3.5";
@@ -69,10 +71,14 @@ type PageSize = SigetTablaPageSizeValue;
 function ClienteFilaMenu({
   row,
   onEditar,
+  canEditar = true,
 }: {
   row: ClienteListRow;
   onEditar: () => void;
+  canEditar?: boolean;
 }) {
+  if (!canEditar) return null;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -104,6 +110,8 @@ function ClienteFilaMenu({
 
 export function ClientesTabla() {
   const router = useRouter();
+  const { effectiveRole } = useUserContext();
+  const canEditar = canEditClientesYVehiculos(effectiveRole);
   const { data: clientes, isLoading, isError } = useCustomers();
   const [crearOpen, setCrearOpen] = useState(false);
   const [editarCliente, setEditarCliente] = useState<ClienteListRow | null>(null);
@@ -154,13 +162,15 @@ export function ClientesTabla() {
   return (
     <>
       <CrearClienteModal open={crearOpen} onOpenChange={setCrearOpen} />
-      <EditarClienteModal
-        open={editarCliente !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditarCliente(null);
-        }}
-        cliente={editarCliente}
-      />
+      {canEditar ? (
+        <EditarClienteModal
+          open={editarCliente !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditarCliente(null);
+          }}
+          cliente={editarCliente}
+        />
+      ) : null}
       <div
         className={cn(
           "flex w-full min-w-0 flex-col shrink-0",
@@ -234,7 +244,9 @@ export function ClientesTabla() {
                   <col style={clientesTablaColAnchoStyle(clientesTablaAnchoNit)} />
                   <col />
                   <col style={clientesTablaColAnchoStyle(clientesTablaAnchoVeh)} />
-                  <col style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)} />
+                  {canEditar ? (
+                    <col style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)} />
+                  ) : null}
                 </colgroup>
                 <thead>
                   <tr className={clientesTablaHeadRowClass}>
@@ -286,19 +298,21 @@ export function ClientesTabla() {
                     >
                       Veh.
                     </th>
-                    <th
-                      className={sigetTablaCeldaBotonHeaderClass}
-                      style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
-                    >
-                      ACC
-                    </th>
+                    {canEditar ? (
+                      <th
+                        className={sigetTablaCeldaBotonHeaderClass}
+                        style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
+                      >
+                        ACC
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
                   {pageItems.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={canEditar ? 6 : 5}
                         className="px-4 py-14 text-center text-sm font-semibold text-muted-foreground"
                       >
                         {search.trim()
@@ -369,17 +383,20 @@ export function ClientesTabla() {
                             </button>
                           </div>
                         </td>
-                        <td
-                          className={sigetTablaCeldaAccionesClass}
-                          style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
-                        >
-                          <div className={sigetTablaCeldaBotonCentrarClass}>
-                            <ClienteFilaMenu
-                              row={row}
-                              onEditar={() => setEditarCliente(row)}
-                            />
-                          </div>
-                        </td>
+                        {canEditar ? (
+                          <td
+                            className={sigetTablaCeldaAccionesClass}
+                            style={clientesTablaColAnchoStyle(clientesTablaAnchoAcc)}
+                          >
+                            <div className={sigetTablaCeldaBotonCentrarClass}>
+                              <ClienteFilaMenu
+                                row={row}
+                                canEditar
+                                onEditar={() => setEditarCliente(row)}
+                              />
+                            </div>
+                          </td>
+                        ) : null}
                       </tr>
                     ))
                   )}
@@ -399,12 +416,15 @@ export function ClientesTabla() {
                   items={pageItems}
                   rowOffset={rowOffset}
                   onVerVehiculos={abrirDetalleCliente}
-                  renderAcciones={(row) => (
-                    <ClienteFilaMenu
-                      row={row}
-                      onEditar={() => setEditarCliente(row)}
-                    />
-                  )}
+                  renderAcciones={(row) =>
+                    canEditar ? (
+                      <ClienteFilaMenu
+                        row={row}
+                        canEditar
+                        onEditar={() => setEditarCliente(row)}
+                      />
+                    ) : null
+                  }
                 />
               )}
             </div>
